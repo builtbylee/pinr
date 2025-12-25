@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "760973100570",
+    "project_id": "days-c4ad4",
+    "storage_bucket": "days-c4ad4.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:760973100570:android:ddaed6b4c5477deacef3a3",
+        "android_client_info": {
+          "package_name": "com.anonymous.chronokepler"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAGTteRsv7MtPctYoCE-hlJY03v_vnDSb4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:760973100570:android:ca72ebdb0e6d3a5bcef3a3",
+        "android_client_info": {
+          "package_name": "com.builtbylee.app80days"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAGTteRsv7MtPctYoCE-hlJY03v_vnDSb4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

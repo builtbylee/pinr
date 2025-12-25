@@ -1,0 +1,1082 @@
+[
+    {
+        "id": "loc_001",
+        "name": "Cairo",
+        "country": "Egypt",
+        "displayName": "Cairo, Egypt",
+        "lat": 30.0444,
+        "lon": 31.2357,
+        "difficulty": "easy"
+    },
+    {
+        "id": "loc_002",
+        "name": "Tokyo",
+        "country": "Japan",
+        "displayName": "Tokyo, Japan",
+        "lat": 35.6762,
+        "lon": 139.6503,
+        "difficulty": "easy"
+    },
+    {
+        "id": "loc_003",
+        "name": "Sydney",
+        "country": "Australia",
+        "displayName": "Sydney, Australia",
+        "lat": -33.8688,
+        "lon": 151.2093,
+        "difficulty": "easy"
+    },
+    {
+        "id": "loc_004",
+        "name": "Rio de Janeiro",
+        "country": "Brazil",
+        "displayName": "Rio de Janeiro, Brazil",
+        "lat": -22.9068,
+        "lon": -43.1729,
+        "difficulty": "easy"
+    },
+    {
+        "id": "loc_005",
+        "name": "Dubai",
+        "country": "UAE",
+        "displayName": "Dubai, UAE",
+        "lat": 25.2048,
+        "lon": 55.2708,
+        "difficulty": "easy"
+    },
+    {
+        "id": "loc_006",
+        "name": "Singapore",
+        "country": "Singapore",
+        "displayName": "Singapore",
+        "lat": 1.3521,
+        "lon": 103.8198,
+        "difficulty": "easy"
+    },
+    {
+        "id": "loc_007",
+        "name": "Mumbai",
+        "country": "India",
+        "displayName": "Mumbai, India",
+        "lat": 19.076,
+        "lon": 72.8777,
+        "difficulty": "easy"
+    },
+    {
+        "id": "loc_008",
+        "name": "Mexico City",
+        "country": "Mexico",
+        "displayName": "Mexico City, Mexico",
+        "lat": 19.4326,
+        "lon": -99.1332,
+        "difficulty": "easy"
+    },
+    {
+        "id": "loc_009",
+        "name": "Hong Kong",
+        "country": "China",
+        "displayName": "Hong Kong, China",
+        "lat": 22.3193,
+        "lon": 114.1694,
+        "difficulty": "easy"
+    },
+    {
+        "id": "loc_010",
+        "name": "Bangkok",
+        "country": "Thailand",
+        "displayName": "Bangkok, Thailand",
+        "lat": 13.7563,
+        "lon": 100.5018,
+        "difficulty": "easy"
+    },
+    {
+        "id": "loc_011",
+        "name": "Cape Town",
+        "country": "South Africa",
+        "displayName": "Cape Town, South Africa",
+        "lat": -33.9249,
+        "lon": 18.4241,
+        "difficulty": "easy"
+    },
+    {
+        "id": "loc_012",
+        "name": "Los Angeles",
+        "country": "USA",
+        "displayName": "Los Angeles, USA",
+        "lat": 34.0522,
+        "lon": -118.2437,
+        "difficulty": "easy"
+    },
+    {
+        "id": "loc_013",
+        "name": "Miami",
+        "country": "USA",
+        "displayName": "Miami, USA",
+        "lat": 25.7617,
+        "lon": -80.1918,
+        "difficulty": "easy"
+    },
+    {
+        "id": "loc_014",
+        "name": "Hawaii",
+        "country": "USA",
+        "displayName": "Honolulu, Hawaii",
+        "lat": 21.3069,
+        "lon": -157.8583,
+        "difficulty": "easy"
+    },
+    {
+        "id": "loc_015",
+        "name": "Delhi",
+        "country": "India",
+        "displayName": "New Delhi, India",
+        "lat": 28.6139,
+        "lon": 77.209,
+        "difficulty": "easy"
+    },
+    {
+        "id": "loc_016",
+        "name": "Shanghai",
+        "country": "China",
+        "displayName": "Shanghai, China",
+        "lat": 31.2304,
+        "lon": 121.4737,
+        "difficulty": "easy"
+    },
+    {
+        "id": "loc_017",
+        "name": "Marrakech",
+        "country": "Morocco",
+        "displayName": "Marrakech, Morocco",
+        "lat": 31.6295,
+        "lon": -7.9811,
+        "difficulty": "easy"
+    },
+    {
+        "id": "loc_018",
+        "name": "Nairobi",
+        "country": "Kenya",
+        "displayName": "Nairobi, Kenya",
+        "lat": -1.2921,
+        "lon": 36.8219,
+        "difficulty": "easy"
+    },
+    {
+        "id": "loc_019",
+        "name": "Buenos Aires",
+        "country": "Argentina",
+        "displayName": "Buenos Aires, Argentina",
+        "lat": -34.6037,
+        "lon": -58.3816,
+        "difficulty": "easy"
+    },
+    {
+        "id": "loc_020",
+        "name": "Johannesburg",
+        "country": "South Africa",
+        "displayName": "Johannesburg, South Africa",
+        "lat": -26.2041,
+        "lon": 28.0473,
+        "difficulty": "easy"
+    },
+    {
+        "id": "loc_021",
+        "name": "Havana",
+        "country": "Cuba",
+        "displayName": "Havana, Cuba",
+        "lat": 23.1136,
+        "lon": -82.3666,
+        "difficulty": "medium"
+    },
+    {
+        "id": "loc_022",
+        "name": "Lima",
+        "country": "Peru",
+        "displayName": "Lima, Peru",
+        "lat": -12.0464,
+        "lon": -77.0428,
+        "difficulty": "medium"
+    },
+    {
+        "id": "loc_023",
+        "name": "Bogotá",
+        "country": "Colombia",
+        "displayName": "Bogotá, Colombia",
+        "lat": 4.711,
+        "lon": -74.0721,
+        "difficulty": "medium"
+    },
+    {
+        "id": "loc_024",
+        "name": "Casablanca",
+        "country": "Morocco",
+        "displayName": "Casablanca, Morocco",
+        "lat": 33.5731,
+        "lon": -7.5898,
+        "difficulty": "medium"
+    },
+    {
+        "id": "loc_025",
+        "name": "Lagos",
+        "country": "Nigeria",
+        "displayName": "Lagos, Nigeria",
+        "lat": 6.5244,
+        "lon": 3.3792,
+        "difficulty": "medium"
+    },
+    {
+        "id": "loc_026",
+        "name": "Kuala Lumpur",
+        "country": "Malaysia",
+        "displayName": "Kuala Lumpur, Malaysia",
+        "lat": 3.139,
+        "lon": 101.6869,
+        "difficulty": "medium"
+    },
+    {
+        "id": "loc_027",
+        "name": "Jakarta",
+        "country": "Indonesia",
+        "displayName": "Jakarta, Indonesia",
+        "lat": -6.2088,
+        "lon": 106.8456,
+        "difficulty": "medium"
+    },
+    {
+        "id": "loc_028",
+        "name": "Manila",
+        "country": "Philippines",
+        "displayName": "Manila, Philippines",
+        "lat": 14.5995,
+        "lon": 120.9842,
+        "difficulty": "medium"
+    },
+    {
+        "id": "loc_029",
+        "name": "Taipei",
+        "country": "Taiwan",
+        "displayName": "Taipei, Taiwan",
+        "lat": 25.033,
+        "lon": 121.5654,
+        "difficulty": "medium"
+    },
+    {
+        "id": "loc_030",
+        "name": "Ho Chi Minh City",
+        "country": "Vietnam",
+        "displayName": "Ho Chi Minh City, Vietnam",
+        "lat": 10.8231,
+        "lon": 106.6297,
+        "difficulty": "medium"
+    },
+    {
+        "id": "loc_031",
+        "name": "Hanoi",
+        "country": "Vietnam",
+        "displayName": "Hanoi, Vietnam",
+        "lat": 21.0285,
+        "lon": 105.8542,
+        "difficulty": "medium"
+    },
+    {
+        "id": "loc_032",
+        "name": "Riyadh",
+        "country": "Saudi Arabia",
+        "displayName": "Riyadh, Saudi Arabia",
+        "lat": 24.7136,
+        "lon": 46.6753,
+        "difficulty": "medium"
+    },
+    {
+        "id": "loc_033",
+        "name": "Doha",
+        "country": "Qatar",
+        "displayName": "Doha, Qatar",
+        "lat": 25.2854,
+        "lon": 51.531,
+        "difficulty": "medium"
+    },
+    {
+        "id": "loc_034",
+        "name": "Abu Dhabi",
+        "country": "UAE",
+        "displayName": "Abu Dhabi, UAE",
+        "lat": 24.4539,
+        "lon": 54.3773,
+        "difficulty": "medium"
+    },
+    {
+        "id": "loc_035",
+        "name": "Tel Aviv",
+        "country": "Israel",
+        "displayName": "Tel Aviv, Israel",
+        "lat": 32.0853,
+        "lon": 34.7818,
+        "difficulty": "medium"
+    },
+    {
+        "id": "loc_036",
+        "name": "Addis Ababa",
+        "country": "Ethiopia",
+        "displayName": "Addis Ababa, Ethiopia",
+        "lat": 9.0054,
+        "lon": 38.7636,
+        "difficulty": "medium"
+    },
+    {
+        "id": "loc_037",
+        "name": "Accra",
+        "country": "Ghana",
+        "displayName": "Accra, Ghana",
+        "lat": 5.6037,
+        "lon": -0.187,
+        "difficulty": "medium"
+    },
+    {
+        "id": "loc_038",
+        "name": "Dakar",
+        "country": "Senegal",
+        "displayName": "Dakar, Senegal",
+        "lat": 14.7167,
+        "lon": -17.4677,
+        "difficulty": "medium"
+    },
+    {
+        "id": "loc_039",
+        "name": "Colombo",
+        "country": "Sri Lanka",
+        "displayName": "Colombo, Sri Lanka",
+        "lat": 6.9271,
+        "lon": 79.8612,
+        "difficulty": "medium"
+    },
+    {
+        "id": "loc_040",
+        "name": "Kathmandu",
+        "country": "Nepal",
+        "displayName": "Kathmandu, Nepal",
+        "lat": 27.7172,
+        "lon": 85.324,
+        "difficulty": "medium"
+    },
+    {
+        "id": "loc_041",
+        "name": "Dhaka",
+        "country": "Bangladesh",
+        "displayName": "Dhaka, Bangladesh",
+        "lat": 23.8103,
+        "lon": 90.4125,
+        "difficulty": "medium"
+    },
+    {
+        "id": "loc_042",
+        "name": "Karachi",
+        "country": "Pakistan",
+        "displayName": "Karachi, Pakistan",
+        "lat": 24.8607,
+        "lon": 67.0011,
+        "difficulty": "medium"
+    },
+    {
+        "id": "loc_043",
+        "name": "Osaka",
+        "country": "Japan",
+        "displayName": "Osaka, Japan",
+        "lat": 34.6937,
+        "lon": 135.5023,
+        "difficulty": "medium"
+    },
+    {
+        "id": "loc_044",
+        "name": "Seoul",
+        "country": "South Korea",
+        "displayName": "Seoul, South Korea",
+        "lat": 37.5665,
+        "lon": 126.978,
+        "difficulty": "medium"
+    },
+    {
+        "id": "loc_045",
+        "name": "Melbourne",
+        "country": "Australia",
+        "displayName": "Melbourne, Australia",
+        "lat": -37.8136,
+        "lon": 144.9631,
+        "difficulty": "medium"
+    },
+    {
+        "id": "loc_046",
+        "name": "Brisbane",
+        "country": "Australia",
+        "displayName": "Brisbane, Australia",
+        "lat": -27.4698,
+        "lon": 153.0251,
+        "difficulty": "medium"
+    },
+    {
+        "id": "loc_047",
+        "name": "Auckland",
+        "country": "New Zealand",
+        "displayName": "Auckland, New Zealand",
+        "lat": -36.8485,
+        "lon": 174.7633,
+        "difficulty": "medium"
+    },
+    {
+        "id": "loc_048",
+        "name": "São Paulo",
+        "country": "Brazil",
+        "displayName": "São Paulo, Brazil",
+        "lat": -23.5505,
+        "lon": -46.6333,
+        "difficulty": "medium"
+    },
+    {
+        "id": "loc_049",
+        "name": "Santiago",
+        "country": "Chile",
+        "displayName": "Santiago, Chile",
+        "lat": -33.4489,
+        "lon": -70.6693,
+        "difficulty": "medium"
+    },
+    {
+        "id": "loc_050",
+        "name": "Caracas",
+        "country": "Venezuela",
+        "displayName": "Caracas, Venezuela",
+        "lat": 10.4806,
+        "lon": -66.9036,
+        "difficulty": "medium"
+    },
+    {
+        "id": "loc_051",
+        "name": "Zanzibar",
+        "country": "Tanzania",
+        "displayName": "Zanzibar, Tanzania",
+        "lat": -6.1659,
+        "lon": 39.2026,
+        "difficulty": "hard"
+    },
+    {
+        "id": "loc_052",
+        "name": "Manaus",
+        "country": "Brazil",
+        "displayName": "Manaus, Brazil",
+        "lat": -3.119,
+        "lon": -60.0217,
+        "difficulty": "hard"
+    },
+    {
+        "id": "loc_053",
+        "name": "Cusco",
+        "country": "Peru",
+        "displayName": "Cusco, Peru",
+        "lat": -13.532,
+        "lon": -71.9675,
+        "difficulty": "hard"
+    },
+    {
+        "id": "loc_054",
+        "name": "Fez",
+        "country": "Morocco",
+        "displayName": "Fez, Morocco",
+        "lat": 34.0181,
+        "lon": -5.0078,
+        "difficulty": "hard"
+    },
+    {
+        "id": "loc_055",
+        "name": "Jaipur",
+        "country": "India",
+        "displayName": "Jaipur, India",
+        "lat": 26.9124,
+        "lon": 75.7873,
+        "difficulty": "hard"
+    },
+    {
+        "id": "loc_056",
+        "name": "Goa",
+        "country": "India",
+        "displayName": "Goa, India",
+        "lat": 15.2993,
+        "lon": 74.124,
+        "difficulty": "hard"
+    },
+    {
+        "id": "loc_057",
+        "name": "Chiang Mai",
+        "country": "Thailand",
+        "displayName": "Chiang Mai, Thailand",
+        "lat": 18.7883,
+        "lon": 98.9853,
+        "difficulty": "hard"
+    },
+    {
+        "id": "loc_058",
+        "name": "Bali",
+        "country": "Indonesia",
+        "displayName": "Bali, Indonesia",
+        "lat": -8.4095,
+        "lon": 115.1889,
+        "difficulty": "hard"
+    },
+    {
+        "id": "loc_059",
+        "name": "Phuket",
+        "country": "Thailand",
+        "displayName": "Phuket, Thailand",
+        "lat": 7.8804,
+        "lon": 98.3923,
+        "difficulty": "hard"
+    },
+    {
+        "id": "loc_060",
+        "name": "Maldives",
+        "country": "Maldives",
+        "displayName": "Malé, Maldives",
+        "lat": 4.1755,
+        "lon": 73.5093,
+        "difficulty": "hard"
+    },
+    {
+        "id": "loc_061",
+        "name": "Mauritius",
+        "country": "Mauritius",
+        "displayName": "Port Louis, Mauritius",
+        "lat": -20.1609,
+        "lon": 57.5012,
+        "difficulty": "hard"
+    },
+    {
+        "id": "loc_062",
+        "name": "Seychelles",
+        "country": "Seychelles",
+        "displayName": "Victoria, Seychelles",
+        "lat": -4.6191,
+        "lon": 55.4513,
+        "difficulty": "hard"
+    },
+    {
+        "id": "loc_063",
+        "name": "Fiji",
+        "country": "Fiji",
+        "displayName": "Suva, Fiji",
+        "lat": -18.1416,
+        "lon": 178.4419,
+        "difficulty": "hard"
+    },
+    {
+        "id": "loc_064",
+        "name": "Medellín",
+        "country": "Colombia",
+        "displayName": "Medellín, Colombia",
+        "lat": 6.2442,
+        "lon": -75.5812,
+        "difficulty": "hard"
+    },
+    {
+        "id": "loc_065",
+        "name": "Cartagena",
+        "country": "Colombia",
+        "displayName": "Cartagena, Colombia",
+        "lat": 10.3932,
+        "lon": -75.4832,
+        "difficulty": "hard"
+    },
+    {
+        "id": "loc_066",
+        "name": "Luang Prabang",
+        "country": "Laos",
+        "displayName": "Luang Prabang, Laos",
+        "lat": 19.8842,
+        "lon": 102.1347,
+        "difficulty": "hard"
+    },
+    {
+        "id": "loc_067",
+        "name": "Siem Reap",
+        "country": "Cambodia",
+        "displayName": "Siem Reap, Cambodia",
+        "lat": 13.3671,
+        "lon": 103.8448,
+        "difficulty": "hard"
+    },
+    {
+        "id": "loc_068",
+        "name": "Varanasi",
+        "country": "India",
+        "displayName": "Varanasi, India",
+        "lat": 25.3176,
+        "lon": 82.9739,
+        "difficulty": "hard"
+    },
+    {
+        "id": "loc_069",
+        "name": "Petra",
+        "country": "Jordan",
+        "displayName": "Petra, Jordan",
+        "lat": 30.3285,
+        "lon": 35.4444,
+        "difficulty": "hard"
+    },
+    {
+        "id": "loc_070",
+        "name": "Luxor",
+        "country": "Egypt",
+        "displayName": "Luxor, Egypt",
+        "lat": 25.6872,
+        "lon": 32.6396,
+        "difficulty": "hard"
+    },
+    {
+        "id": "loc_071",
+        "name": "Tulum",
+        "country": "Mexico",
+        "displayName": "Tulum, Mexico",
+        "lat": 20.2114,
+        "lon": -87.4654,
+        "difficulty": "hard"
+    },
+    {
+        "id": "loc_072",
+        "name": "Cancún",
+        "country": "Mexico",
+        "displayName": "Cancún, Mexico",
+        "lat": 21.1619,
+        "lon": -86.8515,
+        "difficulty": "hard"
+    },
+    {
+        "id": "loc_073",
+        "name": "Galápagos",
+        "country": "Ecuador",
+        "displayName": "Galápagos Islands, Ecuador",
+        "lat": -0.9538,
+        "lon": -90.9656,
+        "difficulty": "hard"
+    },
+    {
+        "id": "loc_074",
+        "name": "Machu Picchu",
+        "country": "Peru",
+        "displayName": "Machu Picchu, Peru",
+        "lat": -13.1631,
+        "lon": -72.545,
+        "difficulty": "hard"
+    },
+    {
+        "id": "loc_075",
+        "name": "Great Barrier Reef",
+        "country": "Australia",
+        "displayName": "Cairns, Australia",
+        "lat": -16.9186,
+        "lon": 145.7781,
+        "difficulty": "hard"
+    },
+    {
+        "id": "loc_076",
+        "name": "Darwin",
+        "country": "Australia",
+        "displayName": "Darwin, Australia",
+        "lat": -12.4634,
+        "lon": 130.8456,
+        "difficulty": "hard"
+    },
+    {
+        "id": "loc_077",
+        "name": "Puerto Rico",
+        "country": "USA",
+        "displayName": "San Juan, Puerto Rico",
+        "lat": 18.4655,
+        "lon": -66.1057,
+        "difficulty": "hard"
+    },
+    {
+        "id": "loc_078",
+        "name": "Jamaica",
+        "country": "Jamaica",
+        "displayName": "Kingston, Jamaica",
+        "lat": 17.9714,
+        "lon": -76.7936,
+        "difficulty": "hard"
+    },
+    {
+        "id": "loc_079",
+        "name": "Barbados",
+        "country": "Barbados",
+        "displayName": "Bridgetown, Barbados",
+        "lat": 13.1132,
+        "lon": -59.5988,
+        "difficulty": "hard"
+    },
+    {
+        "id": "loc_080",
+        "name": "Trinidad",
+        "country": "Trinidad and Tobago",
+        "displayName": "Port of Spain, Trinidad",
+        "lat": 10.6596,
+        "lon": -61.5086,
+        "difficulty": "hard"
+    },
+    {
+        "id": "loc_081",
+        "name": "Maputo",
+        "country": "Mozambique",
+        "displayName": "Maputo, Mozambique",
+        "lat": -25.9692,
+        "lon": 32.5732,
+        "difficulty": "hard"
+    },
+    {
+        "id": "loc_082",
+        "name": "Libreville",
+        "country": "Gabon",
+        "displayName": "Libreville, Gabon",
+        "lat": 0.4162,
+        "lon": 9.4673,
+        "difficulty": "hard"
+    },
+    {
+        "id": "loc_083",
+        "name": "Kigali",
+        "country": "Rwanda",
+        "displayName": "Kigali, Rwanda",
+        "lat": -1.9403,
+        "lon": 29.8739,
+        "difficulty": "hard"
+    },
+    {
+        "id": "loc_084",
+        "name": "Entebbe",
+        "country": "Uganda",
+        "displayName": "Entebbe, Uganda",
+        "lat": 0.0512,
+        "lon": 32.4637,
+        "difficulty": "hard"
+    },
+    {
+        "id": "loc_085",
+        "name": "Windhoek",
+        "country": "Namibia",
+        "displayName": "Windhoek, Namibia",
+        "lat": -22.5609,
+        "lon": 17.0658,
+        "difficulty": "hard"
+    },
+    {
+        "id": "loc_086",
+        "name": "Gaborone",
+        "country": "Botswana",
+        "displayName": "Gaborone, Botswana",
+        "lat": -24.6282,
+        "lon": 25.9231,
+        "difficulty": "hard"
+    },
+    {
+        "id": "loc_087",
+        "name": "Muscat",
+        "country": "Oman",
+        "displayName": "Muscat, Oman",
+        "lat": 23.588,
+        "lon": 58.3829,
+        "difficulty": "hard"
+    },
+    {
+        "id": "loc_088",
+        "name": "Brunei",
+        "country": "Brunei",
+        "displayName": "Bandar Seri Begawan, Brunei",
+        "lat": 4.9031,
+        "lon": 114.9398,
+        "difficulty": "hard"
+    },
+    {
+        "id": "loc_089",
+        "name": "Bhutan",
+        "country": "Bhutan",
+        "displayName": "Thimphu, Bhutan",
+        "lat": 27.4728,
+        "lon": 89.6393,
+        "difficulty": "hard"
+    },
+    {
+        "id": "loc_090",
+        "name": "Yangon",
+        "country": "Myanmar",
+        "displayName": "Yangon, Myanmar",
+        "lat": 16.8661,
+        "lon": 96.1951,
+        "difficulty": "hard"
+    },
+    {
+        "id": "loc_091",
+        "name": "Vientiane",
+        "country": "Laos",
+        "displayName": "Vientiane, Laos",
+        "lat": 17.9757,
+        "lon": 102.6331,
+        "difficulty": "hard"
+    },
+    {
+        "id": "loc_092",
+        "name": "Phnom Penh",
+        "country": "Cambodia",
+        "displayName": "Phnom Penh, Cambodia",
+        "lat": 11.5564,
+        "lon": 104.9282,
+        "difficulty": "hard"
+    },
+    {
+        "id": "loc_093",
+        "name": "Montevideo",
+        "country": "Uruguay",
+        "displayName": "Montevideo, Uruguay",
+        "lat": -34.9011,
+        "lon": -56.1645,
+        "difficulty": "hard"
+    },
+    {
+        "id": "loc_094",
+        "name": "Asunción",
+        "country": "Paraguay",
+        "displayName": "Asunción, Paraguay",
+        "lat": -25.2637,
+        "lon": -57.5759,
+        "difficulty": "hard"
+    },
+    {
+        "id": "loc_095",
+        "name": "La Paz",
+        "country": "Bolivia",
+        "displayName": "La Paz, Bolivia",
+        "lat": -16.4897,
+        "lon": -68.1193,
+        "difficulty": "hard"
+    },
+    {
+        "id": "loc_096",
+        "name": "Quito",
+        "country": "Ecuador",
+        "displayName": "Quito, Ecuador",
+        "lat": -0.1807,
+        "lon": -78.4678,
+        "difficulty": "hard"
+    },
+    {
+        "id": "loc_097",
+        "name": "Panama City",
+        "country": "Panama",
+        "displayName": "Panama City, Panama",
+        "lat": 8.9824,
+        "lon": -79.5199,
+        "difficulty": "hard"
+    },
+    {
+        "id": "loc_098",
+        "name": "San José",
+        "country": "Costa Rica",
+        "displayName": "San José, Costa Rica",
+        "lat": 9.9281,
+        "lon": -84.0907,
+        "difficulty": "hard"
+    },
+    {
+        "id": "loc_099",
+        "name": "Belize City",
+        "country": "Belize",
+        "displayName": "Belize City, Belize",
+        "lat": 17.4989,
+        "lon": -88.1886,
+        "difficulty": "hard"
+    },
+    {
+        "id": "loc_100",
+        "name": "Antigua",
+        "country": "Guatemala",
+        "displayName": "Antigua, Guatemala",
+        "lat": 14.5586,
+        "lon": -90.7295,
+        "difficulty": "hard"
+    },
+    {
+        "id": "loc_101",
+        "name": "Perth",
+        "country": "Australia",
+        "displayName": "Perth, Australia",
+        "lat": -31.9505,
+        "lon": 115.8605,
+        "difficulty": "medium"
+    },
+    {
+        "id": "loc_102",
+        "name": "Adelaide",
+        "country": "Australia",
+        "displayName": "Adelaide, Australia",
+        "lat": -34.9285,
+        "lon": 138.6007,
+        "difficulty": "medium"
+    },
+    {
+        "id": "loc_103",
+        "name": "Durban",
+        "country": "South Africa",
+        "displayName": "Durban, South Africa",
+        "lat": -29.8587,
+        "lon": 31.0218,
+        "difficulty": "medium"
+    },
+    {
+        "id": "loc_104",
+        "name": "Chennai",
+        "country": "India",
+        "displayName": "Chennai, India",
+        "lat": 13.0827,
+        "lon": 80.2707,
+        "difficulty": "medium"
+    },
+    {
+        "id": "loc_105",
+        "name": "Bangalore",
+        "country": "India",
+        "displayName": "Bangalore, India",
+        "lat": 12.9716,
+        "lon": 77.5946,
+        "difficulty": "medium"
+    },
+    {
+        "id": "loc_106",
+        "name": "Hyderabad",
+        "country": "India",
+        "displayName": "Hyderabad, India",
+        "lat": 17.385,
+        "lon": 78.4867,
+        "difficulty": "medium"
+    },
+    {
+        "id": "loc_107",
+        "name": "Kolkata",
+        "country": "India",
+        "displayName": "Kolkata, India",
+        "lat": 22.5726,
+        "lon": 88.3639,
+        "difficulty": "medium"
+    },
+    {
+        "id": "loc_108",
+        "name": "Shenzhen",
+        "country": "China",
+        "displayName": "Shenzhen, China",
+        "lat": 22.5431,
+        "lon": 114.0579,
+        "difficulty": "medium"
+    },
+    {
+        "id": "loc_109",
+        "name": "Guangzhou",
+        "country": "China",
+        "displayName": "Guangzhou, China",
+        "lat": 23.1291,
+        "lon": 113.2644,
+        "difficulty": "medium"
+    },
+    {
+        "id": "loc_110",
+        "name": "Chengdu",
+        "country": "China",
+        "displayName": "Chengdu, China",
+        "lat": 30.5723,
+        "lon": 104.0665,
+        "difficulty": "hard"
+    },
+    {
+        "id": "loc_111",
+        "name": "Busan",
+        "country": "South Korea",
+        "displayName": "Busan, South Korea",
+        "lat": 35.1796,
+        "lon": 129.0756,
+        "difficulty": "hard"
+    },
+    {
+        "id": "loc_112",
+        "name": "Kyoto",
+        "country": "Japan",
+        "displayName": "Kyoto, Japan",
+        "lat": 35.0116,
+        "lon": 135.7681,
+        "difficulty": "medium"
+    },
+    {
+        "id": "loc_113",
+        "name": "Hiroshima",
+        "country": "Japan",
+        "displayName": "Hiroshima, Japan",
+        "lat": 34.3853,
+        "lon": 132.4553,
+        "difficulty": "hard"
+    },
+    {
+        "id": "loc_114",
+        "name": "Okinawa",
+        "country": "Japan",
+        "displayName": "Naha, Okinawa",
+        "lat": 26.2124,
+        "lon": 127.6809,
+        "difficulty": "hard"
+    },
+    {
+        "id": "loc_115",
+        "name": "Lahore",
+        "country": "Pakistan",
+        "displayName": "Lahore, Pakistan",
+        "lat": 31.5204,
+        "lon": 74.3587,
+        "difficulty": "hard"
+    },
+    {
+        "id": "loc_116",
+        "name": "Amman",
+        "country": "Jordan",
+        "displayName": "Amman, Jordan",
+        "lat": 31.9454,
+        "lon": 35.9284,
+        "difficulty": "hard"
+    },
+    {
+        "id": "loc_117",
+        "name": "Beirut",
+        "country": "Lebanon",
+        "displayName": "Beirut, Lebanon",
+        "lat": 33.8938,
+        "lon": 35.5018,
+        "difficulty": "hard"
+    },
+    {
+        "id": "loc_118",
+        "name": "Kuwait City",
+        "country": "Kuwait",
+        "displayName": "Kuwait City, Kuwait",
+        "lat": 29.3759,
+        "lon": 47.9774,
+        "difficulty": "hard"
+    },
+    {
+        "id": "loc_119",
+        "name": "Bahrain",
+        "country": "Bahrain",
+        "displayName": "Manama, Bahrain",
+        "lat": 26.2285,
+        "lon": 50.5860,
+        "difficulty": "hard"
+    },
+    {
+        "id": "loc_120",
+        "name": "Dar es Salaam",
+        "country": "Tanzania",
+        "displayName": "Dar es Salaam, Tanzania",
+        "lat": -6.7924,
+        "lon": 39.2083,
+        "difficulty": "hard"
+    }
+]

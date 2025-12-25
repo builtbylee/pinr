@@ -1,0 +1,51 @@
+12-21 14:47:44.712 31920 31920 W RtiGracefulSystemMethodHelper: [AI] Failed to start service due to IllegalStateException on Android O
+12-21 14:47:44.712 31920 31920 W RtiGracefulSystemMethodHelper: android.app.BackgroundServiceStartNotAllowedException: Not allowed to start service Intent { act=Orca.START xflg=0x4 cmp=com.instagram.android/com.facebook.rti.pushv2.inapp.InappFbnsService (has extras) }: app is in background uid UidRecord{d929899 u0a293 TRNB bg:+5h50m19s838ms idle change:procadj procs:0 seq(9406311,9406297)} caps=-------TI
+12-21 14:47:45.098  1756  2252 E AppOps  : java.lang.SecurityException: Specified package "com.android.phone" under uid 10170 but it is not
+12-21 14:47:45.521 13517 17711 W Dck     : java.util.concurrent.ExecutionException: m20.jpz: 17: API: Wearable.API is not available on this device. Connection failed with: jnu{statusCode=API_UNAVAILABLE, resolution=null, message=null, clientMethodKey=null}
+12-21 14:47:46.539 14747 10064 E m55.qkd : java.lang.RuntimeException: ManagedChannel allocation site
+12-21 14:47:51.812 16914 16914 W WellbeingModel: getShortcutForApp [com.builtbylee.app80days]: action: 'Pause app'
+12-21 14:47:53.407 16914 16914 D SecondaryDropTarget: start uninstall activity from drop target com.builtbylee.app80days
+12-21 14:47:53.531 10280 10280 I UninstallationFragment: UninstallUserActionRequired(titleResId=2131755378, messageResId=null, positiveButtonResId=2131755078, appDataSize=0, appSnippet=AppSnippet[label = 80 Days, hasIcon = true], isClonedApp=false, isDifferentActivityName=false, isOtherUser=false, userName=null, targetAppInfo=ApplicationInfo{3a5a174 com.builtbylee.app80days}, targetActivityInfo=ActivityInfo{86f469d com.builtbylee.app80days.MainActivity})
+12-21 14:48:12.440  3575  7849 E SconeApkMinimumVersions: android.content.pm.PackageManager$NameNotFoundException: com.google.android.apps.stargate
+12-21 14:48:12.441  2900  3120 E SatelliteServiceUtils: isSatelliteSupported SatelliteException: android.telephony.satellite.SatelliteManager$SatelliteException
+12-21 14:48:12.444  2900  3120 E SatelliteServiceUtils: isSatelliteSupported SatelliteException: android.telephony.satellite.SatelliteManager$SatelliteException
+12-21 14:48:12.445  3575  7849 E ixo     : android.telephony.satellite.SatelliteManager$SatelliteException
+12-21 14:48:12.451  3575  9788 E ixo     : android.telephony.satellite.SatelliteManager$SatelliteException
+12-21 14:48:27.858  1756  2352 E serviceDiscovery: android.net.connectivity.com.android.server.connectivity.mdns.MdnsPacket$ParseException: Response has no answers
+12-21 14:48:29.071  1756  2352 E serviceDiscovery: android.net.connectivity.com.android.server.connectivity.mdns.MdnsPacket$ParseException: Response has no answers
+12-21 14:48:29.072  1756  2352 E serviceDiscovery: android.net.connectivity.com.android.server.connectivity.mdns.MdnsPacket$ParseException: Response has no answers
+12-21 14:49:01.515 16834 16834 D ActivityThread: Package [com.builtbylee.app80days] reported as REPLACED, but missing application info. Assuming REMOVED.
+12-21 14:49:01.519 16834 16834 D ActivityThread: Package [com.builtbylee.app80days] reported as REPLACED, but missing application info. Assuming REMOVED.
+12-21 14:49:01.520 16834 16834 D ActivityThread: Package [com.builtbylee.app80days] reported as REPLACED, but missing application info. Assuming REMOVED.
+12-21 14:49:01.520 16834 16834 D ActivityThread: Package [com.builtbylee.app80days] reported as REPLACED, but missing application info. Assuming REMOVED.
+12-21 14:49:01.520 16834 16834 D ActivityThread: Package [com.builtbylee.app80days] reported as REPLACED, but missing application info. Assuming REMOVED.
+12-21 14:49:01.521 16834 16834 D ActivityThread: Package [com.builtbylee.app80days] reported as REPLACED, but missing application info. Assuming REMOVED.
+12-21 14:49:01.521 16834 16834 D ActivityThread: Package [com.builtbylee.app80days] reported as REPLACED, but missing application info. Assuming REMOVED.
+12-21 14:49:01.522 16834 16834 D ActivityThread: Package [com.builtbylee.app80days] reported as REPLACED, but missing application info. Assuming REMOVED.
+12-21 14:49:01.523 16834 16834 D ActivityThread: Package [com.builtbylee.app80days] reported as REPLACED, but missing application info. Assuming REMOVED.
+12-21 14:49:01.524 16834 16834 D ActivityThread: Package [com.builtbylee.app80days] reported as REPLACED, but missing application info. Assuming REMOVED.
+12-21 14:49:01.525 16834 16834 D ActivityThread: Package [com.builtbylee.app80days] reported as REPLACED, but missing application info. Assuming REMOVED.
+12-21 14:49:01.527 16834 16834 D ActivityThread: Package [com.builtbylee.app80days] reported as REPLACED, but missing application info. Assuming REMOVED.
+12-21 14:49:01.677 23457 23457 D ActivityThread: Package [com.builtbylee.app80days] reported as REPLACED, but missing application info. Assuming REMOVED.
+12-21 14:49:01.678 23457 23457 D ActivityThread: Package [com.builtbylee.app80days] reported as REPLACED, but missing application info. Assuming REMOVED.
+12-21 14:49:03.393 26893 26893 D ActivityThread: Package [com.builtbylee.app80days] reported as REPLACED, but missing application info. Assuming REMOVED.
+12-21 14:49:03.394 26893 26893 D ActivityThread: Package [com.builtbylee.app80days] reported as REPLACED, but missing application info. Assuming REMOVED.
+12-21 14:49:03.396 26893 26893 D ActivityThread: Package [com.builtbylee.app80days] reported as REPLACED, but missing application info. Assuming REMOVED.
+12-21 14:49:03.397 26893 26893 D ActivityThread: Package [com.builtbylee.app80days] reported as REPLACED, but missing application info. Assuming REMOVED.
+12-21 14:49:03.398 26893 26893 D ActivityThread: Package [com.builtbylee.app80days] reported as REPLACED, but missing application info. Assuming REMOVED.
+12-21 14:49:03.398 26893 26893 D ActivityThread: Package [com.builtbylee.app80days] reported as REPLACED, but missing application info. Assuming REMOVED.
+12-21 14:49:03.399 26893 26893 D ActivityThread: Package [com.builtbylee.app80days] reported as REPLACED, but missing application info. Assuming REMOVED.
+12-21 14:49:03.400 26893 26893 D ActivityThread: Package [com.builtbylee.app80days] reported as REPLACED, but missing application info. Assuming REMOVED.
+12-21 14:49:03.400 26893 26893 D ActivityThread: Package [com.builtbylee.app80days] reported as REPLACED, but missing application info. Assuming REMOVED.
+12-21 14:49:03.401 26893 26893 D ActivityThread: Package [com.builtbylee.app80days] reported as REPLACED, but missing application info. Assuming REMOVED.
+12-21 14:49:03.401 26893 26893 D ActivityThread: Package [com.builtbylee.app80days] reported as REPLACED, but missing application info. Assuming REMOVED.
+12-21 14:49:03.402 26893 26893 D ActivityThread: Package [com.builtbylee.app80days] reported as REPLACED, but missing application info. Assuming REMOVED.
+12-21 14:49:03.402 26893 26893 D ActivityThread: Package [com.builtbylee.app80days] reported as REPLACED, but missing application info. Assuming REMOVED.
+12-21 14:49:03.403 26893 26893 D ActivityThread: Package [com.builtbylee.app80days] reported as REPLACED, but missing application info. Assuming REMOVED.
+12-21 14:49:32.478  3575  3596 E SconeApkMinimumVersions: android.content.pm.PackageManager$NameNotFoundException: com.google.android.apps.stargate
+12-21 14:49:32.484  2900  3120 E SatelliteServiceUtils: isSatelliteSupported SatelliteException: android.telephony.satellite.SatelliteManager$SatelliteException
+12-21 14:49:32.494  2900  3120 E SatelliteServiceUtils: isSatelliteSupported SatelliteException: android.telephony.satellite.SatelliteManager$SatelliteException
+12-21 14:49:32.496  3575  3596 E ixo     : android.telephony.satellite.SatelliteManager$SatelliteException
+12-21 14:49:32.497  3575  3596 E ixo     : android.telephony.satellite.SatelliteManager$SatelliteException
+12-21 14:50:05.971 23106 23106 D ActivityThread: Package [com.builtbylee.app80days] reported as REPLACED, but missing application info. Assuming REMOVED.
+12-21 14:50:05.975 23106 23106 D ActivityThread: Package [com.builtbylee.app80days] reported as REPLACED, but missing application info. Assuming REMOVED.

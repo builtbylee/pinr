@@ -1,0 +1,26 @@
+{
+    "cli": {
+        "version": ">= 7.0.0"
+    },
+    "build": {
+        "preview": {
+            "channel": "preview",
+            "distribution": "internal",
+            "android": {
+                "buildType": "apk",
+                "image": "latest"
+            },
+            "env": {
+                "EXPO_PUBLIC_MAPBOX_TOKEN": "pk.eyJ1IjoiaGFja25leW1hbmxlZSIsImEiOiJjbWo4eXcyNDEwNWNyM2hyM204ajVjejkyIn0._ZH3oEqV-t0wM891mGUDlQ"
+            }
+        },
+        "production": {
+            "android": {
+                "image": "latest"
+            },
+            "env": {
+                "EXPO_PUBLIC_MAPBOX_TOKEN": "pk.eyJ1IjoiaGFja25leW1hbmxlZSIsImEiOiJjbWo4eXcyNDEwNWNyM2hyM204ajVjejkyIn0._ZH3oEqV-t0wM891mGUDlQ"
+            }
+        }
+    }
+}

@@ -1,0 +1,53 @@
+{
+  "id": "b2c80901-d51a-4231-8816-52cfaacc625f",
+  "status": "ERRORED",
+  "platform": "ANDROID",
+  "error": {
+    "errorCode": "EAS_BUILD_UNKNOWN_GRADLE_ERROR",
+    "message": "Gradle build failed with unknown error. See logs for the \"Run gradlew\" phase for more information."
+  },
+  "artifacts": {},
+  "fingerprint": {
+    "id": "a8ecd000-7f9b-4647-8e16-7e33b0d6bcd3",
+    "hash": "6a97398d8f864aa12d4d334a63ceffc579d54a21"
+  },
+  "initiatingActor": {
+    "id": "68a0f4ed-8e7a-4315-93ed-acc4b279255a",
+    "displayName": "hackneymanlee"
+  },
+  "logFiles": [
+    "https://job-logs.eascdn.net/production/b2c80901-d51a-4231-8816-52cfaacc625f/1766477518904-0b03578e-8c41-4ca0-b8a8-ee16edf07c23.txt?X-Goog-Algorithm=GOOG4-RSA-SHA256&X-Goog-Credential=www-production%40exponentjs.iam.gserviceaccount.com%2F20251223%2Fauto%2Fstorage%2Fgoog4_request&X-Goog-Date=20251223T082642Z&X-Goog-Expires=900&X-Goog-SignedHeaders=host&X-Goog-Signature=7f356cb69d2493ba31e1ecf9679d6fd29958736c649a6f185e717e8653fcfe2373928ea69d1e70fbaa2fd0958988e62fb1d72640db0651e34519fd451f276ddeae151b0fd187699f818ee3740ee3359f04c2c837a08c246e5e85dba32010859c18a8532857fbe168d441c97486dc5014e43f96531f9ccc933a1183d2304b511555fd66af08db7da88c217a36b2db50443dafe5ddbd3db6d09b2dab037d773e9e94be299406afb20d2b376a8b5659585f8bd5d94da87423f9b78aaef8b937ccc169c52d5c2e6ccd143ef445a965833290758a920b370e79cfe5286131da42248b8e8228f341ffa62823e651feedfdea2142396942447ecfc2e78872689ebc606b",
+    "https://job-logs.eascdn.net/production/b2c80901-d51a-4231-8816-52cfaacc625f/1766477521555-c39405d4-4693-452a-9406-66646aa95b2a.txt?X-Goog-Algorithm=GOOG4-RSA-SHA256&X-Goog-Credential=www-production%40exponentjs.iam.gserviceaccount.com%2F20251223%2Fauto%2Fstorage%2Fgoog4_request&X-Goog-Date=20251223T082642Z&X-Goog-Expires=900&X-Goog-SignedHeaders=host&X-Goog-Signature=75b5dda38ac9b3dcd55e817474af029cd566823db48b4698d6a00834c71e912290148fc72487fe46d4dcc7ea6b76532f363595eea9e6dd20ba8cca72c942ff1de4807e97def6b08bc2db4c60cbf46e70295816110675fba1cf288519d868166414c7de8e19abb1763497569877bd094117ef718ad0a536df6ff42a295f53e101b40ecdddd1763ca66515ec85c945b9616de91d83f1aa3fe0bc35e19ab076e7a5bcee890e3f44ac48b55be7f8deef896af7a2b0f69f6b2ef060ef560e1aca50e9e4a29caf04f0ebe2484894c0edac801521717259932bf97b1e9bfa7b9b7c1f251464b32f927f49d3914a66c563093325ebfbfe3daa30f11518da1271ae32b6b7",
+    "https://job-logs.eascdn.net/production/b2c80901-d51a-4231-8816-52cfaacc625f/1766477521774-958a4aac-7acd-447a-8b3f-a8fe545dd968.txt?X-Goog-Algorithm=GOOG4-RSA-SHA256&X-Goog-Credential=www-production%40exponentjs.iam.gserviceaccount.com%2F20251223%2Fauto%2Fstorage%2Fgoog4_request&X-Goog-Date=20251223T082642Z&X-Goog-Expires=900&X-Goog-SignedHeaders=host&X-Goog-Signature=14232469d6e0286be9be2fe7ac5cad8acef97a5f32d3ce9a81ffd2432ed4aecd69c93443ec29b918fc4599f4ce91a87b7f8565726fca335662e0e85d86b0d9db70c036941258b854df599f2172cfa8a8f590e746e02e120a5111cb7fd108eff9e14c8662110079d1f244b40779884e6dd1d9d7187dce252520b7a807aeb6e6f32ae58ecc4c318f061f2835b908734c9f25c56c626ecbdbce71de757500d39f3525f73ffa5f4e05f351eee6ec3132e10e088703416746f19046900f18ddc747ff0379c60c58648d5b3a34f0392c00ecbeb9849cadf11cb34426ab5099ec5dd1e21a46497e1ef46564c9d6d041dd70b315b7c55494a5c461e167b2b0da3e9ecc14",
+    "https://job-logs.eascdn.net/production/b2c80901-d51a-4231-8816-52cfaacc625f/1766477521976-e4316eda-ac84-4321-afde-6737195f2830.txt?X-Goog-Algorithm=GOOG4-RSA-SHA256&X-Goog-Credential=www-production%40exponentjs.iam.gserviceaccount.com%2F20251223%2Fauto%2Fstorage%2Fgoog4_request&X-Goog-Date=20251223T082642Z&X-Goog-Expires=900&X-Goog-SignedHeaders=host&X-Goog-Signature=c34aa9975a16bacf41dbfed4a7c8136cc650512fb924858cba1681263b3d9d8a2ff73cad09d3648238677acb7090efe1577bef231017ffbb513429992d11d6e3547a6775b65bf53ff0a5bfa92da778ba26a575c5234e30dd7ab3384a56acf2d7b682846d4d7a6ac12da5ba4e55ce0e65bb6b1f7cf96cb7ccfdf96831ec75a444ebb7b7e15a23323c655956df1d518f86d2c916889e815b1149ebd2ee288bf0e99dab323db0c6f1b0438e6377dfbe92eec346244917606b8b6201db549cb94493027eee78a1c02cff5170f002124ba5347539ab6c8efc685b240dbaa18eee75326f520afb55edc7809fe11944b3653d35bae589df958af37a710b6a856f862523"
+  ],
+  "project": {
+    "id": "c4e5d0dc-0cae-4f01-bacb-a5a3234fcd08",
+    "name": "80days",
+    "slug": "80days",
+    "ownerAccount": {
+      "id": "d432e3ec-4b4d-4f5c-b0d2-3a58b98ee553",
+      "name": "hackneymanlee"
+    }
+  },
+  "channel": "preview",
+  "distribution": "INTERNAL",
+  "buildProfile": "preview",
+  "sdkVersion": "52.0.0",
+  "appVersion": "1.0.0",
+  "appBuildVersion": "1",
+  "runtimeVersion": "1.0.0",
+  "gitCommitHash": "466de72e96a9a9d0278145688588edff31004e52",
+  "gitCommitMessage": "Fix Syntax Error in useMemoryStore.ts and add AsyncStorage persistence",
+  "priority": "HIGH",
+  "createdAt": "2025-12-23T08:11:58.619Z",
+  "updatedAt": "2025-12-23T08:17:18.793Z",
+  "completedAt": "2025-12-23T08:17:13.567Z",
+  "expirationDate": "2026-03-23T08:11:58.655Z",
+  "isForIosSimulator": false,
+  "metrics": {
+    "buildWaitTime": 194,
+    "buildQueueTime": 46366,
+    "buildDuration": 268056
+  }
+}
