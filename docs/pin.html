@@ -151,9 +151,9 @@
 
         .buttons {
             display: flex;
-            flex-direction: column;
-            gap: 10px;
-            /* Tighter gap */
+            flex-direction: row;
+            /* Changed from column */
+            gap: 12px;
             width: 100%;
         }
 
@@ -164,14 +164,19 @@
             padding: 14px;
             /* Reduced from 16px */
             border-radius: 14px;
-            font-size: 16px;
-            /* Reduced from 17px */
+            font-size: 15px;
+            /* Slightly reduced for side-by-side */
+            flex: 1;
+            /* Equal width */
             font-weight: 600;
             cursor: pointer;
             text-decoration: none;
             text-align: center;
             transition: transform 0.2s;
             box-shadow: 0 4px 12px rgba(52, 199, 89, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         .btn-primary:active {
@@ -184,12 +189,18 @@
             padding: 14px;
             /* Reduced from 18px */
             border-radius: 14px;
-            font-size: 16px;
+            font-size: 15px;
+            /* Slightly reduced */
+            flex: 1;
+            /* Equal width */
             font-weight: 600;
             cursor: pointer;
             text-decoration: none;
             text-align: center;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         .loading-state,
