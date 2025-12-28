@@ -81,56 +81,53 @@
             mix-blend-mode: multiply;
         }
 
-        /* Form Styles - Moved below images */
+        /* Form Styles - Compact & Stacked */
         .waitlist-container {
             position: relative;
-            /* No longer absolute */
             width: 90%;
-            max-width: 460px;
-            /* Slightly wider for inline form */
+            max-width: 380px;
+            /* Reduced max-width for compact feel */
             background: rgba(255, 255, 255, 0.95);
-            padding: 32px;
-            /* Increased padding */
+            padding: 20px;
+            /* Reduced padding (was 32px) */
             border-radius: 20px;
+            /* kept rounded */
             box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
             z-index: 40;
             text-align: center;
-            margin-top: 40px;
-            /* Space between images and form */
-            margin-bottom: 40px;
+            margin-top: 20px;
+            /* Reduced margin (was 40px) */
+            margin-bottom: 30px;
             border: 1px solid rgba(0, 0, 0, 0.05);
         }
 
         .form-title {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             font-weight: 700;
-            font-size: 1.5rem;
-            /* Larger title */
-            margin-bottom: 24px;
-            /* Increased margin since toggle is gone */
+            font-size: 1.25rem;
+            /* Slightly smaller than 1.5rem, but bold */
+            margin-bottom: 16px;
+            /* Reduced margin */
             color: #1a1a1a;
         }
 
         .input-group {
             display: flex;
-            flex-direction: row;
-            /* Back to row */
-            gap: 0;
-            /* No gap for merged look */
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-            border-radius: 12px;
+            flex-direction: column;
+            /* Stacked */
+            gap: 10px;
+            /* Small gap between input and button */
+            box-shadow: none;
+            /* Removed container shadow */
         }
 
         .email-input {
-            width: 65%;
-            padding: 16px 20px;
+            width: 100%;
+            padding: 14px 16px;
+            /* Comfortable touch target */
             border: 1px solid #e2e8f0;
-            border-right: none;
-            /* remove scroll/border between */
-            border-top-left-radius: 12px;
-            border-bottom-left-radius: 12px;
-            border-top-right-radius: 0;
-            border-bottom-right-radius: 0;
+            border-radius: 12px;
+            /* Full rounded */
             outline: none;
             transition: all 0.2s;
             font-size: 1rem;
@@ -138,27 +135,22 @@
         }
 
         .email-input:focus {
-            background: #f8fafc;
-            border-color: #e2e8f0;
-            /* Keep subtle, focus is on button */
+            background: #fff;
+            border-color: #0f172a;
         }
 
         .submit-btn {
-            width: 35%;
+            width: 100%;
             background: #0f172a;
             color: white;
-            padding: 16px;
+            padding: 14px 16px;
             border: 1px solid #0f172a;
-            /* Match background */
-            border-top-right-radius: 12px;
-            border-bottom-right-radius: 12px;
-            border-top-left-radius: 0;
-            border-bottom-left-radius: 0;
+            border-radius: 12px;
+            /* Full rounded */
             font-weight: 600;
             cursor: pointer;
             transition: background 0.2s;
             font-size: 1rem;
-            white-space: nowrap;
         }
 
         .submit-btn:hover {
@@ -167,9 +159,7 @@
         }
 
         .submit-btn:active {
-            transform: none;
-            /* Remove scale for merged block */
-            background: #000;
+            transform: scale(0.98);
         }
     </style>
     <!-- Firebase -->
