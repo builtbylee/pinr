@@ -16,8 +16,17 @@
 
         .composition-container {
             position: relative;
-            max-width: 1024px;
-            margin: 0 auto;
+            max-width: 100%;
+            /* Allow full width */
+            margin-right: 0;
+            /* Push to right edge */
+            margin-left: auto;
+            /* Center or push right */
+            overflow: hidden;
+            /* Prevent horizontal scroll if scaling */
+            display: flex;
+            justify-content: flex-end;
+            /* Align image content to right */
         }
 
         .base-image {
@@ -27,19 +36,21 @@
         }
 
         /* Phone Overlay */
+        /* Phone Overlay */
         .phone-overlay {
             position: absolute;
-            /* Positioning: Move down and right to sit in the empty space */
-            top: 25%;
+            /* Move down significantly to avoid overlapping text */
+            top: 40%;
             left: 5%;
-            width: 30%;
-            height: 55%;
+            width: 35%;
+            height: 50%;
+            /* Tighter height to crop top text */
 
-            /* CSS Crop: Use background image to show only the left phone */
+            /* CSS Crop: Anchor to bottom-left to show phone and hide top text */
             background-image: url('assets/phones-mockup.png');
             background-size: 200%;
-            /* Image has 2 phones, so 200% width makes one phone fill the width */
-            background-position: left center;
+            background-position: left bottom;
+            /* Critical: cuts off top text */
             background-repeat: no-repeat;
 
             /* Blend Mode: Multiply makes the white background transparent */
