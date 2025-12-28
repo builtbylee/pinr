@@ -3,43 +3,27 @@ import { Image } from 'expo-image';
 import React, { useEffect, useState } from 'react';
 import { Dimensions, ScrollView, StyleSheet, Text, TouchableOpacity, View, Alert, Switch, TextInput, ActivityIndicator, KeyboardAvoidingView, Platform, Linking, BackHandler } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring, withTiming } from 'react-native-reanimated';
-import { getCurrentEmail, sendPasswordReset, getCurrentUser, reauthenticateUser } from '../services/authService';
+import { getCurrentEmail, sendPasswordReset, getCurrentUser, reauthenticateUser, updatePassword } from '../services/authService';
 import { LinkEmailModal } from './LinkEmailModal';
-import { addFriend, removeFriend, getUserProfile, saveUserPinColor, updateNotificationSettings, getFriendRequests, acceptFriendRequest, rejectFriendRequest, FriendRequest, updatePinVisibility } from '../services/userService';
+import { ManageVisibilityModal } from './ManageVisibilityModal';
+import { addFriend, removeFriend, getUserProfile, saveUserPinColor, updateNotificationSettings, getFriendRequests, acceptFriendRequest, rejectFriendRequest, FriendRequest, updatePinVisibility, getFriends, clearProfileCache, updatePrivacySettings } from '../services/userService';
 import { notificationService } from '../services/NotificationService';
 import { useMemoryStore } from '../store/useMemoryStore';
+import crashlytics from '@react-native-firebase/crashlytics';
 
 interface SettingsModalProps {
     visible: boolean;
     onClose: () => void;
-    username: string | null;
-    avatarUri: string | null;
-    pinColor: string;
-    onEditUsername: () => void;
-    onEditAvatar: () => void;
-    onPinColorChange: (color: string) => void;
 }
 
 // Available pin colors
-const PIN_COLOR_OPTIONS = [
-    { id: 'magenta', color: '#FF00FF', name: 'Magenta' },
-    { id: 'orange', color: '#FF8C00', name: 'Orange' },
-    { id: 'green', color: '#22CC66', name: 'Green' },
-    { id: 'blue', color: '#0066FF', name: 'Blue' },
-    { id: 'cyan', color: '#00DDDD', name: 'Cyan' },
-];
+
 
 const { width, height } = Dimensions.get('window');
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({
     visible,
-    onClose,
-    username,
-    avatarUri,
-    pinColor,
-    onEditUsername,
-    onEditAvatar,
-    onPinColorChange
+    onClose
 }) => {
     const [userEmail, setUserEmail] = useState<string | null>(null);
 
@@ -61,6 +45,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     const [pushEnabled, setPushEnabled] = useState(false);
     const [mutedFriends, setMutedFriends] = useState<string[]>([]);
     const [hidePinsFrom, setHidePinsFrom] = useState<string[]>([]); // Privacy: friends who can't see my pins
+    const [allowSharing, setAllowSharing] = useState(true); // Privacy: allow friends to share my content
 
     // Notification Type Preferences
     const [pinNotificationsEnabled, setPinNotificationsEnabled] = useState(true);
@@ -68,12 +53,22 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     const [gameInvitesEnabled, setGameInvitesEnabled] = useState(true);
     const [gameResultsEnabled, setGameResultsEnabled] = useState(true);
 
+    const [isVisibilityModalVisible, setIsVisibilityModalVisible] = useState(false);
+
     // LinkEmail & Deletion State (moved up for BackHandler access)
     const [linkEmailVisible, setLinkEmailVisible] = useState(false);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [deletePassword, setDeletePassword] = useState('');
     const [isDeleting, setIsDeleting] = useState(false);
     const [deleteError, setDeleteError] = useState<string | null>(null);
+
+    // Change Password State
+    const [showChangePassword, setShowChangePassword] = useState(false);
+    const [currentPassword, setCurrentPassword] = useState('');
+    const [newPassword, setNewPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
+    const [isChangingPassword, setIsChangingPassword] = useState(false);
+    const [changePasswordError, setChangePasswordError] = useState<string | null>(null);
 
     // Check auth state and trigger animation when modal opens
     useEffect(() => {
@@ -99,6 +94,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 setShowDeleteConfirm(false);
                 return true;
             }
+            if (showChangePassword) {
+                setShowChangePassword(false);
+                return true;
+            }
+            if (isVisibilityModalVisible) {
+                setIsVisibilityModalVisible(false);
+                return true;
+            }
             // Close main modal
             onClose();
             return true;
@@ -106,7 +109,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
         const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
         return () => subscription.remove();
-    }, [visible, linkEmailVisible, showDeleteConfirm, onClose]);
+    }, [visible, linkEmailVisible, showDeleteConfirm, showChangePassword, isVisibilityModalVisible, onClose]);
 
     const loadProfileData = async () => {
         const user = getCurrentUser();
@@ -124,14 +127,23 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
                 // Load Pin Visibility Privacy
                 setHidePinsFrom(profile.hidePinsFrom || []);
+                setAllowSharing(profile.privacySettings?.allowSharing ?? true);
 
                 // Load Friends
-                if (profile.friends && profile.friends.length > 0) {
+                // SECURE: Use getFriends() to ensure we list verified friends
+                const friendIds = await getFriends(user.uid);
+
+                if (friendIds && friendIds.length > 0) {
                     const friendList = [];
-                    for (const friendUid of profile.friends) {
+                    for (const friendUid of friendIds) {
                         const fProfile = await getUserProfile(friendUid);
                         if (fProfile) {
-                            friendList.push({ uid: friendUid, username: fProfile.username });
+                            friendList.push({
+                                uid: friendUid,
+                                username: fProfile.username,
+                                avatarUrl: fProfile.avatarUrl,
+                                pinColor: fProfile.pinColor
+                            });
                         }
                     }
                     setFriends(friendList);
@@ -177,12 +189,17 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     const handleRemoveFriend = async (friendUid: string) => {
         const user = getCurrentUser();
         if (user) {
-            await removeFriend(user.uid, friendUid);
-            loadProfileData();
+            try {
+                await removeFriend(user.uid, friendUid);
+                loadProfileData();
 
-            // Sync with global store so map updates immediately
-            const currentFriends = useMemoryStore.getState().friends;
-            useMemoryStore.getState().setFriends(currentFriends.filter(id => id !== friendUid));
+                // Sync with global store so map updates immediately
+                const currentFriends = useMemoryStore.getState().friends;
+                useMemoryStore.getState().setFriends(currentFriends.filter(id => id !== friendUid));
+            } catch (error) {
+                console.error('[SettingsModal] Failed to remove friend:', error);
+                Alert.alert('Error', 'Failed to remove friend. Please try again.');
+            }
         }
     };
 
@@ -203,6 +220,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         const user = getCurrentUser();
         if (user) {
             await updatePinVisibility(user.uid, friendUid, isHidden);
+        }
+    };
+
+    const handleToggleAllowSharing = async (value: boolean) => {
+        setAllowSharing(value);
+        const user = getCurrentUser();
+        if (user) {
+            await updatePrivacySettings(user.uid, { allowSharing: value });
         }
     };
 
@@ -243,6 +268,55 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     const handleDeleteAccount = () => {
         setDeleteError(null);
         setShowDeleteConfirm(true);
+    };
+
+    const handleChangePassword = async () => {
+        // Validation
+        if (!currentPassword) {
+            setChangePasswordError('Please enter your current password');
+            return;
+        }
+        if (!newPassword) {
+            setChangePasswordError('Please enter a new password');
+            return;
+        }
+        if (newPassword.length < 6) {
+            setChangePasswordError('New password must be at least 6 characters');
+            return;
+        }
+        if (newPassword !== confirmPassword) {
+            setChangePasswordError('Passwords do not match');
+            return;
+        }
+
+        setIsChangingPassword(true);
+        setChangePasswordError(null);
+
+        try {
+            // 1. Re-authenticate with current password
+            await reauthenticateUser(currentPassword);
+
+            // 2. Update to new password
+            await updatePassword(newPassword);
+
+            // 3. Success
+            Alert.alert('Success', 'Your password has been changed successfully.');
+            setShowChangePassword(false);
+            setCurrentPassword('');
+            setNewPassword('');
+            setConfirmPassword('');
+        } catch (error: any) {
+            console.error('Change password failed:', error);
+            if (error.code === 'auth/wrong-password' || error.message?.includes('Incorrect')) {
+                setChangePasswordError('Current password is incorrect');
+            } else if (error.code === 'auth/weak-password') {
+                setChangePasswordError('New password is too weak');
+            } else {
+                setChangePasswordError(error.message || 'Failed to change password');
+            }
+        } finally {
+            setIsChangingPassword(false);
+        }
     };
 
     const handleConfirmDelete = async () => {
@@ -307,6 +381,131 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
     if (!visible) return null;
 
+    // Change Password Screen
+    if (showChangePassword) {
+        return (
+            <View style={[styles.container, { backgroundColor: 'rgba(0,0,0,0.8)' }]}>
+                <View style={styles.content}>
+                    <View style={styles.header}>
+                        <Text style={styles.title}>Change Password</Text>
+                        <TouchableOpacity onPress={() => {
+                            setShowChangePassword(false);
+                            setChangePasswordError(null);
+                            setCurrentPassword('');
+                            setNewPassword('');
+                            setConfirmPassword('');
+                        }} style={styles.closeButton}>
+                            <Feather name="arrow-left" size={28} color="#1a1a1a" />
+                        </TouchableOpacity>
+                    </View>
+
+                    <KeyboardAvoidingView
+                        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                        style={{ flex: 1 }}
+                    >
+                        <ScrollView
+                            contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', padding: 20 }}
+                            showsVerticalScrollIndicator={false}
+                        >
+                            <View style={{ alignItems: 'center', marginBottom: 30 }}>
+                                <View style={{ width: 80, height: 80, borderRadius: 40, backgroundColor: 'rgba(0, 122, 255, 0.1)', justifyContent: 'center', alignItems: 'center', marginBottom: 16 }}>
+                                    <Feather name="lock" size={40} color="#007AFF" />
+                                </View>
+                                <Text style={{ fontSize: 20, fontWeight: 'bold', color: '#1a1a1a', marginBottom: 8 }}>Update Your Password</Text>
+                                <Text style={{ fontSize: 14, color: 'rgba(0,0,0,0.6)', textAlign: 'center' }}>
+                                    Enter your current password and choose a new one.
+                                </Text>
+                            </View>
+
+                            <Text style={{ fontSize: 14, fontWeight: '600', color: '#1a1a1a', marginBottom: 8, marginLeft: 4 }}>CURRENT PASSWORD</Text>
+                            <TextInput
+                                style={{
+                                    backgroundColor: 'rgba(0,0,0,0.05)',
+                                    borderRadius: 16,
+                                    padding: 16,
+                                    fontSize: 16,
+                                    marginBottom: 16,
+                                    color: '#1a1a1a'
+                                }}
+                                placeholder="Enter current password"
+                                placeholderTextColor="rgba(0,0,0,0.4)"
+                                secureTextEntry
+                                value={currentPassword}
+                                onChangeText={setCurrentPassword}
+                                autoCapitalize="none"
+                            />
+
+                            <Text style={{ fontSize: 14, fontWeight: '600', color: '#1a1a1a', marginBottom: 8, marginLeft: 4 }}>NEW PASSWORD</Text>
+                            <TextInput
+                                style={{
+                                    backgroundColor: 'rgba(0,0,0,0.05)',
+                                    borderRadius: 16,
+                                    padding: 16,
+                                    fontSize: 16,
+                                    marginBottom: 16,
+                                    color: '#1a1a1a'
+                                }}
+                                placeholder="Enter new password"
+                                placeholderTextColor="rgba(0,0,0,0.4)"
+                                secureTextEntry
+                                value={newPassword}
+                                onChangeText={setNewPassword}
+                                autoCapitalize="none"
+                            />
+
+                            <Text style={{ fontSize: 14, fontWeight: '600', color: '#1a1a1a', marginBottom: 8, marginLeft: 4 }}>CONFIRM NEW PASSWORD</Text>
+                            <TextInput
+                                style={{
+                                    backgroundColor: 'rgba(0,0,0,0.05)',
+                                    borderRadius: 16,
+                                    padding: 16,
+                                    fontSize: 16,
+                                    marginBottom: 20,
+                                    color: '#1a1a1a'
+                                }}
+                                placeholder="Confirm new password"
+                                placeholderTextColor="rgba(0,0,0,0.4)"
+                                secureTextEntry
+                                value={confirmPassword}
+                                onChangeText={setConfirmPassword}
+                                autoCapitalize="none"
+                            />
+
+                            {changePasswordError && (
+                                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginBottom: 20 }}>
+                                    <Feather name="alert-circle" size={16} color="#FF3B30" style={{ marginRight: 6 }} />
+                                    <Text style={{ color: '#FF3B30', fontSize: 14 }}>{changePasswordError}</Text>
+                                </View>
+                            )}
+
+                            <TouchableOpacity
+                                style={{
+                                    backgroundColor: '#007AFF',
+                                    borderRadius: 16,
+                                    padding: 18,
+                                    alignItems: 'center',
+                                    shadowColor: '#007AFF',
+                                    shadowOffset: { width: 0, height: 4 },
+                                    shadowOpacity: 0.3,
+                                    shadowRadius: 8,
+                                    elevation: 6,
+                                }}
+                                onPress={handleChangePassword}
+                                disabled={isChangingPassword}
+                            >
+                                {isChangingPassword ? (
+                                    <ActivityIndicator color="white" />
+                                ) : (
+                                    <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 18 }}>Update Password</Text>
+                                )}
+                            </TouchableOpacity>
+                        </ScrollView>
+                    </KeyboardAvoidingView>
+                </View>
+            </View>
+        );
+    }
+
     if (showDeleteConfirm) {
         return (
             <View style={[styles.container, { backgroundColor: 'rgba(0,0,0,0.8)' }]}>
@@ -320,64 +519,69 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
                     <KeyboardAvoidingView
                         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-                        style={{ flex: 1, justifyContent: 'center', padding: 20 }}
+                        style={{ flex: 1 }}
                     >
-                        <View style={{ alignItems: 'center', marginBottom: 30 }}>
-                            <View style={{ width: 80, height: 80, borderRadius: 40, backgroundColor: 'rgba(255, 59, 48, 0.1)', justifyContent: 'center', alignItems: 'center', marginBottom: 16 }}>
-                                <Feather name="alert-triangle" size={40} color="#FF3B30" />
-                            </View>
-                            <Text style={{ fontSize: 20, fontWeight: 'bold', color: '#1a1a1a', marginBottom: 8 }}>Are you sure?</Text>
-                            <Text style={{ fontSize: 16, color: 'rgba(0,0,0,0.6)', textAlign: 'center' }}>
-                                This will permanently delete your profile, memories, and photos. This action cannot be undone.
-                            </Text>
-                        </View>
-
-                        <Text style={{ fontSize: 14, fontWeight: '600', color: '#1a1a1a', marginBottom: 8, marginLeft: 4 }}>ENTER PASSWORD</Text>
-                        <TextInput
-                            style={{
-                                backgroundColor: 'rgba(0,0,0,0.05)',
-                                borderRadius: 16,
-                                padding: 16,
-                                fontSize: 16,
-                                marginBottom: 20,
-                                color: '#1a1a1a'
-                            }}
-                            placeholder="Password"
-                            placeholderTextColor="rgba(0,0,0,0.4)"
-                            secureTextEntry
-                            value={deletePassword}
-                            onChangeText={setDeletePassword}
-                            autoCapitalize="none"
-                        />
-
-                        {deleteError && (
-                            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginBottom: 20 }}>
-                                <Feather name="alert-circle" size={16} color="#FF3B30" style={{ marginRight: 6 }} />
-                                <Text style={{ color: '#FF3B30', fontSize: 14 }}>{deleteError}</Text>
-                            </View>
-                        )}
-
-                        <TouchableOpacity
-                            style={{
-                                backgroundColor: '#FF3B30',
-                                borderRadius: 16,
-                                padding: 18,
-                                alignItems: 'center',
-                                shadowColor: '#FF3B30',
-                                shadowOffset: { width: 0, height: 4 },
-                                shadowOpacity: 0.3,
-                                shadowRadius: 8,
-                                elevation: 6,
-                            }}
-                            onPress={handleConfirmDelete}
-                            disabled={isDeleting}
+                        <ScrollView
+                            contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', padding: 20 }}
+                            showsVerticalScrollIndicator={false}
                         >
-                            {isDeleting ? (
-                                <ActivityIndicator color="white" />
-                            ) : (
-                                <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 18 }}>Delete Permanently</Text>
+                            <View style={{ alignItems: 'center', marginBottom: 30 }}>
+                                <View style={{ width: 80, height: 80, borderRadius: 40, backgroundColor: 'rgba(255, 59, 48, 0.1)', justifyContent: 'center', alignItems: 'center', marginBottom: 16 }}>
+                                    <Feather name="alert-triangle" size={40} color="#FF3B30" />
+                                </View>
+                                <Text style={{ fontSize: 20, fontWeight: 'bold', color: '#1a1a1a', marginBottom: 8 }}>Are you sure?</Text>
+                                <Text style={{ fontSize: 16, color: 'rgba(0,0,0,0.6)', textAlign: 'center' }}>
+                                    This will permanently delete your profile, memories, and photos. This action cannot be undone.
+                                </Text>
+                            </View>
+
+                            <Text style={{ fontSize: 14, fontWeight: '600', color: '#1a1a1a', marginBottom: 8, marginLeft: 4 }}>ENTER PASSWORD</Text>
+                            <TextInput
+                                style={{
+                                    backgroundColor: 'rgba(0,0,0,0.05)',
+                                    borderRadius: 16,
+                                    padding: 16,
+                                    fontSize: 16,
+                                    marginBottom: 20,
+                                    color: '#1a1a1a'
+                                }}
+                                placeholder="Password"
+                                placeholderTextColor="rgba(0,0,0,0.4)"
+                                secureTextEntry
+                                value={deletePassword}
+                                onChangeText={setDeletePassword}
+                                autoCapitalize="none"
+                            />
+
+                            {deleteError && (
+                                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginBottom: 20 }}>
+                                    <Feather name="alert-circle" size={16} color="#FF3B30" style={{ marginRight: 6 }} />
+                                    <Text style={{ color: '#FF3B30', fontSize: 14 }}>{deleteError}</Text>
+                                </View>
                             )}
-                        </TouchableOpacity>
+
+                            <TouchableOpacity
+                                style={{
+                                    backgroundColor: '#FF3B30',
+                                    borderRadius: 16,
+                                    padding: 18,
+                                    alignItems: 'center',
+                                    shadowColor: '#FF3B30',
+                                    shadowOffset: { width: 0, height: 4 },
+                                    shadowOpacity: 0.3,
+                                    shadowRadius: 8,
+                                    elevation: 6,
+                                }}
+                                onPress={handleConfirmDelete}
+                                disabled={isDeleting}
+                            >
+                                {isDeleting ? (
+                                    <ActivityIndicator color="white" />
+                                ) : (
+                                    <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 18 }}>Delete Permanently</Text>
+                                )}
+                            </TouchableOpacity>
+                        </ScrollView>
                     </KeyboardAvoidingView>
                 </View>
             </View>
@@ -395,70 +599,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     </TouchableOpacity>
                 </View>
 
-                <ScrollView style={styles.scrollContent} showsVerticalScrollIndicator={false}>
-                    {/* Profile Section */}
-                    <View style={styles.section}>
-                        <Text style={styles.sectionTitle}>Profile</Text>
-
-                        {/* Avatar */}
-                        <TouchableOpacity style={styles.avatarRow} onPress={onEditAvatar}>
-                            <View style={styles.avatarContainer}>
-                                {avatarUri ? (
-                                    <Image
-                                        source={{ uri: avatarUri }}
-                                        style={styles.avatarImage}
-                                        contentFit="cover"
-                                    />
-                                ) : (
-                                    <Feather name="user" size={60} color="rgba(255, 255, 255, 0.6)" />
-                                )}
-                                <View style={styles.editBadge}>
-                                    <Feather name="camera" size={14} color="white" />
-                                </View>
-                            </View>
-                            <View style={styles.avatarText}>
-                                <Text style={styles.settingLabel}>Profile Picture</Text>
-                                <Text style={styles.settingValue}>Tap to change</Text>
-                            </View>
-                        </TouchableOpacity>
-
-                        {/* Username */}
-                        <TouchableOpacity style={styles.settingRow} onPress={onEditUsername}>
-                            <View style={styles.settingInfo}>
-                                <Feather name="at-sign" size={22} color="#1a1a1a" />
-                                <View style={styles.settingText}>
-                                    <Text style={styles.settingLabel}>Username</Text>
-                                    <Text style={styles.settingValue}>{username || 'Not set'}</Text>
-                                </View>
-                            </View>
-                            <Feather name="chevron-right" size={22} color="rgba(0,0,0,0.3)" />
-                        </TouchableOpacity>
-
-                        {/* Pin Color */}
-                        <View style={styles.pinColorSection}>
-                            <View style={styles.pinColorHeader}>
-                                <Feather name="droplet" size={22} color="#1a1a1a" />
-                                <Text style={[styles.settingLabel, { marginLeft: 12 }]}>Pin Ring Color</Text>
-                            </View>
-                            <View style={styles.colorOptions}>
-                                {PIN_COLOR_OPTIONS.map((option) => (
-                                    <TouchableOpacity
-                                        key={option.id}
-                                        style={[
-                                            styles.colorOption,
-                                            { backgroundColor: option.color },
-                                            pinColor === option.id && styles.colorOptionSelected,
-                                        ]}
-                                        onPress={() => onPinColorChange(option.id)}
-                                    >
-                                        {pinColor === option.id && (
-                                            <Feather name="check" size={18} color="white" />
-                                        )}
-                                    </TouchableOpacity>
-                                ))}
-                            </View>
-                        </View>
-                    </View>
+                <ScrollView
+                    style={styles.scrollContent}
+                    contentContainerStyle={{ flexGrow: 1, paddingBottom: 50 }}
+                    showsVerticalScrollIndicator={false}
+                    nestedScrollEnabled={true}
+                >
+                    {/* (Profile Section Removed) */}
 
 
                     {/* Notifications Section */}
@@ -557,37 +704,41 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                             <View style={styles.settingInfo}>
                                 <Feather name="eye-off" size={22} color="#1a1a1a" />
                                 <View style={styles.settingText}>
-                                    <Text style={styles.settingLabel}>Pin Visibility</Text>
-                                    <Text style={styles.settingValue}>Control who sees your pins</Text>
+                                    <Text style={styles.settingLabel}>Pin & Journey Visibility</Text>
+                                    <Text style={styles.settingValue}>Control who sees your pins and journeys</Text>
                                 </View>
                             </View>
                         </View>
 
-                        {friends.length > 0 ? (
-                            friends.map((f) => (
-                                <View key={f.uid} style={styles.settingRowIndented}>
-                                    <View style={styles.settingInfo}>
-                                        <Feather name="user" size={18} color="#6B7280" />
-                                        <View style={styles.settingText}>
-                                            <Text style={styles.settingLabelSmall}>{f.username}</Text>
-                                            <Text style={styles.settingValueSmall}>
-                                                {hidePinsFrom.includes(f.uid) ? 'Cannot see your pins' : 'Can see your pins'}
-                                            </Text>
-                                        </View>
-                                    </View>
-                                    <Switch
-                                        value={!hidePinsFrom.includes(f.uid)}
-                                        onValueChange={(v) => handleToggleHidePins(f.uid, !v)}
-                                        trackColor={{ false: '#767577', true: '#34C759' }}
-                                        thumbColor={'#f4f3f4'}
-                                    />
+                        <View style={styles.settingRow}>
+                            <View style={styles.settingInfo}>
+                                <Feather name="share-2" size={22} color="#1a1a1a" />
+                                <View style={styles.settingText}>
+                                    <Text style={styles.settingLabel}>Allow Friends to Share</Text>
+                                    <Text style={styles.settingValue}>Allow friends to share your content</Text>
                                 </View>
-                            ))
-                        ) : (
-                            <View style={styles.settingRowIndented}>
-                                <Text style={styles.settingValueSmall}>No friends added yet</Text>
                             </View>
-                        )}
+                            <Switch
+                                value={allowSharing}
+                                onValueChange={handleToggleAllowSharing}
+                                trackColor={{ false: '#767577', true: '#34C759' }}
+                                thumbColor={'#f4f3f4'}
+                            />
+                        </View>
+
+                        <TouchableOpacity
+                            style={styles.settingRow}
+                            onPress={() => setIsVisibilityModalVisible(true)}
+                        >
+                            <View style={styles.settingInfo}>
+                                <Feather name="users" size={22} color="#1a1a1a" />
+                                <View style={styles.settingText}>
+                                    <Text style={styles.settingLabel}>Manage Visibility</Text>
+                                    <Text style={styles.settingValue}>Block specific friends</Text>
+                                </View>
+                            </View>
+                            <Feather name="chevron-right" size={22} color="rgba(0,0,0,0.3)" />
+                        </TouchableOpacity>
                     </View>
 
                     {/* About Section */}
@@ -624,7 +775,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
                         {/* Support */}
                         <TouchableOpacity style={styles.settingRow} onPress={() => {
-                            Linking.openURL('mailto:support@example.com?subject=Primal Singularity Feedback');
+                            Linking.openURL('mailto:pinr.builtbylee@gmail.com?subject=Pinr Support Request');
                         }}>
                             <View style={styles.settingInfo}>
                                 <Feather name="help-circle" size={22} color="#1a1a1a" />
@@ -643,7 +794,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
                         {/* Change Password */}
                         <TouchableOpacity style={styles.settingRow} onPress={() => {
-                            alert('Change Password feature coming soon!');
+                            setChangePasswordError(null);
+                            setShowChangePassword(true);
                         }}>
                             <View style={styles.settingInfo}>
                                 <Feather name="lock" size={22} color="#1a1a1a" />
@@ -698,6 +850,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                             style={[styles.settingRow, styles.signOutRow]}
                             onPress={async () => {
                                 const auth = require('@react-native-firebase/auth').default;
+                                clearProfileCache(); // Clear cached profiles on logout
                                 await auth().signOut();
                                 onClose();
                                 // Auth state listener in _layout will handle navigation
@@ -713,6 +866,18 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     </View>
                 </ScrollView>
             </Animated.View>
+
+            <LinkEmailModal
+                visible={linkEmailVisible}
+                onClose={() => setLinkEmailVisible(false)}
+                onSuccess={() => loadProfileData()}
+            />
+
+            <ManageVisibilityModal
+                visible={isVisibilityModalVisible}
+                onClose={() => setIsVisibilityModalVisible(false)}
+                friends={friends}
+            />
         </View >
     );
 };
