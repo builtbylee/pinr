@@ -19,15 +19,18 @@
             flex-direction: column;
             align-items: center;
             min-height: 100vh;
-            padding: 2rem 1rem;
+            padding: 2rem 0;
+            /* Remove horizontal padding on mobile */
+            overflow-x: hidden;
+            /* Prevent horizontal scroll */
         }
 
         .composition-container {
             position: relative;
             width: 100%;
-            max-width: 100%;
-            display: flex;
-            justify-content: flex-end;
+            margin-left: auto;
+            /* Push to right */
+            margin-right: 0;
         }
 
         .base-image {
@@ -186,16 +189,19 @@
         @media (min-width: 768px) {
             .page-container {
                 justify-content: flex-start;
-                padding: 20px 20px 40px 20px;
+                padding: 20px 0 40px 0;
             }
 
             .composition-container {
-                max-width: 550px;
-                margin: 0 auto;
+                max-width: 70%;
+                /* Constrain but keep right-aligned */
+                margin-left: auto;
+                margin-right: 0;
             }
 
             .bottom-section {
                 margin-top: 20px;
+                padding: 0 20px;
             }
 
             .waitlist-container {
@@ -205,7 +211,13 @@
 
         @media (min-width: 1024px) {
             .composition-container {
-                max-width: 650px;
+                max-width: 60%;
+            }
+        }
+
+        @media (min-width: 1400px) {
+            .composition-container {
+                max-width: 50%;
             }
         }
     </style>
