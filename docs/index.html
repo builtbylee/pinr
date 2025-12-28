@@ -100,34 +100,9 @@
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             font-weight: 600;
             font-size: 1.1rem;
-            margin-bottom: 16px;
+            margin-bottom: 24px;
+            /* Increased margin since toggle is gone */
             color: #1a1a1a;
-        }
-
-        .preference-toggle {
-            display: flex;
-            background: #f1f5f9;
-            padding: 4px;
-            border-radius: 12px;
-            margin-bottom: 16px;
-        }
-
-        .preference-option {
-            flex: 1;
-            padding: 8px;
-            text-align: center;
-            font-size: 0.85rem;
-            font-weight: 500;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.2s;
-            color: #64748b;
-        }
-
-        .preference-option.active {
-            background: white;
-            color: #0f172a;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
         }
 
         .input-group {
@@ -180,47 +155,25 @@
         <!-- Mask to hide old logo -->
         <div class="logo-mask"></div>
 
-        <!-- New Centered Logo -->
-        <img src="assets/landing-logo.jpg?v=2" alt="Pinr Logo" class="centered-logo">
-
         <!-- Overlay: Left Phone -->
         <div class="phone-overlay"></div>
     </div>
 
     <!-- Waitlist Form (Now stacked below) -->
     <div class="waitlist-container">
-        <div class="form-title">Join the Journey</div>
+        <div class="form-title">Join Early Access</div>
 
         <form id="waitlistForm">
-            <!-- Preference Selection -->
-            <div class="preference-toggle">
-                <div class="preference-option active" data-value="early_access">Get Early Access</div>
-                <div class="preference-option" data-value="launch_notify">Notify on Launch</div>
-            </div>
-            <input type="hidden" id="preference" value="early_access">
-
             <!-- Email & Submit -->
             <div class="input-group">
                 <input type="email" id="email" required placeholder="Enter your email" class="email-input">
-                <button type="submit" id="submitBtn" class="submit-btn">Join</button>
+                <button type="submit" id="submitBtn" class="submit-btn">Get Early Access</button>
             </div>
             <p id="feedback" class="text-xs mt-3 font-medium h-4 opacity-0 transition-opacity text-green-600"></p>
         </form>
     </div>
 
     <script>
-        // Toggle Logic
-        const options = document.querySelectorAll('.preference-option');
-        const prefInput = document.getElementById('preference');
-
-        options.forEach(opt => {
-            opt.addEventListener('click', () => {
-                options.forEach(o => o.classList.remove('active'));
-                opt.classList.add('active');
-                prefInput.value = opt.dataset.value;
-            });
-        });
-
         // Firebase Config
         const firebaseConfig = {
             apiKey: "AIzaSyAHNlIbE1uCgnMz8k3E1GFSd2ed3uCT9UI",
@@ -242,7 +195,6 @@
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
             const email = emailInput.value.trim();
-            const preference = prefInput.value;
 
             if (!email) return;
 
@@ -253,13 +205,13 @@
             try {
                 await db.collection('waitlist').doc(email).set({
                     email: email,
-                    preference: preference, // 'early_access' or 'launch_notify'
+                    preference: 'early_access', // Defaulting to early access
                     joinedAt: firebase.firestore.FieldValue.serverTimestamp(),
-                    source: 'web_landing_v2'
+                    source: 'web_landing_v3'
                 });
 
                 submitBtn.innerText = "✓";
-                feedback.innerText = "You're in! We'll be in touch.";
+                feedback.innerText = "You're in! We'll be in touch soon.";
                 feedback.classList.remove('text-red-500');
                 feedback.classList.add('text-green-600');
                 feedback.style.opacity = '1';
