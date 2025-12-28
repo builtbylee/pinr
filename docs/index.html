@@ -307,6 +307,16 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
 
+        // Detect device platform
+        function getDevicePlatform() {
+            const ua = navigator.userAgent || navigator.vendor || window.opera;
+            if (/android/i.test(ua)) return 'android';
+            if (/iPad|iPhone|iPod/.test(ua) && !window.MSStream) return 'ios';
+            if (/Macintosh|MacIntel|MacPPC|Mac68K/.test(ua)) return 'mac';
+            if (/Win/.test(ua)) return 'windows';
+            return 'unknown';
+        }
+
         // Form Submit
         const form = document.getElementById('waitlistForm');
         const emailInput = document.getElementById('email');
@@ -324,11 +334,15 @@
             feedback.style.opacity = '0';
 
             try {
+                const platform = getDevicePlatform();
                 await db.collection('waitlist').doc(email).set({
                     email: email,
+                    platform: platform,
+                    userAgent: navigator.userAgent,
                     preference: 'early_access',
                     joinedAt: firebase.firestore.FieldValue.serverTimestamp(),
-                    source: 'web_landing_v3'
+                    source: 'web_landing_v4',
+                    emailSent: false  // Flag for Cloud Function to track
                 });
 
                 submitBtn.innerText = "✓";

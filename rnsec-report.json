@@ -1,0 +1,2522 @@
+{
+  "findings": [
+    {
+      "ruleId": "SENSITIVE_LOGGING",
+      "description": "console.log() logging Authentication Token: [App] Saving push token:",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/app/index.tsx",
+      "line": 369,
+      "snippet": "        notificationService.registerForPushNotificationsAsync().then(token => {\n            if (token && currentUserId) {\n                console.log('[App] Saving push token:', token);\n                savePushToken(currentUserId, token);\n            }",
+      "suggestion": "Remove console logs with sensitive data or wrap in __DEV__ check. Use a logging library with data filtering for production."
+    },
+    {
+      "ruleId": "SENSITIVE_LOGGING",
+      "description": "console.error() logging Authentication Token: [App] Token registration failed:",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/app/index.tsx",
+      "line": 373,
+      "snippet": "            }\n        }).catch(err =>\n            console.error('[App] Token registration failed:', err)\n        );\n",
+      "suggestion": "Remove console logs with sensitive data or wrap in __DEV__ check. Use a logging library with data filtering for production."
+    },
+    {
+      "ruleId": "SENSITIVE_LOGGING",
+      "description": "console.log() logging Payment/Financial Data: [App] Flying to new pin at:",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/app/index.tsx",
+      "line": 394,
+      "snippet": "            } else if (data.type === 'new_pin' && data.lat && data.lon) {\n                // Deep link to new pin location\n                console.log('[App] Flying to new pin at:', data.lat, data.lon);\n                setTimeout(() => {\n                    if (cameraRef.current) {",
+      "suggestion": "Remove console logs with sensitive data or wrap in __DEV__ check. Use a logging library with data filtering for production."
+    },
+    {
+      "ruleId": "SENSITIVE_LOGGING",
+      "description": "console.log() logging Payment/Financial Data: [App] Deep link to pin:",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/app/index.tsx",
+      "line": 497,
+      "snippet": "                const pinId = url.split('pin/')[1]?.split('?')[0]; // Handle any query params\n                if (pinId) {\n                    console.log('[App] Deep link to pin:', pinId);\n                    // Find the pin and fly to it\n                    const pin = memories.find(m => m.id === pinId);",
+      "suggestion": "Remove console logs with sensitive data or wrap in __DEV__ check. Use a logging library with data filtering for production."
+    },
+    {
+      "ruleId": "SENSITIVE_LOGGING",
+      "description": "console.error() logging Payment/Financial Data: [App] Failed to fetch pin for deep link:",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/app/index.tsx",
+      "line": 526,
+      "snippet": "                            }\n                        } catch (err) {\n                            console.error('[App] Failed to fetch pin for deep link:', err);\n                        }\n                    }",
+      "suggestion": "Remove console logs with sensitive data or wrap in __DEV__ check. Use a logging library with data filtering for production."
+    },
+    {
+      "ruleId": "SENSITIVE_LOGGING",
+      "description": "console.log() logging Payment/Financial Data: [App] New Friend Pin detected:",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/app/index.tsx",
+      "line": 630,
+      "snippet": "                    // Check if friend's pin and NOT my own\n                    if (friends.includes(pin.creatorId) && pin.creatorId !== currentUserId) {\n                        console.log('[App] New Friend Pin detected:', pin.id);\n\n                        // Increment badge",
+      "suggestion": "Remove console logs with sensitive data or wrap in __DEV__ check. Use a logging library with data filtering for production."
+    },
+    {
+      "ruleId": "SENSITIVE_LOGGING",
+      "description": "console.log() logging Payment/Financial Data: firestoreProfile.pinColor",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/app/index.tsx",
+      "line": 730,
+      "snippet": "            if (firestoreProfile.avatarUrl) setAvatarUri(firestoreProfile.avatarUrl);\n            if (firestoreProfile.pinColor) {\n                console.log('[DEBUG] Syncing pinColor from Firestore:', firestoreProfile.pinColor, '| typeof:', typeof firestoreProfile.pinColor);\n                setPinColor(firestoreProfile.pinColor);\n            }",
+      "suggestion": "Remove console logs with sensitive data or wrap in __DEV__ check. Use a logging library with data filtering for production."
+    },
+    {
+      "ruleId": "SENSITIVE_LOGGING",
+      "description": "console.error() logging Payment/Financial Data: [App] No user ID - cannot create pin",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/app/index.tsx",
+      "line": 814,
+      "snippet": "        const currentUserId = useMemoryStore.getState().currentUserId;\n        if (!currentUserId) {\n            console.error('[App] No user ID - cannot create pin');\n            return;\n        }",
+      "suggestion": "Remove console logs with sensitive data or wrap in __DEV__ check. Use a logging library with data filtering for production."
+    },
+    {
+      "ruleId": "SENSITIVE_LOGGING",
+      "description": "console.log() logging Payment/Financial Data: [App] Updating existing pin:",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/app/index.tsx",
+      "line": 821,
+      "snippet": "        if ('id' in memoryData && memoryData.id) {\n            const pinId = memoryData.id;\n            console.log('[App] Updating existing pin:', pinId);\n\n            // Optimistic Update (Local)",
+      "suggestion": "Remove console logs with sensitive data or wrap in __DEV__ check. Use a logging library with data filtering for production."
+    },
+    {
+      "ruleId": "SENSITIVE_LOGGING",
+      "description": "console.log() logging Payment/Financial Data: [App] Spinning to new pin:",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/app/index.tsx",
+      "line": 876,
+      "snippet": "        setTimeout(() => {\n            if (cameraRef.current) {\n                console.log('[App] Spinning to new pin:', memoryData.location);\n                cameraRef.current.setCamera({\n                    centerCoordinate: memoryData.location,",
+      "suggestion": "Remove console logs with sensitive data or wrap in __DEV__ check. Use a logging library with data filtering for production."
+    },
+    {
+      "ruleId": "SENSITIVE_LOGGING",
+      "description": "console.log() logging Payment/Financial Data: [App] Pin saved to Firestore:",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/app/index.tsx",
+      "line": 909,
+      "snippet": "                // Save to Firestore (real-time sync will update with proper ID)\n                const pinId = await addPin(newMemory);\n                console.log('[App] Pin saved to Firestore:', pinId);\n\n                // Notify Friends",
+      "suggestion": "Remove console logs with sensitive data or wrap in __DEV__ check. Use a logging library with data filtering for production."
+    },
+    {
+      "ruleId": "SENSITIVE_LOGGING",
+      "description": "console.log() logging Payment/Financial Data: `[App] Notifying ${friends.length} friends about new pin...`",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/app/index.tsx",
+      "line": 918,
+      "snippet": "                console.log(`[App] Friends list for notification:`, friends);\n                if (friends.length > 0) {\n                    console.log(`[App] Notifying ${friends.length} friends about new pin...`);\n                    // Fire and forget - don't await loop to block UI\n                    friends.forEach(friendUid => {",
+      "suggestion": "Remove console logs with sensitive data or wrap in __DEV__ check. Use a logging library with data filtering for production."
+    },
+    {
+      "ruleId": "SENSITIVE_LOGGING",
+      "description": "console.log() logging Payment/Financial Data: [App] Spinning to pin location:",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/app/index.tsx",
+      "line": 948,
+      "snippet": "        // Then spin to the pin location\n        if (memoryToSpinTo && cameraRef.current) {\n            console.log('[App] Spinning to pin location:', memoryToSpinTo.location);\n            cameraRef.current.setCamera({\n                centerCoordinate: memoryToSpinTo.location,",
+      "suggestion": "Remove console logs with sensitive data or wrap in __DEV__ check. Use a logging library with data filtering for production."
+    },
+    {
+      "ruleId": "SENSITIVE_LOGGING",
+      "description": "console.log() logging Payment/Financial Data: [App] Creating single pin:",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/app/index.tsx",
+      "line": 1497,
+      "snippet": "                        onClose={() => setIsStoryCreationVisible(false)}\n                        onCreateSinglePin={async (pinDraft) => {\n                            console.log('[App] Creating single pin:', pinDraft.title);\n                            try {\n                                // Use existing handleCreateMemory for single pin",
+      "suggestion": "Remove console logs with sensitive data or wrap in __DEV__ check. Use a logging library with data filtering for production."
+    },
+    {
+      "ruleId": "SENSITIVE_LOGGING",
+      "description": "console.error() logging Payment/Financial Data: [App] Pin creation error:",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/app/index.tsx",
+      "line": 1515,
+      "snippet": "                                useMemoryStore.getState().showToast('Pin created!', 'success');\n                            } catch (error) {\n                                console.error('[App] Pin creation error:', error);\n                                useMemoryStore.getState().showToast('Failed to create pin', 'error');\n                            }",
+      "suggestion": "Remove console logs with sensitive data or wrap in __DEV__ check. Use a logging library with data filtering for production."
+    },
+    {
+      "ruleId": "SENSITIVE_LOGGING",
+      "description": "console.error() logging Payment/Financial Data: Failed to hide pin remotely:",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/app/index.tsx",
+      "line": 1643,
+      "snippet": "                                        await toggleHiddenPinService(currentUserId, pin.id, true);\n                                    } catch (e) {\n                                        console.error('Failed to hide pin remotely:', e);\n                                        // Revert if failed? For now keep local.\n                                    }",
+      "suggestion": "Remove console logs with sensitive data or wrap in __DEV__ check. Use a logging library with data filtering for production."
+    },
+    {
+      "ruleId": "SENSITIVE_DATA_IN_ERROR_MESSAGES",
+      "description": "Error object logged directly - may contain sensitive data or stack traces",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/app/index.tsx",
+      "line": 364,
+      "snippet": "                console.warn('[App] OneSignal Configuration Issues:', config.issues);\n            }\n        }).catch(err => console.error('[App] Config check failed:', err));\n\n        // Ensure token (once)",
+      "suggestion": "Log only safe error properties (message, code). Sanitize error messages before displaying to users. Never expose stack traces in production."
+    },
+    {
+      "ruleId": "SENSITIVE_DATA_IN_ERROR_MESSAGES",
+      "description": "Error object logged directly - may contain sensitive data or stack traces",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/app/index.tsx",
+      "line": 373,
+      "snippet": "            }\n        }).catch(err =>\n            console.error('[App] Token registration failed:', err)\n        );\n",
+      "suggestion": "Log only safe error properties (message, code). Sanitize error messages before displaying to users. Never expose stack traces in production."
+    },
+    {
+      "ruleId": "SENSITIVE_DATA_IN_ERROR_MESSAGES",
+      "description": "Error object logged directly - may contain sensitive data or stack traces",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/app/index.tsx",
+      "line": 526,
+      "snippet": "                            }\n                        } catch (err) {\n                            console.error('[App] Failed to fetch pin for deep link:', err);\n                        }\n                    }",
+      "suggestion": "Log only safe error properties (message, code). Sanitize error messages before displaying to users. Never expose stack traces in production."
+    },
+    {
+      "ruleId": "SENSITIVE_DATA_IN_ERROR_MESSAGES",
+      "description": "Error object logged directly - may contain sensitive data or stack traces",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/app/index.tsx",
+      "line": 803,
+      "snippet": "        } catch (error: any) {\n            if (error.code !== 'E_PICKER_CANCELLED') {\n                console.error('[App] Error uploading avatar:', error);\n                Alert.alert('Error', 'Failed to upload avatar');\n            }",
+      "suggestion": "Log only safe error properties (message, code). Sanitize error messages before displaying to users. Never expose stack traces in production."
+    },
+    {
+      "ruleId": "SENSITIVE_DATA_IN_ERROR_MESSAGES",
+      "description": "Error object logged directly - may contain sensitive data or stack traces",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/app/index.tsx",
+      "line": 929,
+      "snippet": "                // The Firestore listener will receive the update and replace our temp memory\n            } catch (error) {\n                console.error('[App] Error syncing memory to cloud:', error);\n            }\n        })();",
+      "suggestion": "Log only safe error properties (message, code). Sanitize error messages before displaying to users. Never expose stack traces in production."
+    },
+    {
+      "ruleId": "SENSITIVE_DATA_IN_ERROR_MESSAGES",
+      "description": "Error object logged directly - may contain sensitive data or stack traces",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/app/index.tsx",
+      "line": 1515,
+      "snippet": "                                useMemoryStore.getState().showToast('Pin created!', 'success');\n                            } catch (error) {\n                                console.error('[App] Pin creation error:', error);\n                                useMemoryStore.getState().showToast('Failed to create pin', 'error');\n                            }",
+      "suggestion": "Log only safe error properties (message, code). Sanitize error messages before displaying to users. Never expose stack traces in production."
+    },
+    {
+      "ruleId": "SENSITIVE_DATA_IN_ERROR_MESSAGES",
+      "description": "Error object logged directly - may contain sensitive data or stack traces",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/app/index.tsx",
+      "line": 1540,
+      "snippet": "                                }\n                            } catch (error) {\n                                console.error('[App] Story creation error:', error);\n                                useMemoryStore.getState().showToast('Failed to create story', 'error');\n                            }",
+      "suggestion": "Log only safe error properties (message, code). Sanitize error messages before displaying to users. Never expose stack traces in production."
+    },
+    {
+      "ruleId": "NO_REQUEST_TIMEOUT",
+      "description": "fetch() without timeout configuration",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/scripts/add-friend.js",
+      "line": 21,
+      "snippet": "    };\n    const token = jwt.sign(payload, serviceAccount.private_key, { algorithm: 'RS256' });\n    const response = await fetch('https://oauth2.googleapis.com/token', {\n        method: 'POST',\n        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },",
+      "suggestion": "Add timeout using AbortSignal: const controller = new AbortController(); setTimeout(() => controller.abort(), 30000);"
+    },
+    {
+      "ruleId": "NO_REQUEST_TIMEOUT",
+      "description": "fetch() without timeout configuration",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/scripts/add-friend.js",
+      "line": 44,
+      "snippet": "    const url = `https://firestore.googleapis.com/v1/projects/days-c4ad4/databases/(default)/documents/users/${hackneymanlee_uid}?updateMask.fieldPaths=friends`;\n\n    const resp = await fetch(url, {\n        method: 'PATCH',\n        headers: {",
+      "suggestion": "Add timeout using AbortSignal: const controller = new AbortController(); setTimeout(() => controller.abort(), 30000);"
+    },
+    {
+      "ruleId": "NO_REQUEST_TIMEOUT",
+      "description": "fetch() without timeout configuration",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/scripts/check-friend-requests.js",
+      "line": 21,
+      "snippet": "    };\n    const token = jwt.sign(payload, serviceAccount.private_key, { algorithm: 'RS256' });\n    const response = await fetch('https://oauth2.googleapis.com/token', {\n        method: 'POST',\n        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },",
+      "suggestion": "Add timeout using AbortSignal: const controller = new AbortController(); setTimeout(() => controller.abort(), 30000);"
+    },
+    {
+      "ruleId": "NO_REQUEST_TIMEOUT",
+      "description": "fetch() without timeout configuration",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/scripts/check-friend-requests.js",
+      "line": 43,
+      "snippet": "\n    // Check requests from user1 to user2\n    const query1 = await fetch(queryUrl, {\n        method: 'POST',\n        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },",
+      "suggestion": "Add timeout using AbortSignal: const controller = new AbortController(); setTimeout(() => controller.abort(), 30000);"
+    },
+    {
+      "ruleId": "NO_REQUEST_TIMEOUT",
+      "description": "fetch() without timeout configuration",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/scripts/check-friend-requests.js",
+      "line": 77,
+      "snippet": "\n    // Check requests from user2 to user1\n    const query2 = await fetch(queryUrl, {\n        method: 'POST',\n        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },",
+      "suggestion": "Add timeout using AbortSignal: const controller = new AbortController(); setTimeout(() => controller.abort(), 30000);"
+    },
+    {
+      "ruleId": "NO_REQUEST_TIMEOUT",
+      "description": "fetch() without timeout configuration",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/scripts/check-friends.js",
+      "line": 21,
+      "snippet": "    };\n    const token = jwt.sign(payload, serviceAccount.private_key, { algorithm: 'RS256' });\n    const response = await fetch('https://oauth2.googleapis.com/token', {\n        method: 'POST',\n        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },",
+      "suggestion": "Add timeout using AbortSignal: const controller = new AbortController(); setTimeout(() => controller.abort(), 30000);"
+    },
+    {
+      "ruleId": "NO_REQUEST_TIMEOUT",
+      "description": "fetch() without timeout configuration",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/scripts/check-friends.js",
+      "line": 35,
+      "snippet": "    const uid = 'FVgteJzI1VTVSSQIfNXk5I85Zpj1';\n    const url = `https://firestore.googleapis.com/v1/projects/days-c4ad4/databases/(default)/documents/users/${uid}`;\n    const resp = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });\n    const data = await resp.json();\n",
+      "suggestion": "Add timeout using AbortSignal: const controller = new AbortController(); setTimeout(() => controller.abort(), 30000);"
+    },
+    {
+      "ruleId": "NO_REQUEST_TIMEOUT",
+      "description": "fetch() without timeout configuration",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/scripts/check-friendship.js",
+      "line": 21,
+      "snippet": "    };\n    const token = jwt.sign(payload, serviceAccount.private_key, { algorithm: 'RS256' });\n    const response = await fetch('https://oauth2.googleapis.com/token', {\n        method: 'POST',\n        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },",
+      "suggestion": "Add timeout using AbortSignal: const controller = new AbortController(); setTimeout(() => controller.abort(), 30000);"
+    },
+    {
+      "ruleId": "NO_REQUEST_TIMEOUT",
+      "description": "fetch() without timeout configuration",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/scripts/check-friendship.js",
+      "line": 34,
+      "snippet": "\n    const queryUrl = `${baseUrl}:runQuery`;\n    const queryResp = await fetch(queryUrl, {\n        method: 'POST',\n        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },",
+      "suggestion": "Add timeout using AbortSignal: const controller = new AbortController(); setTimeout(() => controller.abort(), 30000);"
+    },
+    {
+      "ruleId": "NO_REQUEST_TIMEOUT",
+      "description": "fetch() without timeout configuration",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/scripts/check-test-user.js",
+      "line": 18,
+      "snippet": "    };\n    const token = jwt.sign(payload, serviceAccount.private_key, { algorithm: 'RS256' });\n    const response = await fetch('https://oauth2.googleapis.com/token', {\n        method: 'POST',\n        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },",
+      "suggestion": "Add timeout using AbortSignal: const controller = new AbortController(); setTimeout(() => controller.abort(), 30000);"
+    },
+    {
+      "ruleId": "NO_REQUEST_TIMEOUT",
+      "description": "fetch() without timeout configuration",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/scripts/check-test-user.js",
+      "line": 35,
+      "snippet": "    // Since get-uids.js worked by listing, we'll do the same.\n    const url = 'https://firestore.googleapis.com/v1/projects/days-c4ad4/databases/(default)/documents/users?pageSize=300';\n    const resp = await fetch(url, { headers });\n    const data = await resp.json();\n",
+      "suggestion": "Add timeout using AbortSignal: const controller = new AbortController(); setTimeout(() => controller.abort(), 30000);"
+    },
+    {
+      "ruleId": "SENSITIVE_LOGGING",
+      "description": "console.log() logging Authentication Token: \n📱 Push Token:",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/scripts/check-test-user.js",
+      "line": 67,
+      "snippet": "        }\n\n        console.log('\\n📱 Push Token:');\n        if (fields.pushToken) {\n            console.log(`✅ Present: ${fields.pushToken.stringValue.substring(0, 15)}...`);",
+      "suggestion": "Remove console logs with sensitive data or wrap in __DEV__ check. Use a logging library with data filtering for production."
+    },
+    {
+      "ruleId": "SENSITIVE_LOGGING",
+      "description": "console.log() logging Authentication Token: \n📱 Push Token (Expo):",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/scripts/check-user-notifications.js",
+      "line": 40,
+      "snippet": "\n        // Check Push Token (Expo)\n        console.log('\\n📱 Push Token (Expo):');\n        if (data.pushToken) {\n            console.log(`✅ Present: ${data.pushToken.substring(0, 15)}...`);",
+      "suggestion": "Remove console logs with sensitive data or wrap in __DEV__ check. Use a logging library with data filtering for production."
+    },
+    {
+      "ruleId": "SENSITIVE_DATA_IN_ERROR_MESSAGES",
+      "description": "Error object logged directly - may contain sensitive data or stack traces",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/scripts/check-user-notifications.js",
+      "line": 52,
+      "snippet": "\n    } catch (error) {\n        console.error('Error checking user:', error);\n    }\n}",
+      "suggestion": "Log only safe error properties (message, code). Sanitize error messages before displaying to users. Never expose stack traces in production."
+    },
+    {
+      "ruleId": "NO_REQUEST_TIMEOUT",
+      "description": "fetch() without timeout configuration",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/scripts/fix-friendship.js",
+      "line": 21,
+      "snippet": "    };\n    const token = jwt.sign(payload, serviceAccount.private_key, { algorithm: 'RS256' });\n    const response = await fetch('https://oauth2.googleapis.com/token', {\n        method: 'POST',\n        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },",
+      "suggestion": "Add timeout using AbortSignal: const controller = new AbortController(); setTimeout(() => controller.abort(), 30000);"
+    },
+    {
+      "ruleId": "NO_REQUEST_TIMEOUT",
+      "description": "fetch() without timeout configuration",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/scripts/fix-friendship.js",
+      "line": 44,
+      "snippet": "    const now = new Date().toISOString();\n\n    const resp = await fetch(docUrl, {\n        method: 'PATCH',\n        headers: {",
+      "suggestion": "Add timeout using AbortSignal: const controller = new AbortController(); setTimeout(() => controller.abort(), 30000);"
+    },
+    {
+      "ruleId": "NO_REQUEST_TIMEOUT",
+      "description": "fetch() without timeout configuration",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/scripts/get-uids.js",
+      "line": 21,
+      "snippet": "    };\n    const token = jwt.sign(payload, serviceAccount.private_key, { algorithm: 'RS256' });\n    const response = await fetch('https://oauth2.googleapis.com/token', {\n        method: 'POST',\n        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },",
+      "suggestion": "Add timeout using AbortSignal: const controller = new AbortController(); setTimeout(() => controller.abort(), 30000);"
+    },
+    {
+      "ruleId": "NO_REQUEST_TIMEOUT",
+      "description": "fetch() without timeout configuration",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/scripts/get-uids.js",
+      "line": 33,
+      "snippet": "    const token = await getAccessToken();\n    const url = 'https://firestore.googleapis.com/v1/projects/days-c4ad4/databases/(default)/documents/users';\n    const resp = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });\n    const data = await resp.json();\n",
+      "suggestion": "Add timeout using AbortSignal: const controller = new AbortController(); setTimeout(() => controller.abort(), 30000);"
+    },
+    {
+      "ruleId": "NO_REQUEST_TIMEOUT",
+      "description": "fetch() without timeout configuration",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/scripts/reset-streak-main.js",
+      "line": 21,
+      "snippet": "    };\n    const token = jwt.sign(payload, serviceAccount.private_key, { algorithm: 'RS256' });\n    const response = await fetch('https://oauth2.googleapis.com/token', {\n        method: 'POST',\n        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },",
+      "suggestion": "Add timeout using AbortSignal: const controller = new AbortController(); setTimeout(() => controller.abort(), 30000);"
+    },
+    {
+      "ruleId": "NO_REQUEST_TIMEOUT",
+      "description": "fetch() without timeout configuration",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/scripts/reset-streak-main.js",
+      "line": 36,
+      "snippet": "    // Query for user with username 'hackneymanlee'\n    const queryUrl = `${baseUrl}:runQuery`;\n    const queryResp = await fetch(queryUrl, {\n        method: 'POST',\n        headers: {",
+      "suggestion": "Add timeout using AbortSignal: const controller = new AbortController(); setTimeout(() => controller.abort(), 30000);"
+    },
+    {
+      "ruleId": "NO_REQUEST_TIMEOUT",
+      "description": "fetch() without timeout configuration",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/scripts/reset-streak-main.js",
+      "line": 69,
+      "snippet": "    // Reset streak\n    const updateUrl = `${baseUrl}/users/${uid}?updateMask.fieldPaths=streak`;\n    const updateResp = await fetch(updateUrl, {\n        method: 'PATCH',\n        headers: {",
+      "suggestion": "Add timeout using AbortSignal: const controller = new AbortController(); setTimeout(() => controller.abort(), 30000);"
+    },
+    {
+      "ruleId": "NO_REQUEST_TIMEOUT",
+      "description": "fetch() without timeout configuration",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/scripts/reset-streak.js",
+      "line": 21,
+      "snippet": "    };\n    const token = jwt.sign(payload, serviceAccount.private_key, { algorithm: 'RS256' });\n    const response = await fetch('https://oauth2.googleapis.com/token', {\n        method: 'POST',\n        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },",
+      "suggestion": "Add timeout using AbortSignal: const controller = new AbortController(); setTimeout(() => controller.abort(), 30000);"
+    },
+    {
+      "ruleId": "NO_REQUEST_TIMEOUT",
+      "description": "fetch() without timeout configuration",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/scripts/reset-streak.js",
+      "line": 36,
+      "snippet": "    // Query for user with username 'leetest2'\n    const queryUrl = `${baseUrl}:runQuery`;\n    const queryResp = await fetch(queryUrl, {\n        method: 'POST',\n        headers: {",
+      "suggestion": "Add timeout using AbortSignal: const controller = new AbortController(); setTimeout(() => controller.abort(), 30000);"
+    },
+    {
+      "ruleId": "NO_REQUEST_TIMEOUT",
+      "description": "fetch() without timeout configuration",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/scripts/reset-streak.js",
+      "line": 69,
+      "snippet": "    // Reset streak\n    const updateUrl = `${baseUrl}/users/${uid}?updateMask.fieldPaths=streak`;\n    const updateResp = await fetch(updateUrl, {\n        method: 'PATCH',\n        headers: {",
+      "suggestion": "Add timeout using AbortSignal: const controller = new AbortController(); setTimeout(() => controller.abort(), 30000);"
+    },
+    {
+      "ruleId": "NO_REQUEST_TIMEOUT",
+      "description": "fetch() without timeout configuration",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/scripts/simulate-gameplay.js",
+      "line": 26,
+      "snippet": "    };\n    const token = jwt.sign(payload, serviceAccount.private_key, { algorithm: 'RS256' });\n    const response = await fetch('https://oauth2.googleapis.com/token', {\n        method: 'POST',\n        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },",
+      "suggestion": "Add timeout using AbortSignal: const controller = new AbortController(); setTimeout(() => controller.abort(), 30000);"
+    },
+    {
+      "ruleId": "NO_REQUEST_TIMEOUT",
+      "description": "fetch() without timeout configuration",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/scripts/simulate-gameplay.js",
+      "line": 36,
+      "snippet": "// REST HELPERS\nasync function firestoreGet(token, path) {\n    const response = await fetch(`${BASE_URL}/${path}`, {\n        headers: { 'Authorization': `Bearer ${token}` }\n    });",
+      "suggestion": "Add timeout using AbortSignal: const controller = new AbortController(); setTimeout(() => controller.abort(), 30000);"
+    },
+    {
+      "ruleId": "NO_REQUEST_TIMEOUT",
+      "description": "fetch() without timeout configuration",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/scripts/simulate-gameplay.js",
+      "line": 43,
+      "snippet": "\nasync function firestoreCreate(token, collection, data) {\n    const response = await fetch(`${BASE_URL}/${collection}`, {\n        method: 'POST',\n        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },",
+      "suggestion": "Add timeout using AbortSignal: const controller = new AbortController(); setTimeout(() => controller.abort(), 30000);"
+    },
+    {
+      "ruleId": "NO_REQUEST_TIMEOUT",
+      "description": "fetch() without timeout configuration",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/scripts/simulate-gameplay.js",
+      "line": 54,
+      "snippet": "    // Construct query param for updateMask\n    const fieldPaths = Object.keys(data).map(k => `updateMask.fieldPaths=${k}`).join('&');\n    const response = await fetch(`${BASE_URL}/${path}?${fieldPaths}`, {\n        method: 'PATCH',\n        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },",
+      "suggestion": "Add timeout using AbortSignal: const controller = new AbortController(); setTimeout(() => controller.abort(), 30000);"
+    },
+    {
+      "ruleId": "NO_REQUEST_TIMEOUT",
+      "description": "fetch() without timeout configuration",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/scripts/simulate-gameplay.js",
+      "line": 105,
+      "snippet": "    // 1. Get Users\n    console.log('Step 1: Finding users...');\n    const usersResp = await fetch(`${BASE_URL}/users?pageSize=2`, { headers: { 'Authorization': `Bearer ${token}` } });\n    const usersJson = await usersResp.json();\n    if (!usersJson.documents || usersJson.documents.length < 2) {",
+      "suggestion": "Add timeout using AbortSignal: const controller = new AbortController(); setTimeout(() => controller.abort(), 30000);"
+    },
+    {
+      "ruleId": "HARDCODED_SECRETS",
+      "description": "Potential hardcoded secret in variable \"ONE_SIGNAL_REST_API_KEY\"",
+      "severity": "HIGH",
+      "filePath": "/Users/lee/Projects/primal-singularity/scripts/simulate-pin-notification.js",
+      "line": 7,
+      "snippet": "// Configuration (Mirrors src/services/NotificationService.ts)\nconst ONE_SIGNAL_APP_ID = '5998e50e-ec2e-49fa-9d3f-9639168487ac';\nconst ONE_SIGNAL_REST_API_KEY = 'os_v2_app_lgmokdxmfze7vhj7sy4rnbehvsajdjhgufbegzfkoyeuqj7txtsyebzctnwo577asbhicpokkrh5plskt3kx2zmrvjanqtsumxn22oi';\n\n// Mock Data",
+      "suggestion": "Move secrets to environment variables or secure config management"
+    },
+    {
+      "ruleId": "NO_REQUEST_TIMEOUT",
+      "description": "fetch() without timeout configuration",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/scripts/simulate-pin-notification.js",
+      "line": 31,
+      "snippet": "\n    try {\n        const response = await fetch('https://onesignal.com/api/v1/notifications', {\n            method: 'POST',\n            headers: {",
+      "suggestion": "Add timeout using AbortSignal: const controller = new AbortController(); setTimeout(() => controller.abort(), 30000);"
+    },
+    {
+      "ruleId": "SENSITIVE_LOGGING",
+      "description": "console.log() logging Payment/Financial Data: === Starting Pin Notification Simulation ===",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/scripts/simulate-pin-notification.js",
+      "line": 63,
+      "snippet": "\nasync function runSimulation() {\n    console.log('=== Starting Pin Notification Simulation ===');\n\n    // 1. Simulate Notification Sending",
+      "suggestion": "Remove console logs with sensitive data or wrap in __DEV__ check. Use a logging library with data filtering for production."
+    },
+    {
+      "ruleId": "SENSITIVE_DATA_IN_ERROR_MESSAGES",
+      "description": "Backend error message or stack trace exposed to user",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/scripts/simulate-pin-notification.js",
+      "line": 57,
+      "snippet": "\n    } catch (error) {\n        console.error('❌ [Simulation] Exception during fetch:', error.message);\n        return false;\n    }",
+      "suggestion": "Use generic error messages for users. Log detailed errors server-side only. Never expose stack traces or backend errors."
+    },
+    {
+      "ruleId": "API_KEY_EXPOSED",
+      "description": "Generic API key pattern detected: API_KEY = 'os_v2_app...[REDACTED]",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/scripts/simulate-pin-notification.js",
+      "line": 7,
+      "snippet": "// Configuration (Mirrors src/services/NotificationService.ts)\nconst ONE_SIGNAL_APP_ID = '5998e50e-ec2e-49fa-9d3f-9639168487ac';\nconst ONE_SIGNAL_REST_API_KEY = 'os_v2_app_lgmokdxmfze7vhj7sy4rnbehvsajdjhgufbegzfkoyeuqj7txtsyebzctnwo577asbhicpokkrh5plskt3kx2zmrvjanqtsumxn22oi';\n\n// Mock Data",
+      "suggestion": "Move Generic API Key to environment variables or secure config management. Never commit secrets to version control."
+    },
+    {
+      "ruleId": "NO_REQUEST_TIMEOUT",
+      "description": "fetch() without timeout configuration",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/scripts/test-flag-dash.js",
+      "line": 44,
+      "snippet": "    };\n    const token = jwt.sign(payload, serviceAccount.private_key, { algorithm: 'RS256' });\n    const response = await fetch('https://oauth2.googleapis.com/token', {\n        method: 'POST',\n        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },",
+      "suggestion": "Add timeout using AbortSignal: const controller = new AbortController(); setTimeout(() => controller.abort(), 30000);"
+    },
+    {
+      "ruleId": "NO_REQUEST_TIMEOUT",
+      "description": "fetch() without timeout configuration",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/scripts/test-flag-dash.js",
+      "line": 54,
+      "snippet": "// FIRESTORE HELPERS\nasync function firestoreGet(token, path) {\n    const response = await fetch(`${BASE_URL}/${path}`, {\n        headers: { 'Authorization': `Bearer ${token}` }\n    });",
+      "suggestion": "Add timeout using AbortSignal: const controller = new AbortController(); setTimeout(() => controller.abort(), 30000);"
+    },
+    {
+      "ruleId": "NO_REQUEST_TIMEOUT",
+      "description": "fetch() without timeout configuration",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/scripts/test-flag-dash.js",
+      "line": 61,
+      "snippet": "\nasync function firestoreCreate(token, collection, data) {\n    const response = await fetch(`${BASE_URL}/${collection}`, {\n        method: 'POST',\n        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },",
+      "suggestion": "Add timeout using AbortSignal: const controller = new AbortController(); setTimeout(() => controller.abort(), 30000);"
+    },
+    {
+      "ruleId": "NO_REQUEST_TIMEOUT",
+      "description": "fetch() without timeout configuration",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/scripts/test-flag-dash.js",
+      "line": 71,
+      "snippet": "async function firestorePatch(token, path, data) {\n    const fieldPaths = Object.keys(data).map(k => `updateMask.fieldPaths=${k}`).join('&');\n    const response = await fetch(`${BASE_URL}/${path}?${fieldPaths}`, {\n        method: 'PATCH',\n        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },",
+      "suggestion": "Add timeout using AbortSignal: const controller = new AbortController(); setTimeout(() => controller.abort(), 30000);"
+    },
+    {
+      "ruleId": "NO_REQUEST_TIMEOUT",
+      "description": "fetch() without timeout configuration",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/scripts/test-flag-dash.js",
+      "line": 80,
+      "snippet": "\nasync function firestoreDelete(token, path) {\n    await fetch(`${BASE_URL}/${path}`, {\n        method: 'DELETE',\n        headers: { 'Authorization': `Bearer ${token}` }",
+      "suggestion": "Add timeout using AbortSignal: const controller = new AbortController(); setTimeout(() => controller.abort(), 30000);"
+    },
+    {
+      "ruleId": "NO_REQUEST_TIMEOUT",
+      "description": "fetch() without timeout configuration",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/scripts/test-flag-dash.js",
+      "line": 143,
+      "snippet": "\n    // Get test users\n    const usersResp = await fetch(`${BASE_URL}/users?pageSize=5`, { headers: { 'Authorization': `Bearer ${token}` } });\n    const usersJson = await usersResp.json();\n    if (!usersJson.documents || usersJson.documents.length < 2) {",
+      "suggestion": "Add timeout using AbortSignal: const controller = new AbortController(); setTimeout(() => controller.abort(), 30000);"
+    },
+    {
+      "ruleId": "NO_REQUEST_TIMEOUT",
+      "description": "fetch() without timeout configuration",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/scripts/test-flag-dash.js",
+      "line": 154,
+      "snippet": "\n    // Cleanup - delete existing test challenges\n    const cleanupResp = await fetch(`${BASE_URL}/game_challenges?pageSize=100`, { headers: { 'Authorization': `Bearer ${token}` } });\n    const cleanupJson = await cleanupResp.json();\n    let cleanedCount = 0;",
+      "suggestion": "Add timeout using AbortSignal: const controller = new AbortController(); setTimeout(() => controller.abort(), 30000);"
+    },
+    {
+      "ruleId": "NO_REQUEST_TIMEOUT",
+      "description": "fetch() without timeout configuration",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/scripts/test-flag-dash.js",
+      "line": 457,
+      "snippet": "    // Test 6.1: Check Leaderboard Collection Exists\n    {\n        const resp = await fetch(`${BASE_URL}/leaderboards?pageSize=1`, { headers: { 'Authorization': `Bearer ${token}` } });\n        const json = await resp.json();\n        if (resp.ok) pass('Leaderboard Collection', 'Accessible');",
+      "suggestion": "Add timeout using AbortSignal: const controller = new AbortController(); setTimeout(() => controller.abort(), 30000);"
+    },
+    {
+      "ruleId": "SENSITIVE_LOGGING",
+      "description": "console.log() logging Payment/Financial Data: PIN DROP - STATE TRANSITION & CHALLENGE TESTS",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/scripts/test-pin-drop-states.js",
+      "line": 15,
+      "snippet": "\nconsole.log('='.repeat(60));\nconsole.log('PIN DROP - STATE TRANSITION & CHALLENGE TESTS');\nconsole.log('='.repeat(60));\nconsole.log();",
+      "suggestion": "Remove console logs with sensitive data or wrap in __DEV__ check. Use a logging library with data filtering for production."
+    },
+    {
+      "ruleId": "SENSITIVE_LOGGING",
+      "description": "console.log() logging Payment/Financial Data: PIN DROP GAME - COMPREHENSIVE TEST SUITE",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/scripts/test-pin-drop.js",
+      "line": 21,
+      "snippet": "\nconsole.log('='.repeat(60));\nconsole.log('PIN DROP GAME - COMPREHENSIVE TEST SUITE');\nconsole.log('='.repeat(60));\nconsole.log();",
+      "suggestion": "Remove console logs with sensitive data or wrap in __DEV__ check. Use a logging library with data filtering for production."
+    },
+    {
+      "ruleId": "SENSITIVE_LOGGING",
+      "description": "console.log() logging Payment/Financial Data: 🎉 ALL TESTS PASSED! Pin Drop game is ready for de...",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/scripts/test-pin-drop.js",
+      "line": 479,
+      "snippet": "\nif (totalFailed === 0) {\n    console.log('🎉 ALL TESTS PASSED! Pin Drop game is ready for deployment.');\n} else {\n    console.log('⚠️ Some tests failed. Review and fix issues before deployment.');",
+      "suggestion": "Remove console logs with sensitive data or wrap in __DEV__ check. Use a logging library with data filtering for production."
+    },
+    {
+      "ruleId": "NO_REQUEST_TIMEOUT",
+      "description": "fetch() without timeout configuration",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/scripts/test_notification_fix.js",
+      "line": 49,
+      "snippet": "\n    try {\n        const response = await fetch('https://onesignal.com/api/v1/notifications', {\n            method: 'POST',\n            headers: {",
+      "suggestion": "Add timeout using AbortSignal: const controller = new AbortController(); setTimeout(() => controller.abort(), 30000);"
+    },
+    {
+      "ruleId": "SENSITIVE_LOGGING",
+      "description": "console.error() logging API Key/Secret: ❌ Error: EXPO_PUBLIC_ONESIGNAL_REST_API_KEY not fo...",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/scripts/test_notification_fix.js",
+      "line": 32,
+      "snippet": "\n    if (!ONE_SIGNAL_REST_API_KEY) {\n        console.error('❌ Error: EXPO_PUBLIC_ONESIGNAL_REST_API_KEY not found in .env');\n        return false;\n    }",
+      "suggestion": "Remove console logs with sensitive data or wrap in __DEV__ check. Use a logging library with data filtering for production."
+    },
+    {
+      "ruleId": "SENSITIVE_LOGGING",
+      "description": "console.log() logging Payment/Financial Data: === Starting Pin Notification Simulation ===",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/scripts/test_notification_fix.js",
+      "line": 87,
+      "snippet": "\nasync function runSimulation() {\n    console.log('=== Starting Pin Notification Simulation ===');\n    const success = await notifyNewPin(MOCK_FRIEND_UID, MOCK_CREATOR_NAME);\n    if (success) {",
+      "suggestion": "Remove console logs with sensitive data or wrap in __DEV__ check. Use a logging library with data filtering for production."
+    },
+    {
+      "ruleId": "SENSITIVE_DATA_IN_ERROR_MESSAGES",
+      "description": "Backend error message or stack trace exposed to user",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/scripts/test_notification_fix.js",
+      "line": 81,
+      "snippet": "\n    } catch (error) {\n        console.error('❌ [Simulation] Exception during fetch:', error.message);\n        return false;\n    }",
+      "suggestion": "Use generic error messages for users. Log detailed errors server-side only. Never expose stack traces or backend errors."
+    },
+    {
+      "ruleId": "NO_REQUEST_TIMEOUT",
+      "description": "fetch() without timeout configuration",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/scripts/verify-explore-backend.js",
+      "line": 41,
+      "snippet": "    };\n    const token = jwt.sign(payload, serviceAccount.private_key, { algorithm: 'RS256' });\n    const response = await fetch('https://oauth2.googleapis.com/token', {\n        method: 'POST',\n        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },",
+      "suggestion": "Add timeout using AbortSignal: const controller = new AbortController(); setTimeout(() => controller.abort(), 30000);"
+    },
+    {
+      "ruleId": "NO_REQUEST_TIMEOUT",
+      "description": "fetch() without timeout - vulnerable to slowloris DoS",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/scripts/verify-explore-backend.js",
+      "line": 59,
+      "snippet": "        const query = 'London';\n        const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json?access_token=${MAPBOX_TOKEN}&types=place&limit=1`;\n        const resp = await fetch(url);\n        if (resp.ok) {\n            const data = await resp.json();",
+      "suggestion": "Add timeout to fetch using AbortSignal with setTimeout, or use a library like axios with timeout config."
+    },
+    {
+      "ruleId": "NO_REQUEST_TIMEOUT",
+      "description": "fetch() without timeout configuration",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/scripts/verify-explore-backend.js",
+      "line": 79,
+      "snippet": "\n    // Create User Doc\n    await fetch(`${BASE_URL}/${USERS_COLLECTION}?documentId=${TEST_UID}`, {\n        method: 'POST',\n        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },",
+      "suggestion": "Add timeout using AbortSignal: const controller = new AbortController(); setTimeout(() => controller.abort(), 30000);"
+    },
+    {
+      "ruleId": "NO_REQUEST_TIMEOUT",
+      "description": "fetch() without timeout configuration",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/scripts/verify-explore-backend.js",
+      "line": 103,
+      "snippet": "\n    console.log('Adding \"Eiffel Tower\" to Bucket List...');\n    const addResp = await fetch(`${BASE_URL}/${USERS_COLLECTION}/${TEST_UID}:runQuery`, { // Using runQuery? No, define patch.\n        // Actually arrayUnion via REST is tricky. We'll read, modify, write (simulate client logic).\n        // Or simpler: Just WRITE the array directly.",
+      "suggestion": "Add timeout using AbortSignal: const controller = new AbortController(); setTimeout(() => controller.abort(), 30000);"
+    },
+    {
+      "ruleId": "NO_REQUEST_TIMEOUT",
+      "description": "fetch() without timeout configuration",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/scripts/verify-explore-backend.js",
+      "line": 110,
+      "snippet": "\n    // Simplification for REST Script: READ -> PUSH -> WRITE\n    const readResp = await fetch(`${BASE_URL}/${USERS_COLLECTION}/${TEST_UID}`, {\n        headers: { 'Authorization': `Bearer ${token}` }\n    });",
+      "suggestion": "Add timeout using AbortSignal: const controller = new AbortController(); setTimeout(() => controller.abort(), 30000);"
+    },
+    {
+      "ruleId": "NO_REQUEST_TIMEOUT",
+      "description": "fetch() without timeout configuration",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/scripts/verify-explore-backend.js",
+      "line": 117,
+      "snippet": "    currentBucket.push(firestoreItem);\n\n    const updateResp = await fetch(`${BASE_URL}/${USERS_COLLECTION}/${TEST_UID}?updateMask.fieldPaths=bucketList`, {\n        method: 'PATCH',\n        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },",
+      "suggestion": "Add timeout using AbortSignal: const controller = new AbortController(); setTimeout(() => controller.abort(), 30000);"
+    },
+    {
+      "ruleId": "NO_REQUEST_TIMEOUT",
+      "description": "fetch() without timeout configuration",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/scripts/verify-explore-backend.js",
+      "line": 135,
+      "snippet": "\n    // Verify\n    const verifyResp = await fetch(`${BASE_URL}/${USERS_COLLECTION}/${TEST_UID}`, {\n        headers: { 'Authorization': `Bearer ${token}` }\n    });",
+      "suggestion": "Add timeout using AbortSignal: const controller = new AbortController(); setTimeout(() => controller.abort(), 30000);"
+    },
+    {
+      "ruleId": "NO_REQUEST_TIMEOUT",
+      "description": "fetch() without timeout configuration",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/scripts/verify-explore-backend.js",
+      "line": 150,
+      "snippet": "    // Cleanup\n    console.log('\\n--- Cleanup ---');\n    await fetch(`${BASE_URL}/${USERS_COLLECTION}/${TEST_UID}`, {\n        method: 'DELETE',\n        headers: { 'Authorization': `Bearer ${token}` }",
+      "suggestion": "Add timeout using AbortSignal: const controller = new AbortController(); setTimeout(() => controller.abort(), 30000);"
+    },
+    {
+      "ruleId": "SENSITIVE_LOGGING",
+      "description": "console.error() logging Authentication Token: ❌ Missing EXPO_PUBLIC_MAPBOX_TOKEN in .env",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/scripts/verify-explore-backend.js",
+      "line": 55,
+      "snippet": "    console.log('--- Step 1: Mapbox Geocoding ---');\n    if (!MAPBOX_TOKEN) {\n        console.error('❌ Missing EXPO_PUBLIC_MAPBOX_TOKEN in .env');\n    } else {\n        const query = 'London';",
+      "suggestion": "Remove console logs with sensitive data or wrap in __DEV__ check. Use a logging library with data filtering for production."
+    },
+    {
+      "ruleId": "SENSITIVE_DATA_IN_ERROR_MESSAGES",
+      "description": "Error object logged directly - may contain sensitive data or stack traces",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/scripts/verify-explore-backend.js",
+      "line": 131,
+      "snippet": "    } else {\n        const err = await updateResp.json();\n        console.error('❌ Update Failed:', err);\n    }\n",
+      "suggestion": "Log only safe error properties (message, code). Sanitize error messages before displaying to users. Never expose stack traces in production."
+    },
+    {
+      "ruleId": "OAUTH_TOKEN_IN_URL",
+      "description": "Authentication token passed as URL query parameter in template",
+      "severity": "HIGH",
+      "filePath": "/Users/lee/Projects/primal-singularity/scripts/verify-explore-backend.js",
+      "line": 58,
+      "snippet": "    } else {\n        const query = 'London';\n        const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json?access_token=${MAPBOX_TOKEN}&types=place&limit=1`;\n        const resp = await fetch(url);\n        if (resp.ok) {",
+      "suggestion": "Use Authorization header instead of URL parameters for tokens"
+    },
+    {
+      "ruleId": "NO_REQUEST_TIMEOUT",
+      "description": "fetch() without timeout configuration",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/scripts/verify-friend-flow.js",
+      "line": 25,
+      "snippet": "    };\n    const token = jwt.sign(payload, serviceAccount.private_key, { algorithm: 'RS256' });\n    const response = await fetch('https://oauth2.googleapis.com/token', {\n        method: 'POST',\n        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },",
+      "suggestion": "Add timeout using AbortSignal: const controller = new AbortController(); setTimeout(() => controller.abort(), 30000);"
+    },
+    {
+      "ruleId": "NO_REQUEST_TIMEOUT",
+      "description": "fetch() without timeout configuration",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/scripts/verify-friend-flow.js",
+      "line": 64,
+      "snippet": "    };\n\n    const createResp = await fetch(`${BASE_URL}/${COLLECTION}`, {\n        method: 'POST',\n        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },",
+      "suggestion": "Add timeout using AbortSignal: const controller = new AbortController(); setTimeout(() => controller.abort(), 30000);"
+    },
+    {
+      "ruleId": "NO_REQUEST_TIMEOUT",
+      "description": "fetch() without timeout configuration",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/scripts/verify-friend-flow.js",
+      "line": 78,
+      "snippet": "    // 2. Verify Pending State\n    console.log('\\n--- Step 2: Verifying Pending State ---');\n    const getResp = await fetch(`${BASE_URL}/${COLLECTION}/${requestId}`, {\n        headers: { 'Authorization': `Bearer ${token}` }\n    });",
+      "suggestion": "Add timeout using AbortSignal: const controller = new AbortController(); setTimeout(() => controller.abort(), 30000);"
+    },
+    {
+      "ruleId": "NO_REQUEST_TIMEOUT",
+      "description": "fetch() without timeout configuration",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/scripts/verify-friend-flow.js",
+      "line": 91,
+      "snippet": "    // 3. Accept Request (Update Status)\n    console.log('\\n--- Step 3: Accepting Request ---');\n    const updateResp = await fetch(`${BASE_URL}/${COLLECTION}/${requestId}?updateMask.fieldPaths=status`, {\n        method: 'PATCH',\n        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },",
+      "suggestion": "Add timeout using AbortSignal: const controller = new AbortController(); setTimeout(() => controller.abort(), 30000);"
+    },
+    {
+      "ruleId": "NO_REQUEST_TIMEOUT",
+      "description": "fetch() without timeout configuration",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/scripts/verify-friend-flow.js",
+      "line": 109,
+      "snippet": "    console.log('\\n--- Step 4: Verifying Friendship ---');\n    // Query: fromUid == USER_A && status == accepted\n    const queryResp = await fetch(`${BASE_URL}:runQuery`, {\n        method: 'POST',\n        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },",
+      "suggestion": "Add timeout using AbortSignal: const controller = new AbortController(); setTimeout(() => controller.abort(), 30000);"
+    },
+    {
+      "ruleId": "NO_REQUEST_TIMEOUT",
+      "description": "fetch() without timeout configuration",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/scripts/verify-friend-flow.js",
+      "line": 139,
+      "snippet": "    // 5. Cleanup\n    console.log('\\n--- Cleanup ---');\n    await fetch(`${BASE_URL}/${COLLECTION}/${requestId}`, {\n        method: 'DELETE',\n        headers: { 'Authorization': `Bearer ${token}` }",
+      "suggestion": "Add timeout using AbortSignal: const controller = new AbortController(); setTimeout(() => controller.abort(), 30000);"
+    },
+    {
+      "ruleId": "NO_REQUEST_TIMEOUT",
+      "description": "fetch() without timeout configuration",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/scripts/verify-notifications.js",
+      "line": 32,
+      "snippet": "    const token = jwt.sign(payload, serviceAccount.private_key, { algorithm: 'RS256' });\n\n    const response = await fetch('https://oauth2.googleapis.com/token', {\n        method: 'POST',\n        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },",
+      "suggestion": "Add timeout using AbortSignal: const controller = new AbortController(); setTimeout(() => controller.abort(), 30000);"
+    },
+    {
+      "ruleId": "NO_REQUEST_TIMEOUT",
+      "description": "fetch() without timeout configuration",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/scripts/verify-notifications.js",
+      "line": 44,
+      "snippet": "async function getFirestoreDocument(accessToken, collection, docId) {\n    const url = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents/${collection}/${docId}`;\n    const response = await fetch(url, {\n        headers: { 'Authorization': `Bearer ${accessToken}` }\n    });",
+      "suggestion": "Add timeout using AbortSignal: const controller = new AbortController(); setTimeout(() => controller.abort(), 30000);"
+    },
+    {
+      "ruleId": "NO_REQUEST_TIMEOUT",
+      "description": "fetch() without timeout configuration",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/scripts/verify-notifications.js",
+      "line": 52,
+      "snippet": "async function listCollection(accessToken, collection) {\n    const url = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents/${collection}`;\n    const response = await fetch(url, {\n        headers: { 'Authorization': `Bearer ${accessToken}` }\n    });",
+      "suggestion": "Add timeout using AbortSignal: const controller = new AbortController(); setTimeout(() => controller.abort(), 30000);"
+    },
+    {
+      "ruleId": "NO_REQUEST_TIMEOUT",
+      "description": "fetch() without timeout configuration",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/scripts/verify-notifications.js",
+      "line": 143,
+      "snippet": "        console.log(`  Sending test notification to: ${testUser.username}`);\n\n        const response = await fetch('https://exp.host/--/api/v2/push/send', {\n            method: 'POST',\n            headers: {",
+      "suggestion": "Add timeout using AbortSignal: const controller = new AbortController(); setTimeout(() => controller.abort(), 30000);"
+    },
+    {
+      "ruleId": "SENSITIVE_LOGGING",
+      "description": "console.log() logging Authentication Token:   ✓ Access token obtained",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/scripts/verify-notifications.js",
+      "line": 78,
+      "snippet": "    console.log('Step 1: Authenticating with Firebase...');\n    const accessToken = await getAccessToken();\n    console.log('  ✓ Access token obtained');\n\n    // Step 2: Get all users",
+      "suggestion": "Remove console logs with sensitive data or wrap in __DEV__ check. Use a logging library with data filtering for production."
+    },
+    {
+      "ruleId": "SENSITIVE_LOGGING",
+      "description": "console.log() logging Authentication Token: `    Token: ${user.pushToken ? user.pushToken.substring(0, 4...",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/scripts/verify-notifications.js",
+      "line": 133,
+      "snippet": "        }\n        console.log(`  User: ${user.username}`);\n        console.log(`    Token: ${user.pushToken ? user.pushToken.substring(0, 40) + '...' : 'MISSING'}`);\n        console.log(`    Friends: ${friendNames.length > 0 ? friendNames.join(', ') : 'NONE'}`);\n    }",
+      "suggestion": "Remove console logs with sensitive data or wrap in __DEV__ check. Use a logging library with data filtering for production."
+    },
+    {
+      "ruleId": "NO_REQUEST_TIMEOUT",
+      "description": "fetch() without timeout configuration",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/scripts/verify-onesignal-key.js",
+      "line": 93,
+      "snippet": "    \n    try {\n        const response = await fetch('https://onesignal.com/api/v1/players?app_id=' + appId, {\n            method: 'GET',\n            headers: {",
+      "suggestion": "Add timeout using AbortSignal: const controller = new AbortController(); setTimeout(() => controller.abort(), 30000);"
+    },
+    {
+      "ruleId": "HARDCODED_SECRETS",
+      "description": "Potential hardcoded secret in variable \"ONE_SIGNAL_REST_API_KEY\"",
+      "severity": "HIGH",
+      "filePath": "/Users/lee/Projects/primal-singularity/scripts/verify-pin-notification.js",
+      "line": 6,
+      "snippet": "// Configuration\nconst ONE_SIGNAL_APP_ID = '5998e50e-ec2e-49fa-9d3f-9639168487ac';\nconst ONE_SIGNAL_REST_API_KEY = 'os_v2_app_lgmokdxmfze7vhj7sy4rnbehvsajdjhgufbegzfkoyeuqj7txtsyebzctnwo577asbhicpokkrh5plskt3kx2zmrvjanqtsumxn22oi';\n\n// Test Data",
+      "suggestion": "Move secrets to environment variables or secure config management"
+    },
+    {
+      "ruleId": "NO_REQUEST_TIMEOUT",
+      "description": "fetch() without timeout configuration",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/scripts/verify-pin-notification.js",
+      "line": 37,
+      "snippet": "\n    try {\n        const response = await fetch('https://onesignal.com/api/v1/notifications', {\n            method: 'POST',\n            headers: {",
+      "suggestion": "Add timeout using AbortSignal: const controller = new AbortController(); setTimeout(() => controller.abort(), 30000);"
+    },
+    {
+      "ruleId": "SENSITIVE_DATA_IN_ERROR_MESSAGES",
+      "description": "Error object logged directly - may contain sensitive data or stack traces",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/scripts/verify-pin-notification.js",
+      "line": 57,
+      "snippet": "\n    } catch (error) {\n        console.error('TEST FAILED: Exception during fetch:', error);\n    }\n}",
+      "suggestion": "Log only safe error properties (message, code). Sanitize error messages before displaying to users. Never expose stack traces in production."
+    },
+    {
+      "ruleId": "API_KEY_EXPOSED",
+      "description": "Generic API key pattern detected: API_KEY = 'os_v2_app...[REDACTED]",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/scripts/verify-pin-notification.js",
+      "line": 6,
+      "snippet": "// Configuration\nconst ONE_SIGNAL_APP_ID = '5998e50e-ec2e-49fa-9d3f-9639168487ac';\nconst ONE_SIGNAL_REST_API_KEY = 'os_v2_app_lgmokdxmfze7vhj7sy4rnbehvsajdjhgufbegzfkoyeuqj7txtsyebzctnwo577asbhicpokkrh5plskt3kx2zmrvjanqtsumxn22oi';\n\n// Test Data",
+      "suggestion": "Move Generic API Key to environment variables or secure config management. Never commit secrets to version control."
+    },
+    {
+      "ruleId": "NO_REQUEST_TIMEOUT",
+      "description": "fetch() without timeout configuration",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/scripts/verify-stories.js",
+      "line": 26,
+      "snippet": "    };\n    const token = jwt.sign(payload, serviceAccount.private_key, { algorithm: 'RS256' });\n    const response = await fetch('https://oauth2.googleapis.com/token', {\n        method: 'POST',\n        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },",
+      "suggestion": "Add timeout using AbortSignal: const controller = new AbortController(); setTimeout(() => controller.abort(), 30000);"
+    },
+    {
+      "ruleId": "NO_REQUEST_TIMEOUT",
+      "description": "fetch() without timeout configuration",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/scripts/verify-stories.js",
+      "line": 106,
+      "snippet": "    }\n\n    const createResp = await fetch(`${BASE_URL}/${STORIES_COLLECTION}`, {\n        method: 'POST',\n        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },",
+      "suggestion": "Add timeout using AbortSignal: const controller = new AbortController(); setTimeout(() => controller.abort(), 30000);"
+    },
+    {
+      "ruleId": "NO_REQUEST_TIMEOUT",
+      "description": "fetch() without timeout configuration",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/scripts/verify-stories.js",
+      "line": 120,
+      "snippet": "    // 3. Scenario: Read & Verify\n    console.log('\\n--- SCENARIO 2: READ & VERIFY ---');\n    const readResp = await fetch(`${BASE_URL}/${STORIES_COLLECTION}/${story1Id}`, {\n        headers: { 'Authorization': `Bearer ${token}` }\n    });",
+      "suggestion": "Add timeout using AbortSignal: const controller = new AbortController(); setTimeout(() => controller.abort(), 30000);"
+    },
+    {
+      "ruleId": "NO_REQUEST_TIMEOUT",
+      "description": "fetch() without timeout configuration",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/scripts/verify-stories.js",
+      "line": 137,
+      "snippet": "    console.log('Creating 4 shadow stories...');\n    for (let i = 0; i < 4; i++) {\n        await fetch(`${BASE_URL}/${STORIES_COLLECTION}`, {\n            method: 'POST',\n            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },",
+      "suggestion": "Add timeout using AbortSignal: const controller = new AbortController(); setTimeout(() => controller.abort(), 30000);"
+    },
+    {
+      "ruleId": "NO_REQUEST_TIMEOUT",
+      "description": "fetch() without timeout configuration",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/scripts/verify-stories.js",
+      "line": 145,
+      "snippet": "\n    // Now query count\n    const queryResp = await fetch(`${BASE_URL}:runQuery`, {\n        method: 'POST',\n        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },",
+      "suggestion": "Add timeout using AbortSignal: const controller = new AbortController(); setTimeout(() => controller.abort(), 30000);"
+    },
+    {
+      "ruleId": "NO_REQUEST_TIMEOUT",
+      "description": "fetch() without timeout configuration",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/scripts/verify-stories.js",
+      "line": 180,
+      "snippet": "    for (const d of validDocs) {\n        const id = d.document.name.split('/').pop();\n        await fetch(`${BASE_URL}/${STORIES_COLLECTION}/${id}`, {\n            method: 'DELETE',\n            headers: { 'Authorization': `Bearer ${token}` }",
+      "suggestion": "Add timeout using AbortSignal: const controller = new AbortController(); setTimeout(() => controller.abort(), 30000);"
+    },
+    {
+      "ruleId": "SENSITIVE_LOGGING",
+      "description": "console.log() logging Payment/Financial Data: ✅ Data Integrity Verified (Title matching, Pin cou...",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/scripts/verify-stories.js",
+      "line": 127,
+      "snippet": "\n    if (readData.title === story1Data.title && readData.pinIds.length === 2) {\n        console.log('✅ Data Integrity Verified (Title matching, Pin count correct)');\n    } else {\n        console.error('❌ Data Integrity Mismatch:', readData);",
+      "suggestion": "Remove console logs with sensitive data or wrap in __DEV__ check. Use a logging library with data filtering for production."
+    },
+    {
+      "ruleId": "SENSITIVE_DATA_IN_ERROR_MESSAGES",
+      "description": "Error object logged directly - may contain sensitive data or stack traces",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/app/sandbox/games.tsx",
+      "line": 243,
+      "snippet": "                    }\n                } catch (error) {\n                    console.error('[GameSandbox] Error in challenge subscription:', error);\n                }\n            });",
+      "suggestion": "Log only safe error properties (message, code). Sanitize error messages before displaying to users. Never expose stack traces in production."
+    },
+    {
+      "ruleId": "SENSITIVE_DATA_IN_ERROR_MESSAGES",
+      "description": "Error object logged directly - may contain sensitive data or stack traces",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/app/sandbox/games.tsx",
+      "line": 373,
+      "snippet": "            setLeaderboardData(data);\n        } catch (error) {\n            console.error('Failed to fetch leaderboard:', error);\n        } finally {\n            setLoadingLeaderboard(false);",
+      "suggestion": "Log only safe error properties (message, code). Sanitize error messages before displaying to users. Never expose stack traces in production."
+    },
+    {
+      "ruleId": "SENSITIVE_DATA_IN_ERROR_MESSAGES",
+      "description": "Error object logged directly - may contain sensitive data or stack traces",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/app/sandbox/games.tsx",
+      "line": 408,
+      "snippet": "            setFriends(friendList);\n        } catch (error) {\n            console.error('Failed to load friends:', error);\n        } finally {\n            setLoadingFriends(false);",
+      "suggestion": "Log only safe error properties (message, code). Sanitize error messages before displaying to users. Never expose stack traces in production."
+    },
+    {
+      "ruleId": "SENSITIVE_DATA_IN_ERROR_MESSAGES",
+      "description": "Error object logged directly - may contain sensitive data or stack traces",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/app/sandbox/games.tsx",
+      "line": 419,
+      "snippet": "            setPendingChallenges(challenges);\n        } catch (error) {\n            console.error('Failed to load pending challenges:', error);\n        }\n    };",
+      "suggestion": "Log only safe error properties (message, code). Sanitize error messages before displaying to users. Never expose stack traces in production."
+    },
+    {
+      "ruleId": "SENSITIVE_DATA_IN_ERROR_MESSAGES",
+      "description": "Error object logged directly - may contain sensitive data or stack traces",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/app/sandbox/games.tsx",
+      "line": 446,
+      "snippet": "            }\n        } catch (error) {\n            console.error('Failed to send challenge:', error);\n        }\n    };",
+      "suggestion": "Log only safe error properties (message, code). Sanitize error messages before displaying to users. Never expose stack traces in production."
+    },
+    {
+      "ruleId": "SENSITIVE_DATA_IN_ERROR_MESSAGES",
+      "description": "Error object logged directly - may contain sensitive data or stack traces",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/app/sandbox/games.tsx",
+      "line": 465,
+      "snippet": "            loadPendingChallenges();\n        } catch (error) {\n            console.error('Failed to accept challenge:', error);\n        }\n    };",
+      "suggestion": "Log only safe error properties (message, code). Sanitize error messages before displaying to users. Never expose stack traces in production."
+    },
+    {
+      "ruleId": "SENSITIVE_DATA_IN_ERROR_MESSAGES",
+      "description": "Error object logged directly - may contain sensitive data or stack traces",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/functions/lib/index.js",
+      "line": 88,
+      "snippet": "    }\n    catch (error) {\n        console.error('[RateLimit] Error checking rate limit:', error);\n        // Fail open to avoid blocking legitimate users\n        return { allowed: true, remaining: config.maxRequests };",
+      "suggestion": "Log only safe error properties (message, code). Sanitize error messages before displaying to users. Never expose stack traces in production."
+    },
+    {
+      "ruleId": "SENSITIVE_DATA_IN_ERROR_MESSAGES",
+      "description": "Error object logged directly - may contain sensitive data or stack traces",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/functions/lib/index.js",
+      "line": 157,
+      "snippet": "            throw error;\n        }\n        console.error('[addFriend] Error:', error);\n        throw new functions.https.HttpsError('internal', error.message || 'Failed to add friend.');\n    }",
+      "suggestion": "Log only safe error properties (message, code). Sanitize error messages before displaying to users. Never expose stack traces in production."
+    },
+    {
+      "ruleId": "SENSITIVE_DATA_IN_ERROR_MESSAGES",
+      "description": "Error object logged directly - may contain sensitive data or stack traces",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/functions/lib/index.js",
+      "line": 198,
+      "snippet": "    }\n    catch (error) {\n        console.error('[removeFriend] Error:', error);\n        throw new functions.https.HttpsError('internal', error.message || 'Failed to remove friend.');\n    }",
+      "suggestion": "Log only safe error properties (message, code). Sanitize error messages before displaying to users. Never expose stack traces in production."
+    },
+    {
+      "ruleId": "SENSITIVE_DATA_IN_ERROR_MESSAGES",
+      "description": "Error object logged directly - may contain sensitive data or stack traces",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/functions/lib/index.js",
+      "line": 240,
+      "snippet": "    }\n    catch (error) {\n        console.error('[acceptFriendRequest] Error:', error);\n        throw new functions.https.HttpsError('internal', error.message || 'Failed to accept friend request.');\n    }",
+      "suggestion": "Log only safe error properties (message, code). Sanitize error messages before displaying to users. Never expose stack traces in production."
+    },
+    {
+      "ruleId": "MISSING_RUNTIME_INTEGRITY_CHECKS",
+      "description": "Sensitive app without runtime integrity or tamper detection",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/functions/lib/index.js",
+      "line": 1,
+      "suggestion": "Implement runtime integrity checks: Play Integrity API (Android), App Attest (iOS), or signature verification to detect tampering."
+    },
+    {
+      "ruleId": "SENSITIVE_DATA_IN_ERROR_MESSAGES",
+      "description": "Error object logged directly - may contain sensitive data or stack traces",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/functions/src/index.ts",
+      "line": 68,
+      "snippet": "        return { allowed: true, remaining: config.maxRequests - data.count - 1 };\n    } catch (error) {\n        console.error('[RateLimit] Error checking rate limit:', error);\n        // Fail open to avoid blocking legitimate users\n        return { allowed: true, remaining: config.maxRequests };",
+      "suggestion": "Log only safe error properties (message, code). Sanitize error messages before displaying to users. Never expose stack traces in production."
+    },
+    {
+      "ruleId": "SENSITIVE_DATA_IN_ERROR_MESSAGES",
+      "description": "Error object logged directly - may contain sensitive data or stack traces",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/functions/src/index.ts",
+      "line": 178,
+      "snippet": "            throw error;\n        }\n        console.error('[addFriend] Error:', error);\n        throw new functions.https.HttpsError(\n            'internal',",
+      "suggestion": "Log only safe error properties (message, code). Sanitize error messages before displaying to users. Never expose stack traces in production."
+    },
+    {
+      "ruleId": "SENSITIVE_DATA_IN_ERROR_MESSAGES",
+      "description": "Error object logged directly - may contain sensitive data or stack traces",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/functions/src/index.ts",
+      "line": 239,
+      "snippet": "        };\n    } catch (error: any) {\n        console.error('[removeFriend] Error:', error);\n        throw new functions.https.HttpsError(\n            'internal',",
+      "suggestion": "Log only safe error properties (message, code). Sanitize error messages before displaying to users. Never expose stack traces in production."
+    },
+    {
+      "ruleId": "SENSITIVE_DATA_IN_ERROR_MESSAGES",
+      "description": "Error object logged directly - may contain sensitive data or stack traces",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/functions/src/index.ts",
+      "line": 356,
+      "snippet": "            throw error;\n        }\n        console.error('[acceptFriendRequest] Error:', error);\n        throw new functions.https.HttpsError(\n            'internal',",
+      "suggestion": "Log only safe error properties (message, code). Sanitize error messages before displaying to users. Never expose stack traces in production."
+    },
+    {
+      "ruleId": "MISSING_RUNTIME_INTEGRITY_CHECKS",
+      "description": "Sensitive app without runtime integrity or tamper detection",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/functions/src/index.ts",
+      "line": 1,
+      "suggestion": "Implement runtime integrity checks: Play Integrity API (Android), App Attest (iOS), or signature verification to detect tampering."
+    },
+    {
+      "ruleId": "SENSITIVE_LOGGING",
+      "description": "console.log() logging Sensitive Data: Biometric login failed:",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/components/AuthScreen.tsx",
+      "line": 80,
+      "snippet": "            }\n        } catch (e: any) {\n            console.log('Biometric login failed:', e);\n            // Don't alert detailed error, just let user try manual\n        } finally {",
+      "suggestion": "Remove console logs with sensitive data or wrap in __DEV__ check. Use a logging library with data filtering for production."
+    },
+    {
+      "ruleId": "SENSITIVE_LOGGING",
+      "description": "console.error() logging Sensitive Data: Failed to save biometric credentials:",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/components/AuthScreen.tsx",
+      "line": 130,
+      "snippet": "                                    Alert.alert('Success', `${biometricType} enabled!`);\n                                } catch (e) {\n                                    console.error('Failed to save biometric credentials:', e);\n                                }\n                                onAuthenticated(loggedInUsername);",
+      "suggestion": "Remove console logs with sensitive data or wrap in __DEV__ check. Use a logging library with data filtering for production."
+    },
+    {
+      "ruleId": "IMPROPER_BIOMETRIC_FALLBACK",
+      "description": "Biometric authentication without proper fallback mechanism",
+      "severity": "LOW",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/components/AuthScreen.tsx",
+      "line": 1,
+      "suggestion": "Implement secure fallback when biometrics fail: device passcode, secure keychain, or re-authentication."
+    },
+    {
+      "ruleId": "SCREENSHOT_PROTECTION_MISSING",
+      "description": "Sensitive screen with secure input without screenshot protection",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/components/AuthScreen.tsx",
+      "line": 1,
+      "suggestion": "Use expo-screen-capture or react-native-screenshot-prevent to block screenshots on sensitive screens"
+    },
+    {
+      "ruleId": "SENSITIVE_DATA_IN_ERROR_MESSAGES",
+      "description": "Error object logged directly - may contain sensitive data or stack traces",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/components/ChallengeFriendModal.tsx",
+      "line": 90,
+      "snippet": "            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);\n        } catch (error) {\n            console.error('Failed to send challenge:', error);\n            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);\n        } finally {",
+      "suggestion": "Log only safe error properties (message, code). Sanitize error messages before displaying to users. Never expose stack traces in production."
+    },
+    {
+      "ruleId": "SENSITIVE_DATA_IN_ERROR_MESSAGES",
+      "description": "Error object logged directly - may contain sensitive data or stack traces",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/components/CreationModal.tsx",
+      "line": 121,
+      "snippet": "        } catch (error: any) {\n            if (error.code !== 'E_PICKER_CANCELLED') {\n                console.error('[CreationModal] Error picking image:', error);\n            }\n        }",
+      "suggestion": "Log only safe error properties (message, code). Sanitize error messages before displaying to users. Never expose stack traces in production."
+    },
+    {
+      "ruleId": "SENSITIVE_DATA_IN_ERROR_MESSAGES",
+      "description": "Error object logged directly - may contain sensitive data or stack traces",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/components/CreationModal.tsx",
+      "line": 137,
+      "snippet": "            setSuggestions(results);\n        } catch (error) {\n            console.error('[Autocomplete] Error fetching suggestions:', error);\n        } finally {\n            setIsSearching(false);",
+      "suggestion": "Log only safe error properties (message, code). Sanitize error messages before displaying to users. Never expose stack traces in production."
+    },
+    {
+      "ruleId": "TEXT_INPUT_NO_SECURE",
+      "description": "TextInput for pin without secureTextEntry property",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/components/CreationModal.tsx",
+      "line": 324,
+      "snippet": "                        <View style={styles.inputGroup}>\n                            <Text style={styles.label}>Title</Text>\n                            <TextInput\n                                style={styles.input}\n                                placeholder=\"Give your pin a name...\"",
+      "suggestion": "Add secureTextEntry={true} to hide sensitive input and prevent screen recording/screenshots of this field"
+    },
+    {
+      "ruleId": "TEXT_INPUT_NO_SECURE",
+      "description": "TextInput for pin without secureTextEntry property",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/components/CreationModal.tsx",
+      "line": 337,
+      "snippet": "                            <View style={styles.searchContainer}>\n                                <View style={styles.searchRow}>\n                                    <TextInput\n                                        style={[styles.input, { flex: 1, marginRight: 10 }]}\n                                        placeholder=\"Start typing...\"",
+      "suggestion": "Add secureTextEntry={true} to hide sensitive input and prevent screen recording/screenshots of this field"
+    },
+    {
+      "ruleId": "SENSITIVE_DATA_IN_ERROR_MESSAGES",
+      "description": "Error object logged directly - may contain sensitive data or stack traces",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/components/DestinationCard.tsx",
+      "line": 77,
+      "snippet": "                            await deletePin(memory.id);\n                        } catch (error) {\n                            console.error('[DestinationCard] Delete failed:', error);\n                            Alert.alert('Error', 'Failed to delete pin. Please try again.');\n                        }",
+      "suggestion": "Log only safe error properties (message, code). Sanitize error messages before displaying to users. Never expose stack traces in production."
+    },
+    {
+      "ruleId": "SENSITIVE_DATA_IN_ERROR_MESSAGES",
+      "description": "Error object logged directly - may contain sensitive data or stack traces",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/components/ExploreInfoCard.tsx",
+      "line": 76,
+      "snippet": "            onClose();\n        } catch (error) {\n            console.error(\"Failed to add bucket list item:\", error);\n            Alert.alert(\"Error\", \"Could not add to bucket list.\");\n        } finally {",
+      "suggestion": "Log only safe error properties (message, code). Sanitize error messages before displaying to users. Never expose stack traces in production."
+    },
+    {
+      "ruleId": "SENSITIVE_DATA_IN_ERROR_MESSAGES",
+      "description": "Error object logged directly - may contain sensitive data or stack traces",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/components/FriendsModal.tsx",
+      "line": 126,
+      "snippet": "            }\n        } catch (error) {\n            console.error('Error loading friends:', error);\n        }\n    };",
+      "suggestion": "Log only safe error properties (message, code). Sanitize error messages before displaying to users. Never expose stack traces in production."
+    },
+    {
+      "ruleId": "SENSITIVE_DATA_IN_ERROR_MESSAGES",
+      "description": "Catch block shows raw error message to user - may expose sensitive backend details",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/components/FriendsModal.tsx",
+      "line": 168,
+      "snippet": "                Alert.alert('Info', result.message);\n            }\n        } catch (error: any) {\n            Alert.alert('Error', error.message || 'Failed to send request');\n        }",
+      "suggestion": "Replace with user-friendly generic messages. Example: \"An error occurred. Please try again.\" Log details securely."
+    },
+    {
+      "ruleId": "SENSITIVE_DATA_IN_ERROR_MESSAGES",
+      "description": "Catch block shows raw error message to user - may expose sensitive backend details",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/components/FriendsModal.tsx",
+      "line": 178,
+      "snippet": "            await acceptFriendRequest(request.id, currentUserId, request.fromUid);\n            loadFriendData();\n        } catch (error: any) {\n            console.error('[FriendsModal] Accept failed:', error);\n            Alert.alert('Error', error.message || 'Failed to accept request');",
+      "suggestion": "Replace with user-friendly generic messages. Example: \"An error occurred. Please try again.\" Log details securely."
+    },
+    {
+      "ruleId": "SENSITIVE_DATA_IN_ERROR_MESSAGES",
+      "description": "Error object logged directly - may contain sensitive data or stack traces",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/components/FriendsModal.tsx",
+      "line": 179,
+      "snippet": "            loadFriendData();\n        } catch (error: any) {\n            console.error('[FriendsModal] Accept failed:', error);\n            Alert.alert('Error', error.message || 'Failed to accept request');\n        }",
+      "suggestion": "Log only safe error properties (message, code). Sanitize error messages before displaying to users. Never expose stack traces in production."
+    },
+    {
+      "ruleId": "SENSITIVE_DATA_IN_ERROR_MESSAGES",
+      "description": "Error object logged directly - may contain sensitive data or stack traces",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/components/FriendsModal.tsx",
+      "line": 260,
+      "snippet": "            }\n        } catch (error) {\n            console.error('Scan error:', error);\n            setScanned(false);\n        } finally {",
+      "suggestion": "Log only safe error properties (message, code). Sanitize error messages before displaying to users. Never expose stack traces in production."
+    },
+    {
+      "ruleId": "SENSITIVE_DATA_IN_ERROR_MESSAGES",
+      "description": "Error object logged directly - may contain sensitive data or stack traces",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/components/ManageVisibilityModal.tsx",
+      "line": 62,
+      "snippet": "            await updatePinVisibility(currentUserId, friendUid, !currentlyHidden);\n        } catch (error) {\n            console.error('Failed to toggle visibility:', error);\n            // Revert on error\n            setHiddenFriendIds(prev =>",
+      "suggestion": "Log only safe error properties (message, code). Sanitize error messages before displaying to users. Never expose stack traces in production."
+    },
+    {
+      "ruleId": "SENSITIVE_DATA_IN_ERROR_MESSAGES",
+      "description": "Error object logged directly - may contain sensitive data or stack traces",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/components/ProfileModal.tsx",
+      "line": 190,
+      "snippet": "            await toggleHiddenFriend(currentUserId, userId, !isHidden);\n        } catch (error) {\n            console.error('Failed to toggle hide pins:', error);\n            toggleHiddenFriendLocal(userId); // Revert on error\n        }",
+      "suggestion": "Log only safe error properties (message, code). Sanitize error messages before displaying to users. Never expose stack traces in production."
+    },
+    {
+      "ruleId": "SENSITIVE_LOGGING",
+      "description": "console.error() logging Password/Credentials: Change password failed:",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/components/SettingsModal.tsx",
+      "line": 309,
+      "snippet": "            setConfirmPassword('');\n        } catch (error: any) {\n            console.error('Change password failed:', error);\n            if (error.code === 'auth/wrong-password' || error.message?.includes('Incorrect')) {\n                setChangePasswordError('Current password is incorrect');",
+      "suggestion": "Remove console logs with sensitive data or wrap in __DEV__ check. Use a logging library with data filtering for production."
+    },
+    {
+      "ruleId": "SENSITIVE_DATA_IN_ERROR_MESSAGES",
+      "description": "Error object logged directly - may contain sensitive data or stack traces",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/components/SettingsModal.tsx",
+      "line": 200,
+      "snippet": "                useMemoryStore.getState().setFriends(currentFriends.filter(id => id !== friendUid));\n            } catch (error) {\n                console.error('[SettingsModal] Failed to remove friend:', error);\n                Alert.alert('Error', 'Failed to remove friend. Please try again.');\n            }",
+      "suggestion": "Log only safe error properties (message, code). Sanitize error messages before displaying to users. Never expose stack traces in production."
+    },
+    {
+      "ruleId": "SENSITIVE_DATA_IN_ERROR_MESSAGES",
+      "description": "Error object logged directly - may contain sensitive data or stack traces",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/components/SettingsModal.tsx",
+      "line": 309,
+      "snippet": "            setConfirmPassword('');\n        } catch (error: any) {\n            console.error('Change password failed:', error);\n            if (error.code === 'auth/wrong-password' || error.message?.includes('Incorrect')) {\n                setChangePasswordError('Current password is incorrect');",
+      "suggestion": "Log only safe error properties (message, code). Sanitize error messages before displaying to users. Never expose stack traces in production."
+    },
+    {
+      "ruleId": "SENSITIVE_DATA_IN_ERROR_MESSAGES",
+      "description": "Catch block shows raw error message to user - may expose sensitive backend details",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/components/SettingsModal.tsx",
+      "line": 368,
+      "snippet": "            onClose();\n\n        } catch (error: any) {\n            console.error('Delete failed:', error);\n            if (error.code === 'auth/wrong-password') {",
+      "suggestion": "Replace with user-friendly generic messages. Example: \"An error occurred. Please try again.\" Log details securely."
+    },
+    {
+      "ruleId": "SENSITIVE_DATA_IN_ERROR_MESSAGES",
+      "description": "Error object logged directly - may contain sensitive data or stack traces",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/components/SettingsModal.tsx",
+      "line": 369,
+      "snippet": "\n        } catch (error: any) {\n            console.error('Delete failed:', error);\n            if (error.code === 'auth/wrong-password') {\n                setDeleteError('Incorrect password');",
+      "suggestion": "Log only safe error properties (message, code). Sanitize error messages before displaying to users. Never expose stack traces in production."
+    },
+    {
+      "ruleId": "SENSITIVE_LOGGING",
+      "description": "console.error() logging Payment/Financial Data: [StoryCreation] Single pin error:",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/components/StoryCreationFlow.tsx",
+      "line": 300,
+      "snippet": "                handleClose();\n            } catch (error) {\n                console.error('[StoryCreation] Single pin error:', error);\n                Alert.alert('Error', 'Failed to create pin. Please try again.');\n            } finally {",
+      "suggestion": "Remove console logs with sensitive data or wrap in __DEV__ check. Use a logging library with data filtering for production."
+    },
+    {
+      "ruleId": "SENSITIVE_DATA_IN_ERROR_MESSAGES",
+      "description": "Error object logged directly - may contain sensitive data or stack traces",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/components/StoryCreationFlow.tsx",
+      "line": 177,
+      "snippet": "        } catch (error: any) {\n            if (error.code !== 'E_PICKER_CANCELLED') {\n                console.error('[StoryCreation] Photo picker error:', error);\n                Alert.alert('Error', 'Failed to select photos');\n            }",
+      "suggestion": "Log only safe error properties (message, code). Sanitize error messages before displaying to users. Never expose stack traces in production."
+    },
+    {
+      "ruleId": "SENSITIVE_DATA_IN_ERROR_MESSAGES",
+      "description": "Error object logged directly - may contain sensitive data or stack traces",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/components/StoryCreationFlow.tsx",
+      "line": 230,
+      "snippet": "            setLocationSuggestions(results);\n        } catch (error) {\n            console.error('[StoryCreation] Location search error:', error);\n        } finally {\n            setIsSearchingLocation(false);",
+      "suggestion": "Log only safe error properties (message, code). Sanitize error messages before displaying to users. Never expose stack traces in production."
+    },
+    {
+      "ruleId": "SENSITIVE_DATA_IN_ERROR_MESSAGES",
+      "description": "Error object logged directly - may contain sensitive data or stack traces",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/components/StoryCreationFlow.tsx",
+      "line": 300,
+      "snippet": "                handleClose();\n            } catch (error) {\n                console.error('[StoryCreation] Single pin error:', error);\n                Alert.alert('Error', 'Failed to create pin. Please try again.');\n            } finally {",
+      "suggestion": "Log only safe error properties (message, code). Sanitize error messages before displaying to users. Never expose stack traces in production."
+    },
+    {
+      "ruleId": "SENSITIVE_DATA_IN_ERROR_MESSAGES",
+      "description": "Error object logged directly - may contain sensitive data or stack traces",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/components/StoryCreationFlow.tsx",
+      "line": 457,
+      "snippet": "            handleClose();\n        } catch (error) {\n            console.error('[StoryCreation] Submit error:', error);\n            Alert.alert('Error', 'Failed to create journey. Please try again.');\n        } finally {",
+      "suggestion": "Log only safe error properties (message, code). Sanitize error messages before displaying to users. Never expose stack traces in production."
+    },
+    {
+      "ruleId": "TEXT_INPUT_NO_SECURE",
+      "description": "TextInput for pin without secureTextEntry property",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/components/StoryCreationFlow.tsx",
+      "line": 576,
+      "snippet": "                            <View style={styles.inputGroup}>\n                                <Text style={styles.inputLabel}>Title *</Text>\n                                <TextInput\n                                    style={styles.textInput}\n                                    placeholder=\"Give this pin a name\"",
+      "suggestion": "Add secureTextEntry={true} to hide sensitive input and prevent screen recording/screenshots of this field"
+    },
+    {
+      "ruleId": "SENSITIVE_DATA_IN_ERROR_MESSAGES",
+      "description": "Error object logged directly - may contain sensitive data or stack traces",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/components/UsernameModal.tsx",
+      "line": 60,
+      "snippet": "\n        } catch (err) {\n            console.error('[UsernameModal] Save error:', err);\n            setError('An error occurred. Please try again.');\n            setIsChecking(false);",
+      "suggestion": "Log only safe error properties (message, code). Sanitize error messages before displaying to users. Never expose stack traces in production."
+    },
+    {
+      "ruleId": "SENSITIVE_LOGGING",
+      "description": "console.error() logging Authentication Token: [Config] CRITICAL: EXPO_PUBLIC_MAPBOX_TOKEN enviro...",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/constants/Config.ts",
+      "line": 3,
+      "snippet": "const token = process.env.EXPO_PUBLIC_MAPBOX_TOKEN;\nif (!token) {\n    console.error('[Config] CRITICAL: EXPO_PUBLIC_MAPBOX_TOKEN environment variable is not set!');\n}\nexport const MAPBOX_TOKEN = token || '';",
+      "suggestion": "Remove console logs with sensitive data or wrap in __DEV__ check. Use a logging library with data filtering for production."
+    },
+    {
+      "ruleId": "SENSITIVE_DATA_IN_ERROR_MESSAGES",
+      "description": "Error object logged directly - may contain sensitive data or stack traces",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/hooks/useMapClusters.ts",
+      "line": 53,
+      "snippet": "                setClusters(clusteredPoints);\n            } catch (error) {\n                console.warn('[useMapClusters] Failed to get clusters:', error);\n                setClusters([]);\n            }",
+      "suggestion": "Log only safe error properties (message, code). Sanitize error messages before displaying to users. Never expose stack traces in production."
+    },
+    {
+      "ruleId": "SENSITIVE_DATA_IN_ERROR_MESSAGES",
+      "description": "Error object logged directly - may contain sensitive data or stack traces",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/services/ChallengeService.ts",
+      "line": 98,
+      "snippet": "            return challenge;\n        } catch (error) {\n            console.error('[ChallengeService] Failed to create challenge:', error);\n            return null;\n        }",
+      "suggestion": "Log only safe error properties (message, code). Sanitize error messages before displaying to users. Never expose stack traces in production."
+    },
+    {
+      "ruleId": "SENSITIVE_DATA_IN_ERROR_MESSAGES",
+      "description": "Error object logged directly - may contain sensitive data or stack traces",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/services/ChallengeService.ts",
+      "line": 116,
+      "snippet": "            return true;\n        } catch (error) {\n            console.error('[ChallengeService] Failed to accept challenge:', error);\n            return false;\n        }",
+      "suggestion": "Log only safe error properties (message, code). Sanitize error messages before displaying to users. Never expose stack traces in production."
+    },
+    {
+      "ruleId": "SENSITIVE_DATA_IN_ERROR_MESSAGES",
+      "description": "Error object logged directly - may contain sensitive data or stack traces",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/services/ChallengeService.ts",
+      "line": 148,
+      "snippet": "            return true;\n        } catch (error) {\n            console.error('[ChallengeService] Failed to start challenge attempt:', error);\n            return false;\n        }",
+      "suggestion": "Log only safe error properties (message, code). Sanitize error messages before displaying to users. Never expose stack traces in production."
+    },
+    {
+      "ruleId": "SENSITIVE_DATA_IN_ERROR_MESSAGES",
+      "description": "Error object logged directly - may contain sensitive data or stack traces",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/services/ChallengeService.ts",
+      "line": 206,
+      "snippet": "            };\n        } catch (error: any) {\n            console.error('[ChallengeService] Failed to submit score:', error);\n            // Handle specific Cloud Function errors\n            if (error.code === 'functions/failed-precondition') {",
+      "suggestion": "Log only safe error properties (message, code). Sanitize error messages before displaying to users. Never expose stack traces in production."
+    },
+    {
+      "ruleId": "SENSITIVE_DATA_IN_ERROR_MESSAGES",
+      "description": "Error object logged directly - may contain sensitive data or stack traces",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/services/ChallengeService.ts",
+      "line": 224,
+      "snippet": "            return { id: doc.id, ...doc.data() } as GameChallenge;\n        } catch (error) {\n            console.error('[ChallengeService] Failed to get challenge:', error);\n            return null;\n        }",
+      "suggestion": "Log only safe error properties (message, code). Sanitize error messages before displaying to users. Never expose stack traces in production."
+    },
+    {
+      "ruleId": "SENSITIVE_DATA_IN_ERROR_MESSAGES",
+      "description": "Error object logged directly - may contain sensitive data or stack traces",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/services/ChallengeService.ts",
+      "line": 253,
+      "snippet": "                .sort((a, b) => b.createdAt - a.createdAt);\n        } catch (error) {\n            console.error('[ChallengeService] Failed to get pending challenges:', error);\n            return [];\n        }",
+      "suggestion": "Log only safe error properties (message, code). Sanitize error messages before displaying to users. Never expose stack traces in production."
+    },
+    {
+      "ruleId": "SENSITIVE_DATA_IN_ERROR_MESSAGES",
+      "description": "Error object logged directly - may contain sensitive data or stack traces",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/services/ChallengeService.ts",
+      "line": 279,
+      "snippet": "                },\n                (error) => {\n                    console.error('[ChallengeService] Subscription error:', error);\n                }\n            );",
+      "suggestion": "Log only safe error properties (message, code). Sanitize error messages before displaying to users. Never expose stack traces in production."
+    },
+    {
+      "ruleId": "SENSITIVE_DATA_IN_ERROR_MESSAGES",
+      "description": "Error object logged directly - may contain sensitive data or stack traces",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/services/ChallengeService.ts",
+      "line": 310,
+      "snippet": "            return Array.from(unique.values()).sort((a, b) => b.createdAt - a.createdAt);\n        } catch (error) {\n            console.error('[ChallengeService] Failed to get active challenges:', error);\n            return [];\n        }",
+      "suggestion": "Log only safe error properties (message, code). Sanitize error messages before displaying to users. Never expose stack traces in production."
+    },
+    {
+      "ruleId": "SENSITIVE_DATA_IN_ERROR_MESSAGES",
+      "description": "Error object logged directly - may contain sensitive data or stack traces",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/services/GameService.ts",
+      "line": 269,
+      "snippet": "            logger.log('[GameService] Server score submission:', result.data);\n        } catch (error) {\n            console.error('[GameService] Failed to submit score to server:', error);\n            // Fallback: Score is still saved locally, just not on leaderboard\n        }",
+      "suggestion": "Log only safe error properties (message, code). Sanitize error messages before displaying to users. Never expose stack traces in production."
+    },
+    {
+      "ruleId": "SENSITIVE_DATA_IN_ERROR_MESSAGES",
+      "description": "Error object logged directly - may contain sensitive data or stack traces",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/services/LeaderboardService.ts",
+      "line": 67,
+      "snippet": "            return entries.slice(0, limit);\n        } catch (error) {\n            console.error('[LeaderboardService] Failed to get friends leaderboard:', error);\n            return [];\n        }",
+      "suggestion": "Log only safe error properties (message, code). Sanitize error messages before displaying to users. Never expose stack traces in production."
+    },
+    {
+      "ruleId": "SENSITIVE_DATA_IN_ERROR_MESSAGES",
+      "description": "Error object logged directly - may contain sensitive data or stack traces",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/services/LeaderboardService.ts",
+      "line": 85,
+      "snippet": "            return snapshot.docs.map(doc => doc.data() as LeaderboardEntry);\n        } catch (error) {\n            console.error('[LeaderboardService] Failed to get global leaderboard:', error);\n            return [];\n        }",
+      "suggestion": "Log only safe error properties (message, code). Sanitize error messages before displaying to users. Never expose stack traces in production."
+    },
+    {
+      "ruleId": "NO_REQUEST_TIMEOUT",
+      "description": "fetch() without timeout configuration",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/services/NotificationService.ts",
+      "line": 198,
+      "snippet": "\n            steps.push('Sending request to OneSignal API...');\n            const response = await fetch('https://onesignal.com/api/v1/notifications', {\n                method: 'POST',\n                headers: {",
+      "suggestion": "Add timeout using AbortSignal: const controller = new AbortController(); setTimeout(() => controller.abort(), 30000);"
+    },
+    {
+      "ruleId": "NO_REQUEST_TIMEOUT",
+      "description": "fetch() without timeout configuration",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/services/NotificationService.ts",
+      "line": 258,
+      "snippet": "\n        try {\n            const response = await fetch('https://onesignal.com/api/v1/notifications', {\n                method: 'POST',\n                headers: {",
+      "suggestion": "Add timeout using AbortSignal: const controller = new AbortController(); setTimeout(() => controller.abort(), 30000);"
+    },
+    {
+      "ruleId": "NO_REQUEST_TIMEOUT",
+      "description": "fetch() without timeout configuration",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/services/NotificationService.ts",
+      "line": 314,
+      "snippet": "\n        try {\n            const response = await fetch('https://onesignal.com/api/v1/notifications', {\n                method: 'POST',\n                headers: {",
+      "suggestion": "Add timeout using AbortSignal: const controller = new AbortController(); setTimeout(() => controller.abort(), 30000);"
+    },
+    {
+      "ruleId": "NO_REQUEST_TIMEOUT",
+      "description": "fetch() without timeout configuration",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/services/NotificationService.ts",
+      "line": 373,
+      "snippet": "            }\n\n            const response = await fetch('https://onesignal.com/api/v1/notifications', {\n                method: 'POST',\n                headers: {",
+      "suggestion": "Add timeout using AbortSignal: const controller = new AbortController(); setTimeout(() => controller.abort(), 30000);"
+    },
+    {
+      "ruleId": "SENSITIVE_LOGGING",
+      "description": "console.error() logging API Key/Secret: [NotificationService] CRITICAL: EXPO_PUBLIC_ONESIG...",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/services/NotificationService.ts",
+      "line": 11,
+      "snippet": "// Debug: Log key status (without exposing the full key)\nif (!ONE_SIGNAL_REST_API_KEY) {\n    console.error('[NotificationService] CRITICAL: EXPO_PUBLIC_ONESIGNAL_REST_API_KEY environment variable is not set!');\n} else {\n    // Log first 10 chars and last 4 chars for verification (safe to log)",
+      "suggestion": "Remove console logs with sensitive data or wrap in __DEV__ check. Use a logging library with data filtering for production."
+    },
+    {
+      "ruleId": "SENSITIVE_LOGGING",
+      "description": "console.log() logging API Key/Secret: `[NotificationService] OneSignal REST API Key loaded: ${keyP...",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/services/NotificationService.ts",
+      "line": 17,
+      "snippet": "        ? `${ONE_SIGNAL_REST_API_KEY.substring(0, 10)}...${ONE_SIGNAL_REST_API_KEY.substring(ONE_SIGNAL_REST_API_KEY.length - 4)}`\n        : '***';\n    console.log(`[NotificationService] OneSignal REST API Key loaded: ${keyPreview} (length: ${ONE_SIGNAL_REST_API_KEY.length})`);\n\n    // Verify key format (should start with 'os_' or be a long alphanumeric string)",
+      "suggestion": "Remove console logs with sensitive data or wrap in __DEV__ check. Use a logging library with data filtering for production."
+    },
+    {
+      "ruleId": "SENSITIVE_LOGGING",
+      "description": "console.log() logging Payment/Financial Data: `[NotificationService] Pin notifications disabled for ${frie...",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/services/NotificationService.ts",
+      "line": 309,
+      "snippet": "\n        if (!isGlobalEnabled || !isPinsEnabled) {\n            console.log(`[NotificationService] Pin notifications disabled for ${friendUid}`);\n            return;\n        }",
+      "suggestion": "Remove console logs with sensitive data or wrap in __DEV__ check. Use a logging library with data filtering for production."
+    },
+    {
+      "ruleId": "SENSITIVE_LOGGING",
+      "description": "console.error() logging Payment/Financial Data: `[NotificationService] Failed to send pin notification:`",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/services/NotificationService.ts",
+      "line": 339,
+      "snippet": "\n            if (!response.ok || result.errors) {\n                console.error(`[NotificationService] Failed to send pin notification:`, result.errors || `HTTP ${response.status}`);\n            } else if (result.recipients === 0) {\n                console.warn(`[NotificationService] Pin notification sent but no recipients found for ${friendUid}. User may not be subscribed or external_id not set.`);",
+      "suggestion": "Remove console logs with sensitive data or wrap in __DEV__ check. Use a logging library with data filtering for production."
+    },
+    {
+      "ruleId": "SENSITIVE_LOGGING",
+      "description": "console.warn() logging Payment/Financial Data: `[NotificationService] Pin notification sent but no recipien...",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/services/NotificationService.ts",
+      "line": 341,
+      "snippet": "                console.error(`[NotificationService] Failed to send pin notification:`, result.errors || `HTTP ${response.status}`);\n            } else if (result.recipients === 0) {\n                console.warn(`[NotificationService] Pin notification sent but no recipients found for ${friendUid}. User may not be subscribed or external_id not set.`);\n            } else {\n                console.log(`[NotificationService] Pin notification sent successfully to ${result.recipients} recipient(s)`);",
+      "suggestion": "Remove console logs with sensitive data or wrap in __DEV__ check. Use a logging library with data filtering for production."
+    },
+    {
+      "ruleId": "SENSITIVE_LOGGING",
+      "description": "console.log() logging Payment/Financial Data: `[NotificationService] Pin notification sent successfully to...",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/services/NotificationService.ts",
+      "line": 343,
+      "snippet": "                console.warn(`[NotificationService] Pin notification sent but no recipients found for ${friendUid}. User may not be subscribed or external_id not set.`);\n            } else {\n                console.log(`[NotificationService] Pin notification sent successfully to ${result.recipients} recipient(s)`);\n            }\n        } catch (error) {",
+      "suggestion": "Remove console logs with sensitive data or wrap in __DEV__ check. Use a logging library with data filtering for production."
+    },
+    {
+      "ruleId": "SENSITIVE_LOGGING",
+      "description": "console.error() logging Payment/Financial Data: [NotificationService] Error notifying new pin:",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/services/NotificationService.ts",
+      "line": 346,
+      "snippet": "            }\n        } catch (error) {\n            console.error('[NotificationService] Error notifying new pin:', error);\n        }\n    },",
+      "suggestion": "Remove console logs with sensitive data or wrap in __DEV__ check. Use a logging library with data filtering for production."
+    },
+    {
+      "ruleId": "SENSITIVE_DATA_IN_ERROR_MESSAGES",
+      "description": "Error object logged directly - may contain sensitive data or stack traces",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/services/NotificationService.ts",
+      "line": 93,
+      "snippet": "            console.log('[OneSignal] Login complete for:', uid);\n        } catch (error) {\n            console.error('[OneSignal] Login error:', error);\n        }\n    },",
+      "suggestion": "Log only safe error properties (message, code). Sanitize error messages before displaying to users. Never expose stack traces in production."
+    },
+    {
+      "ruleId": "SENSITIVE_DATA_IN_ERROR_MESSAGES",
+      "description": "Error object logged directly - may contain sensitive data or stack traces",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/services/NotificationService.ts",
+      "line": 287,
+      "snippet": "            }\n        } catch (error) {\n            console.error('[NotificationService] Error notifying challenge complete:', error);\n        }\n    },",
+      "suggestion": "Log only safe error properties (message, code). Sanitize error messages before displaying to users. Never expose stack traces in production."
+    },
+    {
+      "ruleId": "SENSITIVE_DATA_IN_ERROR_MESSAGES",
+      "description": "Error object logged directly - may contain sensitive data or stack traces",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/services/NotificationService.ts",
+      "line": 346,
+      "snippet": "            }\n        } catch (error) {\n            console.error('[NotificationService] Error notifying new pin:', error);\n        }\n    },",
+      "suggestion": "Log only safe error properties (message, code). Sanitize error messages before displaying to users. Never expose stack traces in production."
+    },
+    {
+      "ruleId": "SENSITIVE_DATA_IN_ERROR_MESSAGES",
+      "description": "Error object logged directly - may contain sensitive data or stack traces",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/services/NotificationService.ts",
+      "line": 406,
+      "snippet": "            }\n        } catch (error) {\n            console.error('[NotificationService] Error notifying new story:', error);\n        }\n    }",
+      "suggestion": "Log only safe error properties (message, code). Sanitize error messages before displaying to users. Never expose stack traces in production."
+    },
+    {
+      "ruleId": "SENSITIVE_LOGGING",
+      "description": "console.log() logging Payment/Financial Data: [ShareService] Pin shared successfully",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/services/ShareService.ts",
+      "line": 52,
+      "snippet": "            });\n\n            console.log('[ShareService] Pin shared successfully');\n            return true;\n        } catch (error) {",
+      "suggestion": "Remove console logs with sensitive data or wrap in __DEV__ check. Use a logging library with data filtering for production."
+    },
+    {
+      "ruleId": "SENSITIVE_LOGGING",
+      "description": "console.error() logging Payment/Financial Data: [ShareService] Share pin failed:",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/services/ShareService.ts",
+      "line": 55,
+      "snippet": "            return true;\n        } catch (error) {\n            console.error('[ShareService] Share pin failed:', error);\n            return false;\n        }",
+      "suggestion": "Remove console logs with sensitive data or wrap in __DEV__ check. Use a logging library with data filtering for production."
+    },
+    {
+      "ruleId": "SENSITIVE_DATA_IN_ERROR_MESSAGES",
+      "description": "Error object logged directly - may contain sensitive data or stack traces",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/services/ShareService.ts",
+      "line": 33,
+      "snippet": "            return true;\n        } catch (error) {\n            console.error('[ShareService] Share app invite failed:', error);\n            return false;\n        }",
+      "suggestion": "Log only safe error properties (message, code). Sanitize error messages before displaying to users. Never expose stack traces in production."
+    },
+    {
+      "ruleId": "SENSITIVE_DATA_IN_ERROR_MESSAGES",
+      "description": "Error object logged directly - may contain sensitive data or stack traces",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/services/ShareService.ts",
+      "line": 55,
+      "snippet": "            return true;\n        } catch (error) {\n            console.error('[ShareService] Share pin failed:', error);\n            return false;\n        }",
+      "suggestion": "Log only safe error properties (message, code). Sanitize error messages before displaying to users. Never expose stack traces in production."
+    },
+    {
+      "ruleId": "SENSITIVE_DATA_IN_ERROR_MESSAGES",
+      "description": "Error object logged directly - may contain sensitive data or stack traces",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/services/ShareService.ts",
+      "line": 75,
+      "snippet": "            return true;\n        } catch (error) {\n            console.error('[ShareService] Share journey failed:', error);\n            return false;\n        }",
+      "suggestion": "Log only safe error properties (message, code). Sanitize error messages before displaying to users. Never expose stack traces in production."
+    },
+    {
+      "ruleId": "SENSITIVE_LOGGING",
+      "description": "console.log() logging Payment/Financial Data: [StoryService] Created pin:",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/services/StoryService.ts",
+      "line": 122,
+      "snippet": "\n                    const newPinId = await addPin(pinData as any);\n                    console.log('[StoryService] Created pin:', newPinId);\n                    return newPinId;\n                } catch (pinError) {",
+      "suggestion": "Remove console logs with sensitive data or wrap in __DEV__ check. Use a logging library with data filtering for production."
+    },
+    {
+      "ruleId": "SENSITIVE_LOGGING",
+      "description": "console.error() logging Payment/Financial Data: [StoryService] Error creating pin:",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/services/StoryService.ts",
+      "line": 125,
+      "snippet": "                    return newPinId;\n                } catch (pinError) {\n                    console.error('[StoryService] Error creating pin:', pinError);\n                    return null;\n                }",
+      "suggestion": "Remove console logs with sensitive data or wrap in __DEV__ check. Use a logging library with data filtering for production."
+    },
+    {
+      "ruleId": "SENSITIVE_LOGGING",
+      "description": "console.log() logging Payment/Financial Data: `[StoryService] Deleting ${story.pinIds.length} pins for sto...",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/services/StoryService.ts",
+      "line": 198,
+      "snippet": "            // 2. Delete all associated pins\n            if (story.pinIds && story.pinIds.length > 0) {\n                console.log(`[StoryService] Deleting ${story.pinIds.length} pins for story ${storyId}`);\n                await Promise.all(story.pinIds.map(pinId => deletePin(pinId).catch(e => {\n                    console.warn(`[StoryService] Failed to delete pin ${pinId}:`, e);",
+      "suggestion": "Remove console logs with sensitive data or wrap in __DEV__ check. Use a logging library with data filtering for production."
+    },
+    {
+      "ruleId": "SENSITIVE_LOGGING",
+      "description": "console.warn() logging Payment/Financial Data: `[StoryService] Failed to delete pin ${pinId}:`",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/services/StoryService.ts",
+      "line": 200,
+      "snippet": "                console.log(`[StoryService] Deleting ${story.pinIds.length} pins for story ${storyId}`);\n                await Promise.all(story.pinIds.map(pinId => deletePin(pinId).catch(e => {\n                    console.warn(`[StoryService] Failed to delete pin ${pinId}:`, e);\n                })));\n            }",
+      "suggestion": "Remove console logs with sensitive data or wrap in __DEV__ check. Use a logging library with data filtering for production."
+    },
+    {
+      "ruleId": "SENSITIVE_DATA_IN_ERROR_MESSAGES",
+      "description": "Error object logged directly - may contain sensitive data or stack traces",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/services/StoryService.ts",
+      "line": 57,
+      "snippet": "\n        } catch (error: any) {\n            console.error('[StoryService] Error creating story:', error);\n            // Handle specific error codes\n            if (error.code === 'functions/resource-exhausted') {",
+      "suggestion": "Log only safe error properties (message, code). Sanitize error messages before displaying to users. Never expose stack traces in production."
+    },
+    {
+      "ruleId": "SENSITIVE_DATA_IN_ERROR_MESSAGES",
+      "description": "Error object logged directly - may contain sensitive data or stack traces",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/services/StoryService.ts",
+      "line": 160,
+      "snippet": "\n        } catch (error) {\n            console.error('[StoryService] Error in batch story creation:', error);\n            return { success: false, error: 'Failed to create story.' };\n        }",
+      "suggestion": "Log only safe error properties (message, code). Sanitize error messages before displaying to users. Never expose stack traces in production."
+    },
+    {
+      "ruleId": "SENSITIVE_DATA_IN_ERROR_MESSAGES",
+      "description": "Error object logged directly - may contain sensitive data or stack traces",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/services/StoryService.ts",
+      "line": 182,
+      "snippet": "            return { success: true };\n        } catch (error) {\n            console.error('[StoryService] Error updating story:', error);\n            return { success: false, error: 'Failed to update story.' };\n        }",
+      "suggestion": "Log only safe error properties (message, code). Sanitize error messages before displaying to users. Never expose stack traces in production."
+    },
+    {
+      "ruleId": "SENSITIVE_DATA_IN_ERROR_MESSAGES",
+      "description": "Error object logged directly - may contain sensitive data or stack traces",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/services/StoryService.ts",
+      "line": 209,
+      "snippet": "            return true;\n        } catch (error) {\n            console.error('[StoryService] Error deleting story:', error);\n            return false;\n        }",
+      "suggestion": "Log only safe error properties (message, code). Sanitize error messages before displaying to users. Never expose stack traces in production."
+    },
+    {
+      "ruleId": "SENSITIVE_DATA_IN_ERROR_MESSAGES",
+      "description": "Error object logged directly - may contain sensitive data or stack traces",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/services/StoryService.ts",
+      "line": 227,
+      "snippet": "            return snapshot.docs.map(doc => doc.data() as Story);\n        } catch (error) {\n            console.error('[StoryService] Error fetching user stories:', error);\n            return [];\n        }",
+      "suggestion": "Log only safe error properties (message, code). Sanitize error messages before displaying to users. Never expose stack traces in production."
+    },
+    {
+      "ruleId": "SENSITIVE_DATA_IN_ERROR_MESSAGES",
+      "description": "Error object logged directly - may contain sensitive data or stack traces",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/services/StoryService.ts",
+      "line": 243,
+      "snippet": "            return null;\n        } catch (error) {\n            console.error('[StoryService] Error fetching story:', error);\n            return null;\n        }",
+      "suggestion": "Log only safe error properties (message, code). Sanitize error messages before displaying to users. Never expose stack traces in production."
+    },
+    {
+      "ruleId": "SENSITIVE_DATA_IN_ERROR_MESSAGES",
+      "description": "Error object logged directly - may contain sensitive data or stack traces",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/services/StoryService.ts",
+      "line": 266,
+      "snippet": "                        console.log('[StoryService] Subscription ended (user logged out)');\n                    } else {\n                        console.error('[StoryService] Subscription error:', error);\n                    }\n                }",
+      "suggestion": "Log only safe error properties (message, code). Sanitize error messages before displaying to users. Never expose stack traces in production."
+    },
+    {
+      "ruleId": "SENSITIVE_LOGGING",
+      "description": "console.log() logging Personal Identifiable Information (PII): userCredential.user.email",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/services/authService.ts",
+      "line": 36,
+      "snippet": "        const userCredential = await auth().signInWithCredential(googleCredential);\n\n        console.log('[AuthService] Signed in with Google:', userCredential.user.email);\n\n        return {",
+      "suggestion": "Remove console logs with sensitive data or wrap in __DEV__ check. Use a logging library with data filtering for production."
+    },
+    {
+      "ruleId": "SENSITIVE_LOGGING",
+      "description": "console.log() logging Password/Credentials: [AuthService] Account linked with email/password",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/services/authService.ts",
+      "line": 69,
+      "snippet": "        if (currentUser) {\n            await currentUser.linkWithCredential(credential);\n            console.log('[AuthService] Account linked with email/password');\n        } else {\n            throw new Error('No user currently signed in');",
+      "suggestion": "Remove console logs with sensitive data or wrap in __DEV__ check. Use a logging library with data filtering for production."
+    },
+    {
+      "ruleId": "SENSITIVE_LOGGING",
+      "description": "console.log() logging Password/Credentials: [AuthService] Signed in with email/password",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/services/authService.ts",
+      "line": 94,
+      "snippet": "    try {\n        await auth().signInWithEmailAndPassword(email, password);\n        console.log('[AuthService] Signed in with email/password');\n    } catch (error: any) {\n        console.error('[AuthService] Sign in failed:', error);",
+      "suggestion": "Remove console logs with sensitive data or wrap in __DEV__ check. Use a logging library with data filtering for production."
+    },
+    {
+      "ruleId": "SENSITIVE_LOGGING",
+      "description": "console.log() logging Password/Credentials: [AuthService] Password reset email sent to:",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/services/authService.ts",
+      "line": 112,
+      "snippet": "    try {\n        await auth().sendPasswordResetEmail(email);\n        console.log('[AuthService] Password reset email sent to:', email);\n    } catch (error: any) {\n        console.error('[AuthService] Password reset failed:', error);",
+      "suggestion": "Remove console logs with sensitive data or wrap in __DEV__ check. Use a logging library with data filtering for production."
+    },
+    {
+      "ruleId": "SENSITIVE_LOGGING",
+      "description": "console.error() logging Password/Credentials: [AuthService] Password reset failed:",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/services/authService.ts",
+      "line": 114,
+      "snippet": "        console.log('[AuthService] Password reset email sent to:', email);\n    } catch (error: any) {\n        console.error('[AuthService] Password reset failed:', error);\n        if (error.code === 'auth/user-not-found') {\n            // Don't reveal if user exists or not for security, or handle UI specific",
+      "suggestion": "Remove console logs with sensitive data or wrap in __DEV__ check. Use a logging library with data filtering for production."
+    },
+    {
+      "ruleId": "SENSITIVE_LOGGING",
+      "description": "console.log() logging Password/Credentials: [AuthService] Password updated",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/services/authService.ts",
+      "line": 134,
+      "snippet": "        if (currentUser) {\n            await currentUser.updatePassword(newPassword);\n            console.log('[AuthService] Password updated');\n        } else {\n            throw new Error('No user currently signed in');",
+      "suggestion": "Remove console logs with sensitive data or wrap in __DEV__ check. Use a logging library with data filtering for production."
+    },
+    {
+      "ruleId": "SENSITIVE_LOGGING",
+      "description": "console.error() logging Password/Credentials: [AuthService] Update password failed:",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/services/authService.ts",
+      "line": 139,
+      "snippet": "        }\n    } catch (error: any) {\n        console.error('[AuthService] Update password failed:', error);\n        if (error.code === 'auth/requires-recent-login') {\n            throw new Error('Please sign out and sign in again to change your password.');",
+      "suggestion": "Remove console logs with sensitive data or wrap in __DEV__ check. Use a logging library with data filtering for production."
+    },
+    {
+      "ruleId": "SENSITIVE_DATA_IN_ERROR_MESSAGES",
+      "description": "Error object logged directly - may contain sensitive data or stack traces",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/services/authService.ts",
+      "line": 45,
+      "snippet": "        };\n    } catch (error: any) {\n        console.error('[AuthService] Google sign-in failed:', error);\n\n        if (error.code === statusCodes.SIGN_IN_CANCELLED) {",
+      "suggestion": "Log only safe error properties (message, code). Sanitize error messages before displaying to users. Never expose stack traces in production."
+    },
+    {
+      "ruleId": "SENSITIVE_DATA_IN_ERROR_MESSAGES",
+      "description": "Error object logged directly - may contain sensitive data or stack traces",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/services/authService.ts",
+      "line": 74,
+      "snippet": "        }\n    } catch (error: any) {\n        console.error('[AuthService] Link failed:', error);\n        if (error.code === 'auth/credential-already-in-use') {\n            throw new Error('This email is already associated with another account.');",
+      "suggestion": "Log only safe error properties (message, code). Sanitize error messages before displaying to users. Never expose stack traces in production."
+    },
+    {
+      "ruleId": "SENSITIVE_DATA_IN_ERROR_MESSAGES",
+      "description": "Error object logged directly - may contain sensitive data or stack traces",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/services/authService.ts",
+      "line": 96,
+      "snippet": "        console.log('[AuthService] Signed in with email/password');\n    } catch (error: any) {\n        console.error('[AuthService] Sign in failed:', error);\n        if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {\n            throw new Error('Invalid email or password.');",
+      "suggestion": "Log only safe error properties (message, code). Sanitize error messages before displaying to users. Never expose stack traces in production."
+    },
+    {
+      "ruleId": "SENSITIVE_DATA_IN_ERROR_MESSAGES",
+      "description": "Error object logged directly - may contain sensitive data or stack traces",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/services/authService.ts",
+      "line": 114,
+      "snippet": "        console.log('[AuthService] Password reset email sent to:', email);\n    } catch (error: any) {\n        console.error('[AuthService] Password reset failed:', error);\n        if (error.code === 'auth/user-not-found') {\n            // Don't reveal if user exists or not for security, or handle UI specific",
+      "suggestion": "Log only safe error properties (message, code). Sanitize error messages before displaying to users. Never expose stack traces in production."
+    },
+    {
+      "ruleId": "SENSITIVE_DATA_IN_ERROR_MESSAGES",
+      "description": "Error object logged directly - may contain sensitive data or stack traces",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/services/authService.ts",
+      "line": 139,
+      "snippet": "        }\n    } catch (error: any) {\n        console.error('[AuthService] Update password failed:', error);\n        if (error.code === 'auth/requires-recent-login') {\n            throw new Error('Please sign out and sign in again to change your password.');",
+      "suggestion": "Log only safe error properties (message, code). Sanitize error messages before displaying to users. Never expose stack traces in production."
+    },
+    {
+      "ruleId": "SENSITIVE_DATA_IN_ERROR_MESSAGES",
+      "description": "Error object logged directly - may contain sensitive data or stack traces",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/services/authService.ts",
+      "line": 178,
+      "snippet": "        return userCredential.user.uid;\n    } catch (error) {\n        console.error('[AuthService] Anonymous sign-in failed:', error);\n        return null;\n    }",
+      "suggestion": "Log only safe error properties (message, code). Sanitize error messages before displaying to users. Never expose stack traces in production."
+    },
+    {
+      "ruleId": "SENSITIVE_DATA_IN_ERROR_MESSAGES",
+      "description": "Error object logged directly - may contain sensitive data or stack traces",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/services/authService.ts",
+      "line": 192,
+      "snippet": "        return userCredential.user.uid;\n    } catch (error: any) {\n        console.error('[AuthService] Sign up failed:', error);\n        if (error.code === 'auth/email-already-in-use') {\n            throw new Error('That email address is already in use!');",
+      "suggestion": "Log only safe error properties (message, code). Sanitize error messages before displaying to users. Never expose stack traces in production."
+    },
+    {
+      "ruleId": "SENSITIVE_DATA_IN_ERROR_MESSAGES",
+      "description": "Error object logged directly - may contain sensitive data or stack traces",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/services/biometricService.ts",
+      "line": 62,
+      "snippet": "            await SecureStore.setItemAsync(KEY_PASSWORD, pass);\n        } catch (error) {\n            console.error('SecureStore Error:', error);\n            throw error;\n        }",
+      "suggestion": "Log only safe error properties (message, code). Sanitize error messages before displaying to users. Never expose stack traces in production."
+    },
+    {
+      "ruleId": "SENSITIVE_DATA_IN_ERROR_MESSAGES",
+      "description": "Error object logged directly - may contain sensitive data or stack traces",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/services/biometricService.ts",
+      "line": 80,
+      "snippet": "            return null;\n        } catch (error) {\n            console.error('SecureStore Retrieval Error:', error);\n            return null;\n        }",
+      "suggestion": "Log only safe error properties (message, code). Sanitize error messages before displaying to users. Never expose stack traces in production."
+    },
+    {
+      "ruleId": "SENSITIVE_DATA_IN_ERROR_MESSAGES",
+      "description": "Error object logged directly - may contain sensitive data or stack traces",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/services/biometricService.ts",
+      "line": 93,
+      "snippet": "            await SecureStore.deleteItemAsync(KEY_PASSWORD);\n        } catch (error) {\n            console.error('SecureStore Clear Error:', error);\n        }\n    },",
+      "suggestion": "Log only safe error properties (message, code). Sanitize error messages before displaying to users. Never expose stack traces in production."
+    },
+    {
+      "ruleId": "IMPROPER_BIOMETRIC_FALLBACK",
+      "description": "Biometric authentication falls back to insecurely stored credentials",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/services/biometricService.ts",
+      "line": 1,
+      "suggestion": "Use proper fallback: require device passcode/pattern, or store fallback credentials in secure keychain/keystore, never in plaintext or AsyncStorage."
+    },
+    {
+      "ruleId": "SENSITIVE_LOGGING",
+      "description": "console.log() logging Payment/Financial Data: [Firestore] Pin added:",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/services/firestoreService.ts",
+      "line": 39,
+      "snippet": "\n        const docRef = await firestore().collection(PINS_COLLECTION).add(pinData);\n        console.log('[Firestore] Pin added:', docRef.id);\n\n",
+      "suggestion": "Remove console logs with sensitive data or wrap in __DEV__ check. Use a logging library with data filtering for production."
+    },
+    {
+      "ruleId": "SENSITIVE_LOGGING",
+      "description": "console.error() logging Payment/Financial Data: [Firestore] Add pin failed:",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/services/firestoreService.ts",
+      "line": 45,
+      "snippet": "        return docRef.id;\n    } catch (error) {\n        console.error('[Firestore] Add pin failed:', error);\n        throw error;\n    }",
+      "suggestion": "Remove console logs with sensitive data or wrap in __DEV__ check. Use a logging library with data filtering for production."
+    },
+    {
+      "ruleId": "SENSITIVE_LOGGING",
+      "description": "console.log() logging Payment/Financial Data: [Firestore] Pin deleted:",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/services/firestoreService.ts",
+      "line": 56,
+      "snippet": "    try {\n        await firestore().collection(PINS_COLLECTION).doc(pinId).delete();\n        console.log('[Firestore] Pin deleted:', pinId);\n    } catch (error) {\n        console.error('[Firestore] Delete pin failed:', error);",
+      "suggestion": "Remove console logs with sensitive data or wrap in __DEV__ check. Use a logging library with data filtering for production."
+    },
+    {
+      "ruleId": "SENSITIVE_LOGGING",
+      "description": "console.error() logging Payment/Financial Data: [Firestore] Delete pin failed:",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/services/firestoreService.ts",
+      "line": 58,
+      "snippet": "        console.log('[Firestore] Pin deleted:', pinId);\n    } catch (error) {\n        console.error('[Firestore] Delete pin failed:', error);\n        throw error;\n    }",
+      "suggestion": "Remove console logs with sensitive data or wrap in __DEV__ check. Use a logging library with data filtering for production."
+    },
+    {
+      "ruleId": "SENSITIVE_LOGGING",
+      "description": "console.log() logging Payment/Financial Data: [Firestore] Pin updated:",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/services/firestoreService.ts",
+      "line": 85,
+      "snippet": "\n        await firestore().collection(PINS_COLLECTION).doc(pinId).update(pinUpdates);\n        console.log('[Firestore] Pin updated:', pinId);\n    } catch (error) {\n        console.error('[Firestore] Update pin failed:', error);",
+      "suggestion": "Remove console logs with sensitive data or wrap in __DEV__ check. Use a logging library with data filtering for production."
+    },
+    {
+      "ruleId": "SENSITIVE_LOGGING",
+      "description": "console.error() logging Payment/Financial Data: [Firestore] Update pin failed:",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/services/firestoreService.ts",
+      "line": 87,
+      "snippet": "        console.log('[Firestore] Pin updated:', pinId);\n    } catch (error) {\n        console.error('[Firestore] Update pin failed:', error);\n        throw error;\n    }",
+      "suggestion": "Remove console logs with sensitive data or wrap in __DEV__ check. Use a logging library with data filtering for production."
+    },
+    {
+      "ruleId": "SENSITIVE_LOGGING",
+      "description": "console.warn() logging Payment/Financial Data: Failed to delete expired pin:",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/services/firestoreService.ts",
+      "line": 137,
+      "snippet": "            console.log('[Firestore] Found expired pins (cleanup):', expiredPinIds.length);\n            // We don't wait for this; fire and forget\n            expiredPinIds.forEach(id => deletePin(id).catch(err => console.warn('Failed to delete expired pin:', id, err)));\n        }\n",
+      "suggestion": "Remove console logs with sensitive data or wrap in __DEV__ check. Use a logging library with data filtering for production."
+    },
+    {
+      "ruleId": "SENSITIVE_DATA_IN_ERROR_MESSAGES",
+      "description": "Error object logged directly - may contain sensitive data or stack traces",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/services/firestoreService.ts",
+      "line": 45,
+      "snippet": "        return docRef.id;\n    } catch (error) {\n        console.error('[Firestore] Add pin failed:', error);\n        throw error;\n    }",
+      "suggestion": "Log only safe error properties (message, code). Sanitize error messages before displaying to users. Never expose stack traces in production."
+    },
+    {
+      "ruleId": "SENSITIVE_DATA_IN_ERROR_MESSAGES",
+      "description": "Error object logged directly - may contain sensitive data or stack traces",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/services/firestoreService.ts",
+      "line": 58,
+      "snippet": "        console.log('[Firestore] Pin deleted:', pinId);\n    } catch (error) {\n        console.error('[Firestore] Delete pin failed:', error);\n        throw error;\n    }",
+      "suggestion": "Log only safe error properties (message, code). Sanitize error messages before displaying to users. Never expose stack traces in production."
+    },
+    {
+      "ruleId": "SENSITIVE_DATA_IN_ERROR_MESSAGES",
+      "description": "Error object logged directly - may contain sensitive data or stack traces",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/services/firestoreService.ts",
+      "line": 87,
+      "snippet": "        console.log('[Firestore] Pin updated:', pinId);\n    } catch (error) {\n        console.error('[Firestore] Update pin failed:', error);\n        throw error;\n    }",
+      "suggestion": "Log only safe error properties (message, code). Sanitize error messages before displaying to users. Never expose stack traces in production."
+    },
+    {
+      "ruleId": "SENSITIVE_DATA_IN_ERROR_MESSAGES",
+      "description": "Error object logged directly - may contain sensitive data or stack traces",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/services/firestoreService.ts",
+      "line": 137,
+      "snippet": "            console.log('[Firestore] Found expired pins (cleanup):', expiredPinIds.length);\n            // We don't wait for this; fire and forget\n            expiredPinIds.forEach(id => deletePin(id).catch(err => console.warn('Failed to delete expired pin:', id, err)));\n        }\n",
+      "suggestion": "Log only safe error properties (message, code). Sanitize error messages before displaying to users. Never expose stack traces in production."
+    },
+    {
+      "ruleId": "SENSITIVE_DATA_IN_ERROR_MESSAGES",
+      "description": "Error object logged directly - may contain sensitive data or stack traces",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/services/firestoreService.ts",
+      "line": 156,
+      "snippet": "            },\n            (error) => {\n                console.error('[Firestore] Snapshot error:', error);\n            }\n        );",
+      "suggestion": "Log only safe error properties (message, code). Sanitize error messages before displaying to users. Never expose stack traces in production."
+    },
+    {
+      "ruleId": "NO_REQUEST_TIMEOUT",
+      "description": "fetch() without timeout - vulnerable to slowloris DoS",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/services/geocodingService.ts",
+      "line": 18,
+      "snippet": "    try {\n        const url = `${MAPBOX_GEOCODING_API}/${encodeURIComponent(query)}.json?access_token=${MAPBOX_TOKEN}&types=place,country,locality&limit=5`;\n        const response = await fetch(url);\n\n        if (!response.ok) {",
+      "suggestion": "Add timeout to fetch using AbortSignal with setTimeout, or use a library like axios with timeout config."
+    },
+    {
+      "ruleId": "SENSITIVE_DATA_IN_ERROR_MESSAGES",
+      "description": "Error object logged directly - may contain sensitive data or stack traces",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/services/geocodingService.ts",
+      "line": 35,
+      "snippet": "\n    } catch (error) {\n        console.error('[GeocodingService] Search failed:', error);\n        return [];\n    }",
+      "suggestion": "Log only safe error properties (message, code). Sanitize error messages before displaying to users. Never expose stack traces in production."
+    },
+    {
+      "ruleId": "SENSITIVE_DATA_IN_ERROR_MESSAGES",
+      "description": "Error object logged directly - may contain sensitive data or stack traces",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/services/storageService.ts",
+      "line": 31,
+      "snippet": "        return result.uri;\n    } catch (error) {\n        console.warn('[Storage] Compression failed, using original:', error);\n        return uri; // Fallback to original if compression fails\n    }",
+      "suggestion": "Log only safe error properties (message, code). Sanitize error messages before displaying to users. Never expose stack traces in production."
+    },
+    {
+      "ruleId": "SENSITIVE_DATA_IN_ERROR_MESSAGES",
+      "description": "Error object logged directly - may contain sensitive data or stack traces",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/services/storageService.ts",
+      "line": 67,
+      "snippet": "        return downloadUrl;\n    } catch (error) {\n        console.error('[Storage] Upload failed:', error);\n        throw error;\n    }",
+      "suggestion": "Log only safe error properties (message, code). Sanitize error messages before displaying to users. Never expose stack traces in production."
+    },
+    {
+      "ruleId": "SENSITIVE_DATA_IN_ERROR_MESSAGES",
+      "description": "Error object logged directly - may contain sensitive data or stack traces",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/services/storageService.ts",
+      "line": 83,
+      "snippet": "        console.log('[Storage] Image deleted');\n    } catch (error) {\n        console.error('[Storage] Delete failed:', error);\n        // Don't throw - image might not exist\n    }",
+      "suggestion": "Log only safe error properties (message, code). Sanitize error messages before displaying to users. Never expose stack traces in production."
+    },
+    {
+      "ruleId": "SENSITIVE_LOGGING",
+      "description": "console.error() logging Personal Identifiable Information (PII): [UserService] Get email failed:",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/services/userService.ts",
+      "line": 119,
+      "snippet": "        return data.email || null;\n    } catch (error) {\n        console.error('[UserService] Get email failed:', error);\n        return null;\n    }",
+      "suggestion": "Remove console logs with sensitive data or wrap in __DEV__ check. Use a logging library with data filtering for production."
+    },
+    {
+      "ruleId": "SENSITIVE_LOGGING",
+      "description": "console.log() logging Payment/Financial Data: [UserService] Pin color saved for:",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/services/userService.ts",
+      "line": 191,
+      "snippet": "            updatedAt: firestore.Timestamp.now(),\n        }, { merge: true });\n        console.log('[UserService] Pin color saved for:', uid);\n        invalidateProfileCache(uid);\n    } catch (error) {",
+      "suggestion": "Remove console logs with sensitive data or wrap in __DEV__ check. Use a logging library with data filtering for production."
+    },
+    {
+      "ruleId": "SENSITIVE_LOGGING",
+      "description": "console.error() logging Payment/Financial Data: [UserService] Save pin color failed:",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/services/userService.ts",
+      "line": 194,
+      "snippet": "        invalidateProfileCache(uid);\n    } catch (error) {\n        console.error('[UserService] Save pin color failed:', error);\n        throw error;\n    }",
+      "suggestion": "Remove console logs with sensitive data or wrap in __DEV__ check. Use a logging library with data filtering for production."
+    },
+    {
+      "ruleId": "SENSITIVE_LOGGING",
+      "description": "console.log() logging Authentication Token: [UserService] Push token saved for:",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/services/userService.ts",
+      "line": 227,
+      "snippet": "            updatedAt: firestore.Timestamp.now(),\n        }, { merge: true });\n        console.log('[UserService] Push token saved for:', uid);\n    } catch (error) {\n        console.error('[UserService] Save push token failed:', error);",
+      "suggestion": "Remove console logs with sensitive data or wrap in __DEV__ check. Use a logging library with data filtering for production."
+    },
+    {
+      "ruleId": "SENSITIVE_LOGGING",
+      "description": "console.error() logging Authentication Token: [UserService] Save push token failed:",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/services/userService.ts",
+      "line": 229,
+      "snippet": "        console.log('[UserService] Push token saved for:', uid);\n    } catch (error) {\n        console.error('[UserService] Save push token failed:', error);\n        // Don't throw, just log. Not critical.\n    }",
+      "suggestion": "Remove console logs with sensitive data or wrap in __DEV__ check. Use a logging library with data filtering for production."
+    },
+    {
+      "ruleId": "SENSITIVE_LOGGING",
+      "description": "console.error() logging Payment/Financial Data: [UserService] Update pin visibility failed:",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/services/userService.ts",
+      "line": 258,
+      "snippet": "        }\n    } catch (error) {\n        console.error('[UserService] Update pin visibility failed:', error);\n        throw error;\n    }",
+      "suggestion": "Remove console logs with sensitive data or wrap in __DEV__ check. Use a logging library with data filtering for production."
+    },
+    {
+      "ruleId": "SENSITIVE_LOGGING",
+      "description": "console.log() logging Payment/Financial Data: `[UserService] Pin ${pinId} ${hide ? 'hidden' : 'shown'} for...",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/services/userService.ts",
+      "line": 395,
+      "snippet": "            updatedAt: firestore.Timestamp.now(),\n        });\n        console.log(`[UserService] Pin ${pinId} ${hide ? 'hidden' : 'shown'} for user ${uid}`);\n    } catch (error) {\n        console.error('[UserService] Toggle hidden pin failed:', error);",
+      "suggestion": "Remove console logs with sensitive data or wrap in __DEV__ check. Use a logging library with data filtering for production."
+    },
+    {
+      "ruleId": "SENSITIVE_LOGGING",
+      "description": "console.error() logging Payment/Financial Data: [UserService] Toggle hidden pin failed:",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/services/userService.ts",
+      "line": 397,
+      "snippet": "        console.log(`[UserService] Pin ${pinId} ${hide ? 'hidden' : 'shown'} for user ${uid}`);\n    } catch (error) {\n        console.error('[UserService] Toggle hidden pin failed:', error);\n        throw error;\n    }",
+      "suggestion": "Remove console logs with sensitive data or wrap in __DEV__ check. Use a logging library with data filtering for production."
+    },
+    {
+      "ruleId": "SENSITIVE_DATA_IN_ERROR_MESSAGES",
+      "description": "Error object logged directly - may contain sensitive data or stack traces",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/services/userService.ts",
+      "line": 96,
+      "snippet": "        return true;\n    } catch (error) {\n        console.error('[UserService] Check username failed:', error);\n        return false; // Assume available on error to not block user\n    }",
+      "suggestion": "Log only safe error properties (message, code). Sanitize error messages before displaying to users. Never expose stack traces in production."
+    },
+    {
+      "ruleId": "SENSITIVE_DATA_IN_ERROR_MESSAGES",
+      "description": "Error object logged directly - may contain sensitive data or stack traces",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/services/userService.ts",
+      "line": 119,
+      "snippet": "        return data.email || null;\n    } catch (error) {\n        console.error('[UserService] Get email failed:', error);\n        return null;\n    }",
+      "suggestion": "Log only safe error properties (message, code). Sanitize error messages before displaying to users. Never expose stack traces in production."
+    },
+    {
+      "ruleId": "SENSITIVE_DATA_IN_ERROR_MESSAGES",
+      "description": "Error object logged directly - may contain sensitive data or stack traces",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/services/userService.ts",
+      "line": 156,
+      "snippet": "        invalidateProfileCache(uid);\n    } catch (error) {\n        console.error('[UserService] Save profile failed:', error);\n        throw error;\n    }",
+      "suggestion": "Log only safe error properties (message, code). Sanitize error messages before displaying to users. Never expose stack traces in production."
+    },
+    {
+      "ruleId": "SENSITIVE_DATA_IN_ERROR_MESSAGES",
+      "description": "Error object logged directly - may contain sensitive data or stack traces",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/services/userService.ts",
+      "line": 176,
+      "snippet": "        invalidateProfileCache(uid);\n    } catch (error) {\n        console.error('[UserService] Save avatar failed:', error);\n        throw error;\n    }",
+      "suggestion": "Log only safe error properties (message, code). Sanitize error messages before displaying to users. Never expose stack traces in production."
+    },
+    {
+      "ruleId": "SENSITIVE_DATA_IN_ERROR_MESSAGES",
+      "description": "Error object logged directly - may contain sensitive data or stack traces",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/services/userService.ts",
+      "line": 194,
+      "snippet": "        invalidateProfileCache(uid);\n    } catch (error) {\n        console.error('[UserService] Save pin color failed:', error);\n        throw error;\n    }",
+      "suggestion": "Log only safe error properties (message, code). Sanitize error messages before displaying to users. Never expose stack traces in production."
+    },
+    {
+      "ruleId": "SENSITIVE_DATA_IN_ERROR_MESSAGES",
+      "description": "Error object logged directly - may contain sensitive data or stack traces",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/services/userService.ts",
+      "line": 212,
+      "snippet": "        invalidateProfileCache(uid);\n    } catch (error) {\n        console.error('[UserService] Save bio failed:', error);\n        throw error;\n    }",
+      "suggestion": "Log only safe error properties (message, code). Sanitize error messages before displaying to users. Never expose stack traces in production."
+    },
+    {
+      "ruleId": "SENSITIVE_DATA_IN_ERROR_MESSAGES",
+      "description": "Error object logged directly - may contain sensitive data or stack traces",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/services/userService.ts",
+      "line": 229,
+      "snippet": "        console.log('[UserService] Push token saved for:', uid);\n    } catch (error) {\n        console.error('[UserService] Save push token failed:', error);\n        // Don't throw, just log. Not critical.\n    }",
+      "suggestion": "Log only safe error properties (message, code). Sanitize error messages before displaying to users. Never expose stack traces in production."
+    },
+    {
+      "ruleId": "SENSITIVE_DATA_IN_ERROR_MESSAGES",
+      "description": "Error object logged directly - may contain sensitive data or stack traces",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/services/userService.ts",
+      "line": 258,
+      "snippet": "        }\n    } catch (error) {\n        console.error('[UserService] Update pin visibility failed:', error);\n        throw error;\n    }",
+      "suggestion": "Log only safe error properties (message, code). Sanitize error messages before displaying to users. Never expose stack traces in production."
+    },
+    {
+      "ruleId": "SENSITIVE_DATA_IN_ERROR_MESSAGES",
+      "description": "Error object logged directly - may contain sensitive data or stack traces",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/services/userService.ts",
+      "line": 271,
+      "snippet": "        return profile?.hidePinsFrom || [];\n    } catch (error) {\n        console.error('[UserService] Get hidePinsFrom failed:', error);\n        return [];\n    }",
+      "suggestion": "Log only safe error properties (message, code). Sanitize error messages before displaying to users. Never expose stack traces in production."
+    },
+    {
+      "ruleId": "SENSITIVE_DATA_IN_ERROR_MESSAGES",
+      "description": "Error object logged directly - may contain sensitive data or stack traces",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/services/userService.ts",
+      "line": 378,
+      "snippet": "        console.log(`[UserService] Friend ${friendUid} pins ${hide ? 'hidden' : 'shown'} for user ${uid}`);\n    } catch (error) {\n        console.error('[UserService] Toggle hidden friend failed:', error);\n        throw error;\n    }",
+      "suggestion": "Log only safe error properties (message, code). Sanitize error messages before displaying to users. Never expose stack traces in production."
+    },
+    {
+      "ruleId": "SENSITIVE_DATA_IN_ERROR_MESSAGES",
+      "description": "Error object logged directly - may contain sensitive data or stack traces",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/services/userService.ts",
+      "line": 397,
+      "snippet": "        console.log(`[UserService] Pin ${pinId} ${hide ? 'hidden' : 'shown'} for user ${uid}`);\n    } catch (error) {\n        console.error('[UserService] Toggle hidden pin failed:', error);\n        throw error;\n    }",
+      "suggestion": "Log only safe error properties (message, code). Sanitize error messages before displaying to users. Never expose stack traces in production."
+    },
+    {
+      "ruleId": "SENSITIVE_DATA_IN_ERROR_MESSAGES",
+      "description": "Error object logged directly - may contain sensitive data or stack traces",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/services/userService.ts",
+      "line": 436,
+      "snippet": "        invalidateProfileCache(uid);\n    } catch (error) {\n        console.error('[UserService] Update privacy settings failed:', error);\n        throw error;\n    }",
+      "suggestion": "Log only safe error properties (message, code). Sanitize error messages before displaying to users. Never expose stack traces in production."
+    },
+    {
+      "ruleId": "SENSITIVE_DATA_IN_ERROR_MESSAGES",
+      "description": "Error object logged directly - may contain sensitive data or stack traces",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/services/userService.ts",
+      "line": 531,
+      "snippet": "        });\n    } catch (error) {\n        console.error('[UserService] Update notification settings failed:', error);\n        throw error;\n    }",
+      "suggestion": "Log only safe error properties (message, code). Sanitize error messages before displaying to users. Never expose stack traces in production."
+    },
+    {
+      "ruleId": "SENSITIVE_DATA_IN_ERROR_MESSAGES",
+      "description": "Error object logged directly - may contain sensitive data or stack traces",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/services/userService.ts",
+      "line": 559,
+      "snippet": "        return null;\n    } catch (error) {\n        console.error('[UserService] Get profile failed:', error);\n        return null;\n    }",
+      "suggestion": "Log only safe error properties (message, code). Sanitize error messages before displaying to users. Never expose stack traces in production."
+    },
+    {
+      "ruleId": "SENSITIVE_DATA_IN_ERROR_MESSAGES",
+      "description": "Error object logged directly - may contain sensitive data or stack traces",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/services/userService.ts",
+      "line": 580,
+      "snippet": "        return { uid: doc.id, ...(doc.data() as UserProfile) };\n    } catch (error) {\n        console.error('[UserService] Get user by username failed:', error);\n        return null;\n    }",
+      "suggestion": "Log only safe error properties (message, code). Sanitize error messages before displaying to users. Never expose stack traces in production."
+    },
+    {
+      "ruleId": "SENSITIVE_DATA_IN_ERROR_MESSAGES",
+      "description": "Error object logged directly - may contain sensitive data or stack traces",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/services/userService.ts",
+      "line": 601,
+      "snippet": "            },\n            (error) => {\n                console.error('[UserService] Profile subscription error:', error);\n            }\n        );",
+      "suggestion": "Log only safe error properties (message, code). Sanitize error messages before displaying to users. Never expose stack traces in production."
+    },
+    {
+      "ruleId": "SENSITIVE_DATA_IN_ERROR_MESSAGES",
+      "description": "Error object logged directly - may contain sensitive data or stack traces",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/services/userService.ts",
+      "line": 631,
+      "snippet": "        return users;\n    } catch (error) {\n        console.error('[UserService] Search users failed:', error);\n        return [];\n    }",
+      "suggestion": "Log only safe error properties (message, code). Sanitize error messages before displaying to users. Never expose stack traces in production."
+    },
+    {
+      "ruleId": "SENSITIVE_DATA_IN_ERROR_MESSAGES",
+      "description": "Error object logged directly - may contain sensitive data or stack traces",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/services/userService.ts",
+      "line": 659,
+      "snippet": "        return null;\n    } catch (error) {\n        console.error('[UserService] Get username failed:', error);\n        return null;\n    }",
+      "suggestion": "Log only safe error properties (message, code). Sanitize error messages before displaying to users. Never expose stack traces in production."
+    },
+    {
+      "ruleId": "SENSITIVE_DATA_IN_ERROR_MESSAGES",
+      "description": "Error object logged directly - may contain sensitive data or stack traces",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/services/userService.ts",
+      "line": 738,
+      "snippet": "        return { success: true, message: 'Friend request sent!' };\n    } catch (error: any) {\n        console.error('[UserService] Send request failed:', error);\n        return { success: false, message: error.message || 'Failed to send request.' };\n    }",
+      "suggestion": "Log only safe error properties (message, code). Sanitize error messages before displaying to users. Never expose stack traces in production."
+    },
+    {
+      "ruleId": "SENSITIVE_DATA_IN_ERROR_MESSAGES",
+      "description": "Error object logged directly - may contain sensitive data or stack traces",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/services/userService.ts",
+      "line": 763,
+      "snippet": "        return requests.sort((a, b) => b.createdAt?.seconds - a.createdAt?.seconds);\n    } catch (error) {\n        console.error('[UserService] Get requests failed:', error);\n        return [];\n    }",
+      "suggestion": "Log only safe error properties (message, code). Sanitize error messages before displaying to users. Never expose stack traces in production."
+    },
+    {
+      "ruleId": "SENSITIVE_DATA_IN_ERROR_MESSAGES",
+      "description": "Error object logged directly - may contain sensitive data or stack traces",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/services/userService.ts",
+      "line": 787,
+      "snippet": "            },\n            (error) => {\n                console.error('[UserService] Friend request subscription error:', error);\n            }\n        );",
+      "suggestion": "Log only safe error properties (message, code). Sanitize error messages before displaying to users. Never expose stack traces in production."
+    },
+    {
+      "ruleId": "SENSITIVE_DATA_IN_ERROR_MESSAGES",
+      "description": "Error object logged directly - may contain sensitive data or stack traces",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/services/userService.ts",
+      "line": 811,
+      "snippet": "\n    } catch (error) {\n        console.error('[UserService] Accept request failed:', error);\n        throw error;\n    }",
+      "suggestion": "Log only safe error properties (message, code). Sanitize error messages before displaying to users. Never expose stack traces in production."
+    },
+    {
+      "ruleId": "SENSITIVE_DATA_IN_ERROR_MESSAGES",
+      "description": "Error object logged directly - may contain sensitive data or stack traces",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/services/userService.ts",
+      "line": 861,
+      "snippet": "        return Array.from(friendIds);\n    } catch (error) {\n        console.error('[UserService] Get friends failed:', error);\n        return [];\n    }",
+      "suggestion": "Log only safe error properties (message, code). Sanitize error messages before displaying to users. Never expose stack traces in production."
+    },
+    {
+      "ruleId": "SENSITIVE_DATA_IN_ERROR_MESSAGES",
+      "description": "Error object logged directly - may contain sensitive data or stack traces",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/services/userService.ts",
+      "line": 873,
+      "snippet": "        await firestore().collection(FRIEND_REQUESTS_COLLECTION).doc(requestId).delete();\n    } catch (error) {\n        console.error('[UserService] Reject request failed:', error);\n        throw error;\n    }",
+      "suggestion": "Log only safe error properties (message, code). Sanitize error messages before displaying to users. Never expose stack traces in production."
+    },
+    {
+      "ruleId": "SENSITIVE_DATA_IN_ERROR_MESSAGES",
+      "description": "Error object logged directly - may contain sensitive data or stack traces",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/services/userService.ts",
+      "line": 953,
+      "snippet": "        return true;\n    } catch (error) {\n        console.error('[UserService] Delete user data failed:', error);\n        throw error;\n    }",
+      "suggestion": "Log only safe error properties (message, code). Sanitize error messages before displaying to users. Never expose stack traces in production."
+    },
+    {
+      "ruleId": "SENSITIVE_DATA_IN_ERROR_MESSAGES",
+      "description": "Error object logged directly - may contain sensitive data or stack traces",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/services/userService.ts",
+      "line": 1004,
+      "snippet": "        console.log('[UserService] Added to bucket list:', item.locationName);\n    } catch (error) {\n        console.error('[UserService] Add to bucket list failed:', error);\n        throw error;\n    }",
+      "suggestion": "Log only safe error properties (message, code). Sanitize error messages before displaying to users. Never expose stack traces in production."
+    },
+    {
+      "ruleId": "SENSITIVE_DATA_IN_ERROR_MESSAGES",
+      "description": "Error object logged directly - may contain sensitive data or stack traces",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/services/userService.ts",
+      "line": 1021,
+      "snippet": "        });\n    } catch (error) {\n        console.error('[UserService] Remove from bucket list failed:', error);\n        throw error;\n    }",
+      "suggestion": "Log only safe error properties (message, code). Sanitize error messages before displaying to users. Never expose stack traces in production."
+    },
+    {
+      "ruleId": "SENSITIVE_DATA_IN_ERROR_MESSAGES",
+      "description": "Error object logged directly - may contain sensitive data or stack traces",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/services/userService.ts",
+      "line": 1120,
+      "snippet": "\n    } catch (error) {\n        console.error('[UserService] Check streak failed:', error);\n        return { streak: 0, increased: false };\n    }",
+      "suggestion": "Log only safe error properties (message, code). Sanitize error messages before displaying to users. Never expose stack traces in production."
+    },
+    {
+      "ruleId": "SENSITIVE_DATA_IN_ERROR_MESSAGES",
+      "description": "Error object logged directly - may contain sensitive data or stack traces",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/services/userService.ts",
+      "line": 1149,
+      "snippet": "        console.log(`[UserService] Updated bucketlist status for ${locationName} to ${newStatus}`);\n    } catch (error) {\n        console.error('[UserService] Update bucketlist status failed:', error);\n        throw error;\n    }",
+      "suggestion": "Log only safe error properties (message, code). Sanitize error messages before displaying to users. Never expose stack traces in production."
+    },
+    {
+      "ruleId": "NO_REQUEST_TIMEOUT",
+      "description": "fetch() without timeout configuration",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/services/wikiService.ts",
+      "line": 34,
+      "snippet": "        };\n\n        const response = await fetch(\n            `${WIKI_SEARCH_API}?action=opensearch&search=${encodeURIComponent(query)}&limit=1&format=json`,\n            { headers }",
+      "suggestion": "Add timeout using AbortSignal: const controller = new AbortController(); setTimeout(() => controller.abort(), 30000);"
+    },
+    {
+      "ruleId": "NO_REQUEST_TIMEOUT",
+      "description": "fetch() without timeout configuration",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/services/wikiService.ts",
+      "line": 70,
+      "snippet": "            'Accept': 'application/json'\n        };\n        const response = await fetch(`${WIKI_API_BASE}/summary/${encodeURIComponent(title)}`, { headers });\n        if (!response.ok) return null;\n",
+      "suggestion": "Add timeout using AbortSignal: const controller = new AbortController(); setTimeout(() => controller.abort(), 30000);"
+    },
+    {
+      "ruleId": "SENSITIVE_DATA_IN_ERROR_MESSAGES",
+      "description": "Error object logged directly - may contain sensitive data or stack traces",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/services/wikiService.ts",
+      "line": 58,
+      "snippet": "        return null;\n    } catch (error) {\n        console.error('[WikiService] Title search failed:', error);\n        return null;\n    }",
+      "suggestion": "Log only safe error properties (message, code). Sanitize error messages before displaying to users. Never expose stack traces in production."
+    },
+    {
+      "ruleId": "INSECURE_DESERIALIZATION",
+      "description": "JSON.parse() on potentially untrusted data without validation",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/src/services/wikiService.ts",
+      "line": 46,
+      "snippet": "        const text = await response.text();\n        try {\n            const data = JSON.parse(text);\n            // Response format: [query, [titles], [descriptions], [urls]]\n            if (data && data[1] && data[1].length > 0) {",
+      "suggestion": "Validate JSON structure and data types before parsing untrusted input. Use schema validation libraries like Zod or Yup."
+    },
+    {
+      "ruleId": "EXPO_INSECURE_PERMISSIONS",
+      "description": "Dangerous permission detected: android.permission.ACCESS_FINE_LOCATION",
+      "severity": "LOW",
+      "filePath": "/Users/lee/Projects/primal-singularity/app.json",
+      "suggestion": "Only request necessary permissions and explain usage to users"
+    },
+    {
+      "ruleId": "EXPO_INSECURE_PERMISSIONS",
+      "description": "Dangerous permission detected: android.permission.CAMERA",
+      "severity": "LOW",
+      "filePath": "/Users/lee/Projects/primal-singularity/app.json",
+      "suggestion": "Only request necessary permissions and explain usage to users"
+    },
+    {
+      "ruleId": "EXPO_INSECURE_PERMISSIONS",
+      "description": "Dangerous permission detected: android.permission.RECORD_AUDIO",
+      "severity": "LOW",
+      "filePath": "/Users/lee/Projects/primal-singularity/app.json",
+      "suggestion": "Only request necessary permissions and explain usage to users"
+    },
+    {
+      "ruleId": "ANDROID_BACKUP_ALLOWED",
+      "description": "Backup enabled for app with sensitive data - data can be extracted via ADB",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/android/app/src/main/AndroidManifest.xml",
+      "suggestion": "Set android:allowBackup=\"false\" or implement android:fullBackupContent rules to exclude sensitive data."
+    },
+    {
+      "ruleId": "ANDROID_EXPORTED_COMPONENT",
+      "description": "Exported activity without permission protection - accessible by any app",
+      "severity": "HIGH",
+      "filePath": "/Users/lee/Projects/primal-singularity/android/app/src/main/AndroidManifest.xml",
+      "suggestion": "Add android:permission attribute to exported activity or set android:exported=\"false\" if external access is not needed."
+    },
+    {
+      "ruleId": "ANDROID_INTENT_FILTER_PERMISSIVE",
+      "description": "Permissive intent filter with android.intent.action.VIEW: Can be invoked by any app",
+      "severity": "MEDIUM",
+      "filePath": "/Users/lee/Projects/primal-singularity/android/app/src/main/AndroidManifest.xml",
+      "suggestion": "Validate all incoming intents and restrict with custom permissions if external access is not required."
+    },
+    {
+      "ruleId": "EXCESSIVE_PERMISSIONS",
+      "description": "Potentially excessive permissions declared: android.permission.ACCESS_COARSE_LOCATION, android.permission.ACCESS_FINE_LOCATION, android.permission.CAMERA...",
+      "severity": "LOW",
+      "filePath": "/Users/lee/Projects/primal-singularity/android/app/src/main/AndroidManifest.xml",
+      "suggestion": "Review declared permissions and remove those not actively used. Request permissions at runtime only when needed."
+    },
+    {
+      "ruleId": "IOS_BACKGROUND_MODES_UNNECESSARY",
+      "description": "Background mode 'remote-notification' enabled: Remote notifications can trigger background activity",
+      "severity": "LOW",
+      "filePath": "/Users/lee/Projects/primal-singularity/ios/Pinr/Info.plist",
+      "suggestion": "Ensure 'remote-notification' background mode is necessary. Remove if not required to reduce attack surface and improve privacy."
+    },
+    {
+      "ruleId": "IOS_DATA_PROTECTION_MISSING",
+      "description": "Sensitive app without data protection entitlement",
+      "severity": "LOW",
+      "filePath": "/Users/lee/Projects/primal-singularity/ios/Pinr/Info.plist",
+      "suggestion": "Enable data protection (NSFileProtectionComplete) to encrypt files when device is locked."
+    }
+  ],
+  "scannedFiles": 102,
+  "duration": 2506,
+  "timestamp": "2025-12-28T21:14:29.521Z"
+}

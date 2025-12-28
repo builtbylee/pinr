@@ -744,3 +744,135 @@ export const createStory = functions.https.onCall(async (data: CreateStoryData, 
         storyId: storyRef.id,
     };
 });
+
+// ============================================
+// WAITLIST EMAIL AUTOMATION
+// ============================================
+
+// Collection name used in .document() below
+// const WAITLIST_COLLECTION = 'waitlist';
+
+// Email configuration - store these in Firebase environment config
+// firebase functions:config:set resend.api_key="YOUR_RESEND_API_KEY"
+const getResendApiKey = () => functions.config().resend?.api_key || process.env.RESEND_API_KEY;
+
+interface WaitlistEntry {
+    email: string;
+    platform: string;
+    userAgent?: string;
+    joinedAt: admin.firestore.Timestamp;
+    emailSent: boolean;
+    source: string;
+}
+
+/**
+ * Triggered when someone joins the waitlist
+ * Sends a personalized welcome email with download link based on their platform
+ */
+export const onWaitlistSignup = functions.firestore
+    .document('waitlist/{email}')
+    .onCreate(async (snapshot, context) => {
+        const data = snapshot.data() as WaitlistEntry;
+        const email = context.params.email;
+
+        // Skip if email already sent (shouldn't happen on create, but safety check)
+        if (data.emailSent) {
+            console.log(`[onWaitlistSignup] Email already sent to ${email}, skipping`);
+            return;
+        }
+
+        const platform = data.platform || 'unknown';
+        console.log(`[onWaitlistSignup] New signup: ${email} (${platform})`);
+
+        // Get the appropriate download link based on platform
+        const ANDROID_LINK = 'https://play.google.com/store/apps/details?id=com.builtbylee.app80days';
+        const IOS_LINK = 'https://apps.apple.com/app/pinr/id1234567890'; // Update when live
+        const LANDING_PAGE = 'https://builtbylee.github.io/pinr/';
+
+        let downloadLink = LANDING_PAGE;
+        let platformText = 'mobile devices';
+
+        if (platform === 'android') {
+            downloadLink = ANDROID_LINK;
+            platformText = 'Android';
+        } else if (platform === 'ios') {
+            downloadLink = IOS_LINK;
+            platformText = 'iOS';
+        }
+
+        // Build the email
+        const emailHtml = `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f5f5f5;">
+    <div style="background: white; border-radius: 16px; padding: 32px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+        <h1 style="margin: 0 0 16px; color: #1a1a1a; font-size: 24px;">You're on the list! 🎉</h1>
+        
+        <p style="color: #4a4a4a; line-height: 1.6; margin: 0 0 24px;">
+            Thanks for signing up for early access to <strong>Pinr</strong> – the app that helps you pin your travels and share memories with friends.
+        </p>
+        
+        <p style="color: #4a4a4a; line-height: 1.6; margin: 0 0 24px;">
+            We noticed you're on <strong>${platformText}</strong>. Here's your download link:
+        </p>
+        
+        <a href="${downloadLink}" style="display: inline-block; background: #34C759; color: white; text-decoration: none; padding: 14px 28px; border-radius: 12px; font-weight: 600; margin: 0 0 24px;">
+            Download Pinr
+        </a>
+        
+        <p style="color: #8e8e93; font-size: 14px; line-height: 1.6; margin: 24px 0 0;">
+            See you on the map! 🗺️<br>
+            – Lee, <em>BuiltByLee</em>
+        </p>
+    </div>
+    
+    <p style="color: #8e8e93; font-size: 12px; text-align: center; margin-top: 24px;">
+        <a href="${LANDING_PAGE}" style="color: #8e8e93;">Pinr</a> • Travel Made Social
+    </p>
+</body>
+</html>
+        `.trim();
+
+        const resendApiKey = getResendApiKey();
+
+        if (!resendApiKey) {
+            console.error('[onWaitlistSignup] No Resend API key configured. Set it with: firebase functions:config:set resend.api_key="YOUR_KEY"');
+            return;
+        }
+
+        try {
+            // Send email via Resend API
+            const response = await fetch('https://api.resend.com/emails', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${resendApiKey}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    from: 'Pinr <noreply@builtbylee.com>', // Update with your verified domain
+                    to: [email],
+                    subject: "You're in! 🎉 Download Pinr",
+                    html: emailHtml,
+                }),
+            });
+
+            if (!response.ok) {
+                const errorBody = await response.text();
+                console.error(`[onWaitlistSignup] Resend API error: ${response.status} - ${errorBody}`);
+                return;
+            }
+
+            const result = await response.json();
+            console.log(`[onWaitlistSignup] Email sent to ${email}, ID: ${result.id}`);
+
+            // Mark email as sent
+            await snapshot.ref.update({ emailSent: true });
+
+        } catch (error: any) {
+            console.error('[onWaitlistSignup] Failed to send email:', error.message);
+        }
+    });
