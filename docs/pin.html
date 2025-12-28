@@ -39,12 +39,12 @@
         .main-card {
             background: #FCFEFD;
             border: 1px solid #e5e5ea;
-            border-radius: 40px;
-            padding: 24px;
-            /* Reduced from 32px 24px */
+            border-radius: 32px;
+            /* Slightly tighter radius */
+            padding: 24px 20px;
+            /* Reduced vertical padding further */
             width: 100%;
             max-width: 400px;
-            /* Slightly reduced max-width for better mobile feel */
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.05);
             display: flex;
             flex-direction: column;
@@ -52,27 +52,27 @@
         }
 
         .header {
-            margin-bottom: 12px;
-            /* Reduced from 20px */
+            margin-bottom: 8px;
+            /* Minimal margin */
             text-align: center;
         }
 
         .logo-full {
-            height: 80px;
-            /* Reduced from 100px */
+            height: 60px;
+            /* Significantly reduced to save top space */
             object-fit: contain;
         }
 
         .pin-preview-card {
             background: #f2f2f7;
-            border-radius: 32px;
+            border-radius: 24px;
             overflow: hidden;
             width: 100%;
-            aspect-ratio: 3/4;
+            aspect-ratio: 4/3;
+            /* Changed from 3/4 to 4/3 (landscape-ish) to save vertical space */
             box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
             position: relative;
             margin-bottom: 16px;
-            /* Reduced from 24px */
         }
 
         .pin-image {
@@ -107,10 +107,10 @@
         }
 
         .pin-title {
-            font-size: 28px;
-            /* Slightly smaller title for compact layout */
+            font-size: 24px;
+            /* Reduced from 28px */
             font-weight: 700;
-            margin-bottom: 6px;
+            margin-bottom: 4px;
             line-height: 1.2;
         }
 
@@ -150,8 +150,8 @@
         .buttons {
             display: flex;
             flex-direction: column;
-            gap: 12px;
-            /* Reduced from 16px */
+            gap: 10px;
+            /* Tighter gap */
             width: 100%;
         }
 
@@ -159,10 +159,11 @@
             background: #34C759;
             color: white;
             border: none;
-            padding: 16px;
-            /* Reduced from 18px */
-            border-radius: 16px;
-            font-size: 17px;
+            padding: 14px;
+            /* Reduced from 16px */
+            border-radius: 14px;
+            font-size: 16px;
+            /* Reduced from 17px */
             font-weight: 600;
             cursor: pointer;
             text-decoration: none;
@@ -178,10 +179,10 @@
         .btn-secondary {
             background: #000000;
             color: #ffffff;
-            padding: 16px;
+            padding: 14px;
             /* Reduced from 18px */
-            border-radius: 16px;
-            font-size: 17px;
+            border-radius: 14px;
+            font-size: 16px;
             font-weight: 600;
             cursor: pointer;
             text-decoration: none;
