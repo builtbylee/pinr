@@ -21,189 +21,175 @@
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+            -webkit-font-smoothing: antialiased;
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #16213e 100%);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background: #ffffff;
             min-height: 100vh;
-            color: white;
             display: flex;
             flex-direction: column;
             align-items: center;
-            padding: 20px;
+            padding: 40px 20px;
+            color: #1c1c1e;
         }
 
         .header {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            margin-bottom: 24px;
+            margin-bottom: 32px;
+            text-align: center;
         }
 
-        .logo {
-            width: 48px;
-            height: 48px;
-            border-radius: 12px;
-        }
-
-        .app-name {
-            font-size: 28px;
-            font-weight: 700;
-            background: linear-gradient(135deg, #FF8C00, #FF6347);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+        .logo-full {
+            height: 60px;
+            object-fit: contain;
         }
 
         .card {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(20px);
-            border-radius: 24px;
+            background: #f2f2f7;
+            border-radius: 32px;
             overflow: hidden;
-            max-width: 400px;
             width: 100%;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            max-width: 380px;
+            aspect-ratio: 3/4;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+            position: relative;
+            margin-bottom: 32px;
         }
 
         .pin-image {
             width: 100%;
-            height: 300px;
+            height: 100%;
             object-fit: cover;
-            background: #2a2a2a;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
         }
 
-        .pin-image.loading {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 48px;
+        .gradient-overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 50%;
+            background: linear-gradient(to top, rgba(0, 0, 0, 0.8) 0%, rgba(0, 0, 0, 0) 100%);
+            z-index: 2;
         }
 
         .pin-details {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
             padding: 24px;
+            z-index: 3;
+            color: white;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
         }
 
         .pin-title {
-            font-size: 24px;
+            font-size: 32px;
             font-weight: 700;
             margin-bottom: 8px;
+            line-height: 1.2;
         }
 
         .pin-location {
             display: flex;
             align-items: center;
-            gap: 8px;
-            color: rgba(255, 255, 255, 0.7);
+            gap: 6px;
             font-size: 16px;
-            margin-bottom: 16px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            opacity: 0.95;
         }
 
         .pin-location svg {
-            width: 18px;
-            height: 18px;
+            width: 16px;
+            height: 16px;
             fill: #FF8C00;
+            filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3));
         }
 
         .pin-date {
-            color: rgba(255, 255, 255, 0.5);
             font-size: 14px;
-            margin-bottom: 24px;
+            opacity: 0.8;
+            font-weight: 500;
         }
 
         .buttons {
             display: flex;
             flex-direction: column;
-            gap: 12px;
+            gap: 16px;
+            width: 100%;
+            max-width: 380px;
         }
 
         .btn-primary {
-            background: linear-gradient(135deg, #34C759, #28a745);
+            background: #34C759;
             color: white;
             border: none;
-            padding: 16px 24px;
+            padding: 18px;
             border-radius: 16px;
             font-size: 18px;
             font-weight: 600;
             cursor: pointer;
             text-decoration: none;
             text-align: center;
-            transition: transform 0.2s, box-shadow 0.2s;
+            transition: transform 0.2s, background 0.2s;
+            box-shadow: 0 4px 12px rgba(52, 199, 89, 0.3);
         }
 
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 30px rgba(52, 199, 89, 0.4);
+        .btn-primary:active {
+            transform: scale(0.98);
         }
 
         .btn-secondary {
-            background: rgba(255, 255, 255, 0.1);
-            color: white;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            padding: 14px 24px;
+            background: #f2f2f7;
+            color: #007AFF;
+            padding: 16px;
             border-radius: 16px;
-            font-size: 16px;
-            font-weight: 500;
+            font-size: 17px;
+            font-weight: 600;
             cursor: pointer;
             text-decoration: none;
             text-align: center;
-            transition: background 0.2s;
         }
 
-        .btn-secondary:hover {
-            background: rgba(255, 255, 255, 0.2);
-        }
-
-        .loading-state {
-            text-align: center;
-            padding: 60px 20px;
-        }
-
+        .loading-state,
         .error-state {
-            text-align: center;
-            padding: 60px 20px;
-            color: #FF6347;
-        }
-
-        .spinner {
-            width: 40px;
-            height: 40px;
-            border: 4px solid rgba(255, 255, 255, 0.3);
-            border-top-color: #FF8C00;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 16px;
-        }
-
-        @keyframes spin {
-            to {
-                transform: rotate(360deg);
-            }
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #8e8e93;
         }
 
         .tagline {
-            margin-top: 32px;
-            text-align: center;
-            color: rgba(255, 255, 255, 0.5);
-            font-size: 14px;
+            margin-top: 40px;
+            color: #8e8e93;
+            font-size: 13px;
         }
     </style>
 </head>
 
 <body>
     <div class="header">
-        <img src="https://builtbylee.github.io/pinr/assets/icon.png" alt="Pinr" class="logo"
-            onerror="this.style.display='none'">
-        <span class="app-name">Pinr</span>
+        <img src="assets/pinr-logo.jpg" alt="Pinr" class="logo-full">
     </div>
 
     <div class="card">
-        <div id="content">
+        <div id="content" style="height: 100%;">
             <div class="loading-state">
-                <div class="spinner"></div>
                 <p>Loading pin...</p>
             </div>
         </div>
+    </div>
+
+    <div id="action-buttons" class="buttons">
+        <!-- Buttons appended here -->
     </div>
 
     <p class="tagline">Pin your travels. Share your memories.</p>
@@ -255,7 +241,7 @@
             const imageUrl = pin.imageUrl || (pin.imageUris && pin.imageUris[0]) || '';
             const deepLink = `pinr://pin/${pinId}`;
 
-            // Update Open Graph tags dynamically (for subsequent shares)
+            // Update Open Graph tags
             document.querySelector('meta[property="og:title"]').content = pin.title || 'Pinr Memory';
             document.querySelector('meta[property="og:description"]').content = pin.locationName || 'View this travel memory';
             if (imageUrl) {
@@ -266,11 +252,13 @@
                 year: 'numeric', month: 'long', day: 'numeric'
             }) : '';
 
+            // 1. Render Card Content (Image + Overlay)
             document.getElementById('content').innerHTML = `
                 ${imageUrl
                     ? `<img src="${imageUrl}" alt="${pin.title}" class="pin-image">`
-                    : `<div class="pin-image loading">📍</div>`
+                    : `<div class="loading-state" style="background:#ddd;">📍</div>`
                 }
+                <div class="gradient-overlay"></div>
                 <div class="pin-details">
                     <h1 class="pin-title">${pin.title || 'Untitled Pin'}</h1>
                     <div class="pin-location">
@@ -278,11 +266,13 @@
                         ${pin.locationName || 'Unknown Location'}
                     </div>
                     ${dateStr ? `<p class="pin-date">${dateStr}</p>` : ''}
-                    <div class="buttons">
-                        <a href="${deepLink}" class="btn-primary">Open in Pinr</a>
-                        <a href="${APP_STORE_URL}" class="btn-secondary">Get Pinr Free</a>
-                    </div>
                 </div>
+            `;
+
+            // 2. Render Action Buttons (Outside Card)
+            document.getElementById('action-buttons').innerHTML = `
+                <a href="${deepLink}" class="btn-primary">Open in Pinr</a>
+                <a href="${APP_STORE_URL}" class="btn-secondary">Get Pinr Free</a>
             `;
         }
 
@@ -291,10 +281,10 @@
                 <div class="error-state">
                     <p style="font-size: 48px; margin-bottom: 16px;">😕</p>
                     <p>${message}</p>
-                    <div class="buttons" style="margin-top: 24px; padding: 0 24px 24px;">
-                        <a href="${APP_STORE_URL}" class="btn-primary">Get Pinr</a>
-                    </div>
                 </div>
+            `;
+            document.getElementById('action-buttons').innerHTML = `
+                <a href="${APP_STORE_URL}" class="btn-primary">Get Pinr</a>
             `;
         }
 
