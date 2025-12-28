@@ -67,13 +67,15 @@
             mix-blend-mode: multiply;
         }
 
-        /* White Mask - Aggressive Coverage */
+        /* White Mask - Precision Coverage */
         .logo-mask {
             position: absolute !important;
             top: 0;
             left: 0;
-            width: 70%;
-            height: 60%;
+            width: 40%;
+            /* Reduced from 70% to avoid globe */
+            height: 30%;
+            /* Reduced from 60% */
             background-color: #ffffff;
             z-index: 10;
         }
