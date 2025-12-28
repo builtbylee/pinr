@@ -188,36 +188,42 @@
         /* ========== DESKTOP RESPONSIVE ========== */
         @media (min-width: 768px) {
             .page-container {
-                justify-content: flex-start;
-                padding: 20px 0 40px 0;
+                justify-content: center;
+                padding: 40px 20px;
+                background-color: #f5f5f5;
+                /* Light gray background to show card */
+            }
+
+            .landing-card {
+                max-width: 700px;
+                margin: 0 auto;
+                background: #ffffff;
+                border-radius: 24px;
+                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+                overflow: hidden;
+                border: 1px solid rgba(0, 0, 0, 0.05);
             }
 
             .composition-container {
-                max-width: 70%;
-                /* Constrain but keep right-aligned */
-                margin-left: auto;
-                margin-right: 0;
+                width: 100%;
+                margin: 0;
             }
 
             .bottom-section {
-                margin-top: 20px;
-                padding: 0 20px;
+                margin-top: 0;
+                padding: 20px;
             }
 
             .waitlist-container {
                 max-width: 400px;
+                box-shadow: none;
+                border: 1px solid rgba(0, 0, 0, 0.08);
             }
         }
 
         @media (min-width: 1024px) {
-            .composition-container {
-                max-width: 60%;
-            }
-        }
-
-        @media (min-width: 1400px) {
-            .composition-container {
-                max-width: 50%;
+            .landing-card {
+                max-width: 800px;
             }
         }
     </style>
@@ -228,57 +234,61 @@
 
 <body>
     <div class="page-container">
+        <!-- Landing Card (visible boundary on desktop) -->
+        <div class="landing-card">
 
-        <!-- Top Visuals -->
-        <div class="composition-container">
-            <img src="assets/feature-base.png?v=2" alt="Pinr Feature Base" class="base-image">
-            <div class="phone-overlay"></div>
-        </div>
-
-        <!-- Bottom Section: Store Badges + Form -->
-        <div class="bottom-section flex flex-col items-center w-full">
-
-            <!-- Store Badges -->
-            <div class="text-[0.6rem] text-gray-400 font-bold uppercase tracking-[0.15em] mb-1">Coming soon to</div>
-
-            <div class="store-badges">
-                <!-- Google Play Button -->
-                <a href="#" class="store-btn">
-                    <img src="assets/google-play-logo.png" alt="Google Play">
-                    <div class="btn-content">
-                        <span class="btn-small-text">GET IT ON</span>
-                        <span class="btn-large-text">Google Play</span>
-                    </div>
-                </a>
-
-                <!-- App Store Button -->
-                <a href="#" class="store-btn">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512" fill="currentColor">
-                        <path
-                            d="M318.7 268.7c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6-35.5-2.8-74.3 20.7-88.5 20.7-15 0-49.4-19.7-76.4-19.7C63.3 141.2 4 184.8 4 273.5q0 39.3 14.4 81.2c12.8 36.7 59 126.7 107.2 125.2 25.2-.6 43-17.9 75.8-17.9 31.8 0 48.3 17.9 76.4 17.9 48.6-.7 90.4-82.5 102.6-119.3-65.2-30.7-61.7-90-61.7-91.9zm-56.6-164.2c27.3-32.4 24.8-61.9 24-72.5-24.1 1.4-52 16.4-67.9 34.9-17.5 19.8-27.8 44.3-25.6 71.9 26.1 2 52.3-11.4 69.5-34.3z" />
-                    </svg>
-                    <div class="btn-content">
-                        <span class="btn-small-text" style="text-transform: none;">Download on the</span>
-                        <span class="btn-large-text">App Store</span>
-                    </div>
-                </a>
+            <!-- Top Visuals -->
+            <div class="composition-container">
+                <img src="assets/feature-base.png?v=2" alt="Pinr Feature Base" class="base-image">
+                <div class="phone-overlay"></div>
             </div>
 
-            <!-- Waitlist Form -->
-            <div class="waitlist-container">
-                <div class="form-title">Skip the wait, get early access to Pinr</div>
+            <!-- Bottom Section: Store Badges + Form -->
+            <div class="bottom-section flex flex-col items-center w-full">
 
-                <form id="waitlistForm">
-                    <div class="input-group">
-                        <input type="email" id="email" required placeholder="Enter your email" class="email-input">
-                        <button type="submit" id="submitBtn" class="submit-btn">Sign me up!</button>
-                    </div>
-                    <p id="feedback" class="text-xs mt-3 font-medium h-4 opacity-0 transition-opacity text-green-600">
-                    </p>
-                </form>
+                <!-- Store Badges -->
+                <div class="text-[0.6rem] text-gray-400 font-bold uppercase tracking-[0.15em] mb-1">Coming soon to</div>
+
+                <div class="store-badges">
+                    <!-- Google Play Button -->
+                    <a href="#" class="store-btn">
+                        <img src="assets/google-play-logo.png" alt="Google Play">
+                        <div class="btn-content">
+                            <span class="btn-small-text">GET IT ON</span>
+                            <span class="btn-large-text">Google Play</span>
+                        </div>
+                    </a>
+
+                    <!-- App Store Button -->
+                    <a href="#" class="store-btn">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512" fill="currentColor">
+                            <path
+                                d="M318.7 268.7c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6-35.5-2.8-74.3 20.7-88.5 20.7-15 0-49.4-19.7-76.4-19.7C63.3 141.2 4 184.8 4 273.5q0 39.3 14.4 81.2c12.8 36.7 59 126.7 107.2 125.2 25.2-.6 43-17.9 75.8-17.9 31.8 0 48.3 17.9 76.4 17.9 48.6-.7 90.4-82.5 102.6-119.3-65.2-30.7-61.7-90-61.7-91.9zm-56.6-164.2c27.3-32.4 24.8-61.9 24-72.5-24.1 1.4-52 16.4-67.9 34.9-17.5 19.8-27.8 44.3-25.6 71.9 26.1 2 52.3-11.4 69.5-34.3z" />
+                        </svg>
+                        <div class="btn-content">
+                            <span class="btn-small-text" style="text-transform: none;">Download on the</span>
+                            <span class="btn-large-text">App Store</span>
+                        </div>
+                    </a>
+                </div>
+
+                <!-- Waitlist Form -->
+                <div class="waitlist-container">
+                    <div class="form-title">Skip the wait, get early access to Pinr</div>
+
+                    <form id="waitlistForm">
+                        <div class="input-group">
+                            <input type="email" id="email" required placeholder="Enter your email" class="email-input">
+                            <button type="submit" id="submitBtn" class="submit-btn">Sign me up!</button>
+                        </div>
+                        <p id="feedback"
+                            class="text-xs mt-3 font-medium h-4 opacity-0 transition-opacity text-green-600">
+                        </p>
+                    </form>
+                </div>
             </div>
-        </div>
-    </div>
+        </div><!-- End landing-card -->
+    </div><!-- End page-container -->
 
     <script>
         // Firebase Config
