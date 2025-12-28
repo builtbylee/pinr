@@ -58,8 +58,8 @@
         }
 
         .logo-full {
-            height: 60px;
-            /* Significantly reduced to save top space */
+            height: 50px;
+            /* Even smaller */
             object-fit: contain;
         }
 
@@ -68,11 +68,13 @@
             border-radius: 24px;
             overflow: hidden;
             width: 100%;
-            aspect-ratio: 4/3;
-            /* Changed from 3/4 to 4/3 (landscape-ish) to save vertical space */
+            height: 35vh;
+            /* Fixed height relative to viewport */
+            max-height: 300px;
+            /* Cap on larger screens */
             box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
             position: relative;
-            margin-bottom: 16px;
+            margin-bottom: 12px;
         }
 
         .pin-image {
