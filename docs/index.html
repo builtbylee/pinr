@@ -67,14 +67,13 @@
             mix-blend-mode: multiply;
         }
 
-        /* White Mask to hide the original logo in feature-base.png */
+        /* White Mask - Aggressive Coverage */
         .logo-mask {
-            position: absolute;
+            position: absolute !important;
             top: 0;
             left: 0;
-            /* Cover left half */
-            height: 35%;
-            /* Cover top area where logo usually is */
+            width: 70%;
+            height: 60%;
             background-color: #ffffff;
             z-index: 10;
         }
@@ -133,16 +132,18 @@
 
         .input-group {
             display: flex;
-            gap: 8px;
+            flex-direction: column;
+            gap: 12px;
         }
 
         .email-input {
-            flex: 1;
-            padding: 12px 16px;
+            width: 100%;
+            padding: 16px;
             border: 1px solid #e2e8f0;
             border-radius: 12px;
             outline: none;
             transition: border-color 0.2s;
+            font-size: 1rem;
         }
 
         .email-input:focus {
@@ -150,13 +151,15 @@
         }
 
         .submit-btn {
+            width: 100%;
             background: #0f172a;
             color: white;
-            padding: 12px 24px;
+            padding: 16px;
             border-radius: 12px;
             font-weight: 600;
             cursor: pointer;
             transition: transform 0.1s;
+            font-size: 1rem;
         }
 
         .submit-btn:active {
