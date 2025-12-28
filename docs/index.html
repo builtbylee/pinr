@@ -39,51 +39,44 @@
         .phone-overlay {
             position: absolute;
             top: 32%;
-            /* Moved up */
             left: -2%;
-            /* Moved further left (slightly off-canvas for dynamic feel) */
             width: 42%;
             height: 65%;
 
-            /* New Clean Asset */
-            background-image: url('assets/phone-final.png');
+            background-image: url('assets/phone-final.png?v=2');
             background-size: contain;
             background-position: center;
             background-repeat: no-repeat;
 
-            /* Keep multiply if the new image has white bg, otherwise can remove. 
-               Safest to keep for seamless blending if white bg exists. */
             mix-blend-mode: multiply;
             z-index: 20;
         }
 
-        /* Top Centered Logo */
+        /* Top Centered Logo - Enforce Center */
         .centered-logo {
-            position: absolute;
-            top: 2%;
-            /* Very top */
-            left: 50%;
-            transform: translateX(-50%);
-            width: 45%;
-            /* Match approx visual size from screenshot */
-            max-width: 250px;
-            /* Cap for desktop */
+            position: absolute !important;
+            top: 5% !important;
+            /* Adjusted to 5% safe area */
+            left: 50% !important;
+            transform: translateX(-50%) !important;
+            width: 50%;
+            /* Slightly wider to match visual weight */
+            max-width: 280px;
             height: auto;
             z-index: 30;
             mix-blend-mode: multiply;
-        }
 
-        /* White Mask to hide the original logo in feature-base.png */
-        .logo-mask {
-            position: absolute;
-            top: 0;
-            left: 0;
-            /* Cover left half */
-            height: 35%;
-            /* Cover top area where logo usually is */
-            background-color: #ffffff;
-            z-index: 10;
-        }
+            /* White Mask to hide the original logo in feature-base.png */
+            .logo-mask {
+                position: absolute;
+                top: 0;
+                left: 0;
+                /* Cover left half */
+                height: 35%;
+                /* Cover top area where logo usually is */
+                background-color: #ffffff;
+                z-index: 10;
+            }
     </style>
 </head>
 
