@@ -817,7 +817,7 @@ export const onWaitlistSignup = functions.firestore
         </p>
         
         <p style="color: #4a4a4a; line-height: 1.6; margin: 0 0 24px;">
-            Did you spot my signature, <strong>BuiltByLee</strong>? This is my personal seal of quality, your guarantee that Pinr has been built with performance, privacy, and security in mind.
+            Did you spot my signature, <strong>BuiltByLee</strong>, on the sign-up page? This is my personal seal of quality, your guarantee that Pinr has been built with performance, privacy, and security in mind.
         </p>
         
         <p style="color: #4a4a4a; line-height: 1.6; margin: 0 0 24px;">

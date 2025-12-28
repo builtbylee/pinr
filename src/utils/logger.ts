@@ -19,8 +19,24 @@ export const logger = {
     },
 
     error: (...args: any[]) => {
-        // Always log errors, but in production could send to crash reporting
-        console.error(...args);
+        // Only log errors in dev mode to prevent stack trace exposure
+        if (isDev) {
+            console.error(...args);
+        }
+    },
+
+    /**
+     * Safe error logging - only prints error message, not full stack trace
+     * Use this for user-facing error handling in production
+     */
+    safeError: (prefix: string, error: unknown) => {
+        if (isDev) {
+            console.error(prefix, error);
+        } else {
+            // In production, only log simple message
+            const message = error instanceof Error ? error.message : 'Unknown error';
+            console.error(`${prefix} ${message}`);
+        }
     },
 
     debug: (...args: any[]) => {
