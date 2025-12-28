@@ -810,14 +810,18 @@ export const onWaitlistSignup = functions.firestore
 </head>
 <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f5f5f5;">
     <div style="background: white; border-radius: 16px; padding: 32px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
-        <h1 style="margin: 0 0 16px; color: #1a1a1a; font-size: 24px;">You're on the list! 🎉</h1>
+        <h1 style="margin: 0 0 16px; color: #1a1a1a; font-size: 24px;">You've got early access! 🎉</h1>
         
         <p style="color: #4a4a4a; line-height: 1.6; margin: 0 0 24px;">
-            Thanks for signing up for early access to <strong>Pinr</strong> – the app that helps you pin your travels and share memories with friends.
+            Lee here from Pinr, thanks for signing up to get Pinr. I built it to create a fun way to share travel photos, connect with friends, and explore your next trip.
         </p>
         
         <p style="color: #4a4a4a; line-height: 1.6; margin: 0 0 24px;">
-            We noticed you're on <strong>${platformText}</strong>. Here's your download link:
+            Lastly, you may have noticed my signature, <strong>BuiltByLee</strong>. This is my personal seal of quality, your guarantee that Pinr has been built with performance, privacy, and security in mind.
+        </p>
+        
+        <p style="color: #4a4a4a; line-height: 1.6; margin: 0 0 24px;">
+            I noticed you're on <strong>${platformText}</strong>. Here's your download link:
         </p>
         
         <a href="${downloadLink}" style="display: inline-block; background: #34C759; color: white; text-decoration: none; padding: 14px 28px; border-radius: 12px; font-weight: 600; margin: 0 0 24px;">
