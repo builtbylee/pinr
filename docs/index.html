@@ -38,17 +38,21 @@
         /* Phone Overlay */
         .phone-overlay {
             position: absolute;
-            top: 38%;
-            left: 2%;
-            /* Moved right (from -2% to 2%) */
+            top: 32%;
+            /* Moved up */
+            left: -2%;
+            /* Moved further left (slightly off-canvas for dynamic feel) */
             width: 42%;
             height: 65%;
 
+            /* New Clean Asset */
             background-image: url('assets/phone-final.png');
             background-size: contain;
             background-position: center;
             background-repeat: no-repeat;
 
+            /* Keep multiply if the new image has white bg, otherwise can remove. 
+               Safest to keep for seamless blending if white bg exists. */
             mix-blend-mode: multiply;
             z-index: 20;
         }
@@ -83,14 +87,8 @@
 <body class="flex items-center justify-center min-h-screen">
 
     <div class="composition-container">
-        <!-- Base Feature Image (Globe + Old Logo) -->
+        <!-- Base Feature Image (Globe + Logo) -->
         <img src="assets/feature-base.png" alt="Pinr Feature Base" class="base-image">
-
-        <!-- Mask to hide old logo -->
-        <div class="logo-mask"></div>
-
-        <!-- New Centered Logo -->
-        <img src="assets/landing-logo.jpg" alt="Pinr Logo" class="centered-logo">
 
         <!-- Overlay: Left Phone -->
         <div class="phone-overlay"></div>
