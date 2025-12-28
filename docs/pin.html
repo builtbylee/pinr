@@ -26,23 +26,24 @@
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            background: #FEFEFE;
+            background: #FCFEFD;
             min-height: 100vh;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            padding: 20px;
+            padding: 16px;
             color: #1c1c1e;
         }
 
         .main-card {
-            background: #FEFEFE;
+            background: #FCFEFD;
             border: 1px solid #e5e5ea;
             border-radius: 40px;
-            padding: 40px;
+            padding: 32px 24px;
             width: 100%;
-            max-width: 440px;
+            max-width: 400px;
+            /* Slightly reduced max-width for better mobile feel */
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.05);
             display: flex;
             flex-direction: column;
@@ -50,12 +51,14 @@
         }
 
         .header {
-            margin-bottom: 32px;
+            margin-bottom: 20px;
+            /* Reduced from 32px */
             text-align: center;
         }
 
         .logo-full {
-            height: 120px;
+            height: 100px;
+            /* Reduced from 120px */
             object-fit: contain;
         }
 
@@ -67,7 +70,8 @@
             aspect-ratio: 3/4;
             box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
             position: relative;
-            margin-bottom: 32px;
+            margin-bottom: 24px;
+            /* Reduced from 32px */
         }
 
         .pin-image {
@@ -102,9 +106,10 @@
         }
 
         .pin-title {
-            font-size: 32px;
+            font-size: 28px;
+            /* Slightly smaller title for compact layout */
             font-weight: 700;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
             line-height: 1.2;
         }
 
@@ -112,7 +117,7 @@
             display: flex;
             align-items: center;
             gap: 6px;
-            font-size: 16px;
+            font-size: 15px;
             font-weight: 600;
             margin-bottom: 8px;
             opacity: 0.95;
@@ -129,7 +134,7 @@
             display: flex;
             align-items: center;
             gap: 6px;
-            font-size: 15px;
+            font-size: 14px;
             font-weight: 500;
             opacity: 0.95;
             flex-wrap: wrap;
@@ -144,7 +149,8 @@
         .buttons {
             display: flex;
             flex-direction: column;
-            gap: 16px;
+            gap: 12px;
+            /* Reduced from 16px */
             width: 100%;
         }
 
@@ -152,9 +158,10 @@
             background: #34C759;
             color: white;
             border: none;
-            padding: 18px;
+            padding: 16px;
+            /* Reduced from 18px */
             border-radius: 16px;
-            font-size: 18px;
+            font-size: 17px;
             font-weight: 600;
             cursor: pointer;
             text-decoration: none;
@@ -170,9 +177,10 @@
         .btn-secondary {
             background: #000000;
             color: #ffffff;
-            padding: 18px;
+            padding: 16px;
+            /* Reduced from 18px */
             border-radius: 16px;
-            font-size: 18px;
+            font-size: 17px;
             font-weight: 600;
             cursor: pointer;
             text-decoration: none;
@@ -191,10 +199,23 @@
         }
 
         .tagline {
-            margin-top: 32px;
+            margin-top: 24px;
             text-align: center;
             color: #8e8e93;
             font-size: 13px;
+            padding: 0 20px;
+            line-height: 1.4;
+        }
+
+        .journey-note {
+            font-size: 14px;
+            color: #1c1c1e;
+            text-align: center;
+            margin-bottom: 16px;
+            font-weight: 500;
+            background: rgba(0, 0, 0, 0.05);
+            padding: 8px 16px;
+            border-radius: 12px;
         }
     </style>
 </head>
@@ -202,13 +223,15 @@
 <body>
     <div class="main-card">
         <div class="header">
-            <img src="assets/pinr-logo.jpg" alt="Pinr" class="logo-full">
+            <img src="assets/pinr-logo.png" alt="Pinr" class="logo-full">
         </div>
+
+        <div id="journey-message-container"></div>
 
         <div class="pin-preview-card">
             <div id="content" style="height: 100%;">
                 <div class="loading-state">
-                    <p>Loading pin...</p>
+                    <p>Loading...</p>
                 </div>
             </div>
         </div>
@@ -239,13 +262,21 @@
         async function loadPin() {
             const urlParams = new URLSearchParams(window.location.search);
             const pinId = urlParams.get('id');
+            const type = urlParams.get('type'); // 'story' or undefined
 
             if (!pinId) {
-                showError('No pin ID provided');
+                showError('No ID provided');
                 return;
             }
 
             try {
+                // If type is 'story', we still fetch the pinId passed (which should be the COVER PIN ID of the story)
+                // Wait, if the user shares a "Journey", does the app share the Story ID or the Cover Pin ID?
+                // The prompt says: "if a user shares a Journey... they only see the first pin".
+                // This implies the ID passed IS a Pin ID (the first pin).
+                // But we need to know it IS a journey to show the message.
+                // So the URL should be pin.html?id={pinId}&type=story OR pin.html?id={pinId}&journey=true
+
                 const pinDoc = await db.collection('pins').doc(pinId).get();
 
                 if (!pinDoc.exists) {
@@ -254,18 +285,21 @@
                 }
 
                 const pin = pinDoc.data();
-                displayPin(pin, pinId);
+                displayPin(pin, pinId, type === 'story');
 
             } catch (error) {
-                console.error('Error loading pin:', error);
-                showError('Unable to load pin');
+                console.error('Error loading data:', error);
+                showError('Unable to load preview');
             }
         }
 
-        function displayPin(pin, pinId) {
+        function displayPin(pin, pinId, isJourney) {
             // Check for imageUrl (Firestore field) or fallback to imageUris (legacy/app state)
             const imageUrl = pin.imageUrl || (pin.imageUris && pin.imageUris[0]) || '';
-            const deepLink = `pinr://pin/${pinId}`;
+            const deepLink = `pinr://pin/${pinId}`; // Deep link still points to Pin (unless we want to deep link to story?)
+            // If it's a journey, deep link should probably go to the pin for now as per "just like if they had shared just a pin" logic, 
+            // OR if the app supports it, we could deep link to the story.
+            // For now, let's stick to the pin deep link to ensure it works, as the user said "they only see the first pin".
 
             // Update Open Graph tags
             document.querySelector('meta[property="og:title"]').content = pin.title || 'Pinr Memory';
@@ -277,6 +311,15 @@
             const dateStr = pin.date ? new Date(pin.date).toLocaleDateString('en-US', {
                 year: 'numeric', month: 'long', day: 'numeric'
             }) : '';
+
+            // 0. Render Journey Message if needed
+            if (isJourney) {
+                document.getElementById('journey-message-container').innerHTML = `
+                    <div class="journey-note">
+                        Get the Pinr app to view the full Journey 📸
+                    </div>
+                `;
+            }
 
             // 1. Render Card Content (Image + Overlay)
             document.getElementById('content').innerHTML = `
@@ -295,7 +338,9 @@
                 </div>
             `;
 
-            // 2. Render Action Buttons (Outside Card, inside Main Card)
+            // 2. Render Action Buttons
+            // If journey, maybe change text to "Open Journey in Pinr"? User didn't explicitly ask for button text change, 
+            // but "Open in Pinr" is safe.
             document.getElementById('action-buttons').innerHTML = `
                 <a href="${deepLink}" class="btn-primary">Open in Pinr</a>
                 <a href="${APP_STORE_URL}" class="btn-secondary">Download Pinr</a>
