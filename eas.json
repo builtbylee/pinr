@@ -6,7 +6,6 @@
     "preview": {
       "channel": "preview",
       "distribution": "internal",
-      "developmentClient": true,
       "android": {
         "buildType": "apk",
         "image": "latest"
