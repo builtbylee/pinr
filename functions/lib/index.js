@@ -576,7 +576,7 @@ exports.onWaitlistSignup = functions.firestore
     // Get the appropriate download link based on platform
     const ANDROID_LINK = 'https://play.google.com/store/apps/details?id=com.builtbylee.app80days';
     const IOS_LINK = 'https://apps.apple.com/app/pinr/id1234567890'; // Update when live
-    const LANDING_PAGE = 'https://builtbylee.github.io/pinr/';
+    const LANDING_PAGE = 'https://getpinr.com';
     let downloadLink = LANDING_PAGE;
     let platformText = 'mobile devices';
     if (platform === 'android') {
@@ -637,7 +637,7 @@ exports.onWaitlistSignup = functions.firestore
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-                from: 'Pinr <noreply@builtbylee.com>', // Update with your verified domain
+                from: 'Pinr <noreply@getpinr.com>',
                 to: [email],
                 subject: "You're in! 🎉 Download Pinr",
                 html: emailHtml,
