@@ -637,7 +637,7 @@ exports.onWaitlistSignup = functions.firestore
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-                from: 'Pinr <noreply@getpinr.com>',
+                from: 'Pinr <lee@getpinr.com>',
                 to: [email],
                 subject: "You're in! 🎉 Download Pinr",
                 html: emailHtml,
