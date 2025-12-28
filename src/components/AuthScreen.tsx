@@ -2,10 +2,10 @@ import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import * as SplashScreen from 'expo-splash-screen';
 import { Image } from 'expo-image';
 import React, { useState, useEffect } from 'react';
-import { Dimensions, StyleSheet, Text, TouchableOpacity, View, Alert, TextInput, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
-import { signInEmailPassword, signUpWithEmail, signInWithGoogle } from '../services/authService';
+import { Dimensions, StyleSheet, Text, TouchableOpacity, View, Alert, TextInput, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import { signInEmailPassword, signUpWithEmail, signInWithGoogle, deleteCurrentUser } from '../services/authService';
 import Svg, { Path } from 'react-native-svg';
-import { saveUserProfile, isUsernameTaken, getEmailByUsername, recoverAccount } from '../services/userService';
+import { saveUserProfile, isUsernameTaken, getEmailByUsername } from '../services/userService';
 import { biometricService } from '../services/biometricService';
 
 
@@ -26,7 +26,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthenticated }) => {
     const [username, setUsername] = useState(''); // Only for signup
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [showRecoveryOption, setShowRecoveryOption] = useState(false);
+
     const [showPassword, setShowPassword] = useState(false);
 
     // Biometric State
@@ -154,30 +154,31 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthenticated }) => {
             setError('Please fill in all fields');
             return;
         }
-        const cleanUsername = username.trim(); // Clean username
+        const cleanUsername = username.trim();
         if (cleanUsername.length < 2) {
             setError('Username must be at least 2 characters');
             return;
         }
         setIsLoading(true);
         setError(null);
-        setShowRecoveryOption(false);
 
         try {
-            // Check if username is taken FIRST
-            const isTaken = await isUsernameTaken(cleanUsername);
+            // 1. Create Auth User FIRST (this authenticates us for Firestore queries)
+            const uid = await signUpWithEmail(email, password);
+
+            // 2. Now check if username is taken (we're authenticated now)
+            const isTaken = await isUsernameTaken(cleanUsername, uid);
 
             if (isTaken) {
+                // Username taken - delete the auth account we just created
+                // Username taken - delete the auth account we just created
+                await deleteCurrentUser();
                 setError(`The username "${cleanUsername}" is already taken.`);
-                setShowRecoveryOption(true); // Offer recovery
                 setIsLoading(false);
                 return;
             }
 
-            // 1. Create Auth User
-            const uid = await signUpWithEmail(email, password);
-
-            // 2. Create Firestore Profile (including email)
+            // 3. Create Firestore Profile
             await saveUserProfile(uid, cleanUsername, email);
 
             // Pass username back to App to prevent "Enter Username" modal from appearing
@@ -190,31 +191,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthenticated }) => {
         }
     };
 
-    const handleRecovery = async () => {
-        try {
-            setIsLoading(true);
-            setError(null);
 
-            // 1. Create a NEW auth account first
-            const uid = await signUpWithEmail(email, password);
-
-            // 2. Recover the old profile into this new UID
-            const success = await recoverAccount(uid, username);
-
-            if (success) {
-                // 3. Update the recovered profile to include the new email
-                await saveUserProfile(uid, username, email);
-                Alert.alert("Success", "Account recovered and secured!");
-            } else {
-                throw new Error("Recovery failed. Username might not exist.");
-            }
-
-        } catch (e: any) {
-            setError(e.message);
-        } finally {
-            setIsLoading(false);
-        }
-    };
 
     const handleGoogleSignIn = async () => {
         setIsLoading(true);
@@ -224,9 +201,20 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthenticated }) => {
 
             // If new user, save profile with display name as username
             if (result.isNewUser && result.displayName) {
-                const { saveUserProfile } = require('../services/userService');
+                const { saveUserProfile, isUsernameTaken } = require('../services/userService');
                 // Use display name as initial username, user can change it later
-                const suggestedUsername = result.displayName.replace(/\s+/g, '').toLowerCase().substring(0, 15);
+                let suggestedUsername = result.displayName.replace(/\s+/g, '').toLowerCase().substring(0, 15);
+
+                // Check if username is taken and generate unique variant if needed
+                let isTaken = await isUsernameTaken(suggestedUsername, result.uid);
+                let attempts = 0;
+                while (isTaken && attempts < 5) {
+                    // Append random digits to make unique
+                    suggestedUsername = suggestedUsername.substring(0, 12) + Math.floor(Math.random() * 1000);
+                    isTaken = await isUsernameTaken(suggestedUsername, result.uid);
+                    attempts++;
+                }
+
                 await saveUserProfile(result.uid, suggestedUsername, result.email || undefined);
                 onAuthenticated(suggestedUsername);
             } else {
@@ -250,7 +238,6 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthenticated }) => {
         setEmail('');
         setPassword('');
         setUsername('');
-        setShowRecoveryOption(false);
     };
 
     const toggleMode = () => {
@@ -260,9 +247,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthenticated }) => {
 
     const renderForm = (isLogin: boolean) => (
         <View style={styles.contentContainer}>
-            {!isLogin && (
-                <Text style={styles.formTitle}>Share your Journey</Text>
-            )}
+            {/* Share your Journey text removed */}
 
             {/* Form Fields */}
             <View style={styles.formFields}>
@@ -290,6 +275,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthenticated }) => {
                 ) : (
                     // LOGIN FIELDS
                     <TextInput
+                        testID="auth-email-input"
                         style={styles.input}
                         placeholder="Email"
                         placeholderTextColor="rgba(0,0,0,0.4)"
@@ -301,6 +287,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthenticated }) => {
 
                 <View style={styles.passwordContainer}>
                     <TextInput
+                        testID="auth-password-input"
                         style={styles.passwordInput}
                         placeholder="Password"
                         placeholderTextColor="rgba(0,0,0,0.4)"
@@ -323,50 +310,39 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthenticated }) => {
 
             {error && <Text style={styles.errorText}>{error}</Text>}
 
-            {showRecoveryOption && !isLogin && (
-                <View style={styles.recoveryContainer}>
-                    <Text style={styles.recoveryText}>Username "{username}" is taken.</Text>
 
-                    <TouchableOpacity
-                        style={styles.recoveryButton}
-                        onPress={handleRecovery}
-                    >
-                        <Text style={styles.recoveryButtonText}>Recover Account</Text>
-                    </TouchableOpacity>
-                </View>
-            )}
 
             {/* Login Button Row with optional Biometric */}
-            {!showRecoveryOption && (
-                <View style={styles.buttonRow}>
-                    <TouchableOpacity
-                        style={[
-                            styles.primaryButton,
-                            isLogin && hasSavedCredentials && styles.primaryButtonWithBiometric
-                        ]}
-                        onPress={isLogin ? handleLogin : handleSignup}
-                        disabled={isLoading}
-                    >
-                        {isLoading ? (
-                            <ActivityIndicator color="white" />
-                        ) : (
-                            <Text style={styles.primaryButtonText}>
-                                {isLogin ? 'Log In' : 'Sign Up'}
-                            </Text>
-                        )}
-                    </TouchableOpacity>
-
-                    {/* Biometric Icon Button */}
-                    {isLogin && hasSavedCredentials && !isLoading && (
-                        <TouchableOpacity
-                            style={styles.biometricIconButton}
-                            onPress={handleBiometricLogin}
-                        >
-                            <MaterialCommunityIcons name="fingerprint" size={28} color="#FFFFFF" />
-                        </TouchableOpacity>
+            <View style={styles.buttonRow}>
+                <TouchableOpacity
+                    testID="auth-submit-button"
+                    style={[
+                        styles.primaryButton,
+                        isLogin && hasSavedCredentials && styles.primaryButtonWithBiometric
+                    ]}
+                    onPress={isLogin ? handleLogin : handleSignup}
+                    disabled={isLoading}
+                >
+                    {isLoading ? (
+                        <ActivityIndicator color="white" />
+                    ) : (
+                        <Text style={styles.primaryButtonText}>
+                            {isLogin ? 'Log In' : 'Sign Up'}
+                        </Text>
                     )}
-                </View>
-            )}
+                </TouchableOpacity>
+
+                {/* Biometric Icon Button */}
+                {isLogin && hasSavedCredentials && !isLoading && (
+                    <TouchableOpacity
+                        style={styles.biometricIconButton}
+                        onPress={handleBiometricLogin}
+                    >
+                        <MaterialCommunityIcons name="fingerprint" size={28} color="#FFFFFF" />
+                    </TouchableOpacity>
+                )}
+            </View>
+
 
             <TouchableOpacity
                 style={styles.textLink}
@@ -407,31 +383,38 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthenticated }) => {
     return (
         <View style={styles.container}>
             <KeyboardAvoidingView
-                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                behavior="padding"
                 style={styles.keyboardView}
+                keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
             >
-                <View style={styles.globeContainer}>
-                    <View style={styles.staticGlobe}>
+                <ScrollView
+                    contentContainerStyle={styles.scrollContent}
+                    keyboardShouldPersistTaps="handled"
+                    showsVerticalScrollIndicator={false}
+                >
+                    <View style={styles.globeContainer}>
+                        <View style={styles.staticGlobe}>
+                            <Image
+                                source={require('../../assets/images/pinr-logo.png')}
+                                style={styles.globeImage}
+                                contentFit="contain"
+                            />
+                        </View>
+                    </View>
+
+
+
+
+                    <View style={styles.signatureContainer} pointerEvents="none">
                         <Image
-                            source={require('../../assets/images/pinr-logo.png')}
-                            style={styles.globeImage}
+                            source={require('../../assets/images/builtbylee-signature.png')}
+                            style={styles.signatureImage}
                             contentFit="contain"
                         />
                     </View>
-                </View>
 
-
-
-
-                <View style={styles.signatureContainer} pointerEvents="none">
-                    <Image
-                        source={require('../../assets/images/builtbylee-signature.png')}
-                        style={styles.signatureImage}
-                        contentFit="contain"
-                    />
-                </View>
-
-                {renderForm(mode === 'login')}
+                    {renderForm(mode === 'login')}
+                </ScrollView>
             </KeyboardAvoidingView>
         </View>
     );
@@ -447,9 +430,14 @@ const styles = StyleSheet.create({
     keyboardView: {
         flex: 1,
         width: '100%',
+    },
+    scrollContent: {
+        flexGrow: 1,
         justifyContent: 'center',
         alignItems: 'center',
+        paddingVertical: 20,
     },
+
     globeContainer: {
         marginBottom: 40,
         justifyContent: 'center',

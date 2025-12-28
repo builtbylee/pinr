@@ -1,13 +1,13 @@
 import { Feather } from '@expo/vector-icons';
 import React, { useState } from 'react';
 import { ActivityIndicator, Dimensions, StyleSheet, Text, TextInput, TouchableOpacity, View, KeyboardAvoidingView, Platform } from 'react-native';
-import { isUsernameTaken, recoverAccount } from '../services/userService';
+import { isUsernameTaken } from '../services/userService';
 import { linkEmailPassword } from '../services/authService';
 
 interface UsernameModalProps {
     visible: boolean;
     onClose: () => void;
-    onSave: (username: string) => void;
+    onSave: (username: string) => void | Promise<void>;
     currentUsername?: string | null;
     currentUserId?: string | null;
     isFirstTime?: boolean;
@@ -28,7 +28,6 @@ export const UsernameModal: React.FC<UsernameModalProps> = ({
     const [password, setPassword] = useState('');
     const [error, setError] = useState<string | null>(null);
     const [isChecking, setIsChecking] = useState(false);
-    const [isRecovering, setIsRecovering] = useState(false);
 
     if (!visible) return null;
 
@@ -42,42 +41,26 @@ export const UsernameModal: React.FC<UsernameModalProps> = ({
         setError(null);
 
         try {
-            if (isRecovering) {
-                // Recovery Mode
-                if (!currentUserId) {
-                    setError('Error: No active user session');
-                    setIsChecking(false);
-                    return;
-                }
-                const success = await recoverAccount(currentUserId, username.trim());
-                if (success) {
-                    onSave(username.trim());
-                } else {
-                    setError('Username not found or cannot be recovered');
-                    setIsChecking(false);
-                }
-            } else {
-                // Creation Mode
-                const taken = await isUsernameTaken(username.trim(), currentUserId || undefined);
+            // Check if username is taken
+            const taken = await isUsernameTaken(username.trim(), currentUserId || undefined);
 
-                if (taken) {
-                    setError('Username is already taken');
-                    setIsChecking(false);
-                    return;
-                }
-
-                onSave(username.trim());
+            if (taken) {
+                setError('Username is already taken');
+                setIsChecking(false);
+                return;
             }
+
+            // Call the save callback (await it in case it's async)
+            await onSave(username.trim());
+
+            // Reset loading state after save completes
+            setIsChecking(false);
+
         } catch (err) {
+            console.error('[UsernameModal] Save error:', err);
             setError('An error occurred. Please try again.');
             setIsChecking(false);
         }
-    };
-
-    const toggleMode = () => {
-        setIsRecovering(!isRecovering);
-        setError(null);
-        setUsername('');
     };
 
     return (
@@ -97,7 +80,7 @@ export const UsernameModal: React.FC<UsernameModalProps> = ({
                     {/* Icon */}
                     <View style={styles.iconContainer}>
                         <Feather
-                            name={isRecovering ? "key" : "user"}
+                            name="user"
                             size={80}
                             color="rgba(0, 0, 0, 0.5)"
                         />
@@ -105,20 +88,16 @@ export const UsernameModal: React.FC<UsernameModalProps> = ({
 
                     {/* Title */}
                     <Text style={styles.title}>
-                        {isRecovering
-                            ? 'Recover Account'
-                            : (isFirstTime ? 'Welcome!' : 'Edit Username')}
+                        {isFirstTime ? 'Welcome!' : 'Edit Username'}
                     </Text>
                     <Text style={styles.subtitle}>
-                        {isRecovering
-                            ? 'Enter your previous username'
-                            : (isFirstTime ? 'Choose your username' : 'Update your display name')}
+                        {isFirstTime ? 'Choose your username' : 'Update your display name'}
                     </Text>
 
                     {/* Input */}
                     <TextInput
                         style={[styles.input, error && styles.inputError]}
-                        placeholder={isRecovering ? "Enter old username" : "Enter username"}
+                        placeholder="Enter username"
                         placeholderTextColor="rgba(0, 0, 0, 0.4)"
                         value={username}
                         onChangeText={(text) => {
@@ -149,19 +128,13 @@ export const UsernameModal: React.FC<UsernameModalProps> = ({
                             <ActivityIndicator color="white" />
                         ) : (
                             <Text style={styles.saveButtonText}>
-                                {isRecovering ? 'Recover' : (isFirstTime ? 'Get Started' : 'Save')}
+                                {isFirstTime ? 'Get Started' : 'Save'}
                             </Text>
                         )}
                     </TouchableOpacity>
 
                     {/* Mode Switcher (link) */}
-                    {isFirstTime && (
-                        <TouchableOpacity onPress={toggleMode} style={styles.switchModeButton}>
-                            <Text style={styles.switchModeText}>
-                                {isRecovering ? "New user? Create account" : "Already have an account? Recover"}
-                            </Text>
-                        </TouchableOpacity>
-                    )}
+
                 </View>
             </KeyboardAvoidingView>
         </View>
@@ -178,6 +151,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         zIndex: 200,
+        backgroundColor: 'rgba(0,0,0,0.5)',
     },
     keyboardView: {
         flex: 1,
@@ -186,17 +160,17 @@ const styles = StyleSheet.create({
         width: '100%',
     },
     content: {
-        width: '85%',
-        backgroundColor: 'rgba(240, 245, 250, 0.98)',
+        width: '90%',
+        maxWidth: 400,
+        backgroundColor: '#FFFFFF',
         borderRadius: 30,
-        padding: 32,
+        padding: 28,
         alignItems: 'center',
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 15 },
-        shadowOpacity: 0.2,
+        shadowOpacity: 0.15,
         shadowRadius: 30,
-        borderWidth: 1,
-        borderColor: 'rgba(255, 255, 255, 0.6)',
+        elevation: 10,
     },
     closeButton: {
         position: 'absolute',
@@ -205,12 +179,18 @@ const styles = StyleSheet.create({
         width: 44,
         height: 44,
         borderRadius: 22,
-        backgroundColor: 'rgba(0, 0, 0, 0.1)',
+        backgroundColor: 'rgba(0, 0, 0, 0.08)',
         justifyContent: 'center',
         alignItems: 'center',
     },
     iconContainer: {
-        marginBottom: 16,
+        width: 80,
+        height: 80,
+        borderRadius: 40,
+        backgroundColor: '#F2F2F7',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: 20,
     },
     title: {
         fontSize: 24,
@@ -228,46 +208,46 @@ const styles = StyleSheet.create({
     input: {
         width: '100%',
         height: 56,
-        backgroundColor: 'rgba(0, 0, 0, 0.05)',
-        borderRadius: 16,
-        paddingHorizontal: 20,
-        fontSize: 18,
+        backgroundColor: '#F8F8F8',
+        borderRadius: 14,
+        paddingHorizontal: 18,
+        fontSize: 17,
         color: '#1a1a1a',
         borderWidth: 1,
-        borderColor: 'rgba(0, 0, 0, 0.1)',
+        borderColor: '#E5E5EA',
     },
     charCount: {
         alignSelf: 'flex-end',
         fontSize: 12,
         color: 'rgba(0, 0, 0, 0.4)',
         marginTop: 8,
-        marginBottom: 24,
+        marginBottom: 20,
     },
     saveButton: {
         width: '100%',
-        height: 56,
-        backgroundColor: '#FF00FF',
-        borderRadius: 16,
+        height: 52,
+        backgroundColor: '#1a1a1a',
+        borderRadius: 26,
         justifyContent: 'center',
         alignItems: 'center',
     },
     saveButtonDisabled: {
-        backgroundColor: 'rgba(255, 0, 255, 0.4)',
+        backgroundColor: 'rgba(26, 26, 26, 0.3)',
     },
     saveButtonText: {
-        fontSize: 18,
+        fontSize: 17,
         fontWeight: '600',
         color: 'white',
     },
     inputError: {
-        borderColor: '#FF4444',
+        borderColor: '#FF3B30',
     },
     errorText: {
         alignSelf: 'flex-start',
         fontSize: 12,
-        color: '#FF4444',
+        color: '#FF3B30',
         marginTop: 8,
-        marginBottom: 24,
+        marginBottom: 20,
     },
     switchModeButton: {
         marginTop: 20,

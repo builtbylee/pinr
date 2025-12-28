@@ -1,6 +1,7 @@
 import firestore from '@react-native-firebase/firestore';
 import React, { useEffect, useState, useRef } from 'react';
 import { StyleSheet, Text, View, TouchableOpacity, Dimensions, SafeAreaView, ScrollView, Animated, Modal, ActivityIndicator, FlatList, BackHandler, PanResponder } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 import { Feather } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
@@ -8,10 +9,13 @@ import { useRouter, useLocalSearchParams, Stack } from 'expo-router';
 import { gameService, GameState, Difficulty } from '../../src/services/GameService';
 import { leaderboardService, LeaderboardEntry } from '../../src/services/LeaderboardService';
 import { challengeService, GameChallenge } from '../../src/services/ChallengeService';
-import { getUserProfile } from '../../src/services/userService';
+import { getUserProfile, getFriends } from '../../src/services/userService';
 import { getCurrentUser } from '../../src/services/authService';
 import { PinDropGame } from '../../src/components/PinDropGame';
+import { TravelBattleGame } from '../../src/components/TravelBattleGame';
 import { PinDropDifficulty } from '../../src/services/PinDropService';
+import { streakService } from '../../src/services/StreakService';
+import { ChallengeFriendModal } from '../../src/components/ChallengeFriendModal';
 
 import { useMemoryStore } from '../../src/store/useMemoryStore';
 
@@ -19,6 +23,9 @@ const { width, height } = Dimensions.get('window');
 const isSmallScreen = height < 700;
 
 export default function GameSandbox() {
+    const insets = useSafeAreaInsets();
+    console.log('[GameSandbox] Rendering with insets:', insets);
+    // Debug: Log all relevant state at render time
     // Persistence
     const activeGameId = useMemoryStore(state => state.activeGameId);
     const setActiveGameId = useMemoryStore(state => state.setActiveGameId);
@@ -42,18 +49,20 @@ export default function GameSandbox() {
     const [activeTab, setActiveTab] = useState<'home' | 'leaderboard' | 'newgame'>('home');
     const [showQuitConfirmation, setShowQuitConfirmation] = useState(false);
 
-    // Game Type Selection (Flag Dash or Pin Drop)
-    const [selectedGameType, setSelectedGameType] = useState<'flagdash' | 'pindrop' | null>(null);
+    // Game Type Selection (Flag Dash, Pin Drop, or Travel Battle)
+    const [selectedGameType, setSelectedGameType] = useState<'flagdash' | 'pindrop' | 'travelbattle' | null>(null);
+    const [previewGame, setPreviewGame] = useState<'flagdash' | 'pindrop' | 'travelbattle' | null>(null); // For bottom sheet
     const [pinDropDifficulty, setPinDropDifficulty] = useState<PinDropDifficulty>('medium');
 
     // Challenge state
     const [showChallengePicker, setShowChallengePicker] = useState(false);
-    const [friends, setFriends] = useState<{ uid: string; username: string }[]>([]);
+    const [friends, setFriends] = useState<{ uid: string; username: string; avatarUrl?: string; pinColor?: string }[]>([]);
     const [loadingFriends, setLoadingFriends] = useState(false);
     const [pendingChallenges, setPendingChallenges] = useState<GameChallenge[]>([]);
     const [activeChallenge, setActiveChallenge] = useState<GameChallenge | null>(null);
     const [activeGames, setActiveGames] = useState<GameChallenge[]>([]); // Active/Completed games
     const [opponentAvatars, setOpponentAvatars] = useState<Record<string, string | null>>({}); // Cache opponent avatars
+    const [dailyStreak, setDailyStreak] = useState<number>(0); // Daily play streak
 
     const router = useRouter();
     const params = useLocalSearchParams<{ challengeId: string }>();
@@ -127,6 +136,15 @@ export default function GameSandbox() {
         }
     }, [params.challengeId]); // Run on mount (activeGameId is stable-ish, avoiding loop)
 
+    // Load daily streak on mount
+    useEffect(() => {
+        const loadStreak = async () => {
+            const streak = await streakService.getCurrentStreak();
+            setDailyStreak(streak);
+        };
+        loadStreak();
+    }, []);
+
 
     const checkDeepLinkChallenge = async (id: string) => {
         const challenge = await challengeService.getChallenge(id);
@@ -175,11 +193,15 @@ export default function GameSandbox() {
             ? activeChallenge.opponentId
             : activeChallenge.challengerId;
 
+        // Store current game type before resetting
+        const currentGameType = selectedGameType || 'flagdash';
+        const currentDifficulty = selectedDifficulty;
+
         setActiveChallenge(null);
         setChallengeResult(null);
         setState(prev => ({ ...prev, gameOver: false, isPlaying: false }));
 
-        setTimeout(() => sendChallenge(opponentId), 100);
+        setTimeout(() => sendChallenge(opponentId, currentGameType, currentDifficulty), 100);
     };
 
     useEffect(() => {
@@ -197,24 +219,28 @@ export default function GameSandbox() {
         if (user) {
             console.log('[GameSandbox] Subscribing to active games...');
             unsubChallenges = challengeService.subscribeToActiveChallenges(user.uid, async (games) => {
-                console.log('[GameSandbox] Active games updated:', games.length);
-                setActiveGames(games);
+                try {
+                    console.log('[GameSandbox] Active games updated:', games.length);
+                    setActiveGames(games);
 
-                // Fetch avatars for opponents (batch fetch, cache in state)
-                const avatarUpdates: Record<string, string | null> = {};
-                for (const game of games) {
-                    const opponentId = game.challengerId === user.uid ? game.opponentId : game.challengerId;
-                    if (!opponentAvatars[opponentId]) {
-                        try {
-                            const profile = await getUserProfile(opponentId);
-                            avatarUpdates[opponentId] = profile?.avatarUrl || null;
-                        } catch (e) {
-                            avatarUpdates[opponentId] = null;
+                    // Fetch avatars for opponents (batch fetch, cache in state)
+                    const avatarUpdates: Record<string, string | null> = {};
+                    for (const game of games) {
+                        const opponentId = game.challengerId === user.uid ? game.opponentId : game.challengerId;
+                        if (!opponentAvatars[opponentId]) {
+                            try {
+                                const profile = await getUserProfile(opponentId);
+                                avatarUpdates[opponentId] = profile?.avatarUrl || null;
+                            } catch (e) {
+                                avatarUpdates[opponentId] = null;
+                            }
                         }
                     }
-                }
-                if (Object.keys(avatarUpdates).length > 0) {
-                    setOpponentAvatars(prev => ({ ...prev, ...avatarUpdates }));
+                    if (Object.keys(avatarUpdates).length > 0) {
+                        setOpponentAvatars(prev => ({ ...prev, ...avatarUpdates }));
+                    }
+                } catch (error) {
+                    console.error('[GameSandbox] Error in challenge subscription:', error);
                 }
             });
         }
@@ -247,8 +273,13 @@ export default function GameSandbox() {
                 setShowChallengePicker(false);
                 return true;
             }
-            if (state.isPlaying) {
-                handleQuit(); // Ask to quit
+            if (selectedGameType === 'flagdash' || selectedGameType === 'pindrop') {
+                // Game handles its own back press or we handle it here by clearing type
+                if (showQuitConfirmation) {
+                    cancelQuit();
+                } else {
+                    handleQuit();
+                }
                 return true;
             }
             return false;
@@ -291,7 +322,8 @@ export default function GameSandbox() {
 
     const handleStart = () => {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-        gameService.startGame(selectedDifficulty);
+        setSelectedGameType('flagdash');
+        gameService.startGame(selectedDifficulty, 'flagdash');
     };
 
     const handleAnswer = (code: string) => {
@@ -306,22 +338,17 @@ export default function GameSandbox() {
 
     const handleQuit = () => {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-        gameService.stopGame(); // Pause game while confirming
+        // Don't stop the game here - just show the confirmation modal
+        // stopGame() was causing the game to unmount before the modal could show
         setShowQuitConfirmation(true);
     };
 
     const confirmQuit = () => {
         setShowQuitConfirmation(false);
-        // Reset state to go back to start screen
-        setState(prev => ({
-            ...prev,
-            isPlaying: false,
-            gameOver: false,
-            score: 0,
-            streak: 0,
-            timeLeft: 30,
-            currentQuestion: null,
-        }));
+        gameService.stopGame(); // Now stop the game after confirmation
+        // Reset state
+        setSelectedGameType(null);
+
         // Clear any active challenge (user is abandoning it)
         if (activeChallenge) {
             setActiveChallenge(null);
@@ -332,7 +359,8 @@ export default function GameSandbox() {
 
     const cancelQuit = () => {
         setShowQuitConfirmation(false);
-        gameService.resumeGame(); // Resume game
+        // Resume game is handled by component prop if needed, or service
+        gameService.resumeGame();
     };
 
     const fetchLeaderboard = async () => {
@@ -355,17 +383,24 @@ export default function GameSandbox() {
             const user = getCurrentUser();
             if (!user) return;
 
-            const profile = await getUserProfile(user.uid);
-            if (!profile?.friends) {
+            // SECURE: Use getFriends() instead of profile.friends
+            const friendIds = await getFriends(user.uid);
+
+            if (friendIds.length === 0) {
                 setFriends([]);
                 return;
             }
 
-            const friendList: { uid: string; username: string }[] = [];
-            for (const friendUid of profile.friends) {
+            const friendList: { uid: string; username: string; avatarUrl?: string; pinColor?: string }[] = [];
+            for (const friendUid of friendIds) {
                 const friendProfile = await getUserProfile(friendUid);
                 if (friendProfile) {
-                    friendList.push({ uid: friendUid, username: friendProfile.username });
+                    friendList.push({
+                        uid: friendUid,
+                        username: friendProfile.username,
+                        avatarUrl: friendProfile.avatarUrl,
+                        pinColor: friendProfile.pinColor,
+                    });
                 }
             }
             setFriends(friendList);
@@ -386,17 +421,26 @@ export default function GameSandbox() {
     };
 
 
-    const sendChallenge = async (friendUid: string) => {
+    const sendChallenge = async (friendUid: string, gameType: 'flagdash' | 'pindrop' | 'travelbattle', difficulty: Difficulty) => {
         setShowChallengePicker(false);
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         try {
-            const challenge = await challengeService.createChallenge(friendUid, selectedDifficulty);
+            const challenge = await challengeService.createChallenge(friendUid, difficulty, gameType);
             if (challenge) {
                 // Start the game immediately for the challenger
                 setActiveChallenge(challenge);
                 setActiveGameId(challenge.id); // Persist
                 await challengeService.startChallengeAttempt(challenge.id); // Anti-Cheat Start
-                gameService.startGame(selectedDifficulty);
+
+                // Use the selected game type from the modal
+                setSelectedDifficulty(difficulty);
+                setSelectedGameType(gameType);
+
+                // Actually start the game - this was missing!
+                if (gameType === 'flagdash' || gameType === 'travelbattle') {
+                    gameService.startGame(difficulty, gameType);
+                }
+                // Note: PinDrop has its own service and starts automatically via props
             }
         } catch (error) {
             console.error('Failed to send challenge:', error);
@@ -410,7 +454,11 @@ export default function GameSandbox() {
             setActiveGameId(challenge.id); // Persist
             await challengeService.startChallengeAttempt(challenge.id); // Anti-Cheat Start
             setSelectedDifficulty(challenge.difficulty);
-            gameService.startGame(challenge.difficulty);
+
+            // Start Game
+            setSelectedGameType('flagdash');
+            gameService.startGame(challenge.difficulty);  // Actually start the game!
+
             // Refresh pending list
             loadPendingChallenges();
         } catch (error) {
@@ -487,7 +535,7 @@ export default function GameSandbox() {
 
     // Bottom Navigation Bar (2 tabs: Scores, Home)
     const renderBottomNav = () => (
-        <View style={styles.bottomNav}>
+        <View style={[styles.bottomNav, { paddingBottom: 20 + Math.max(0, insets.bottom - 10) }]}>
             <TouchableOpacity
                 style={[styles.navButton, activeTab === 'leaderboard' && styles.navButtonActive]}
                 onPress={() => {
@@ -557,6 +605,25 @@ export default function GameSandbox() {
         return (
             <View style={{ flex: 1, backgroundColor: 'white' }}>
 
+                {/* Daily Streak Badge */}
+                <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingTop: 16, paddingBottom: 8 }}>
+                    <View style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        backgroundColor: dailyStreak > 0 ? '#FEF3C7' : '#F3F4F6',
+                        paddingHorizontal: 12,
+                        paddingVertical: 6,
+                        borderRadius: 20,
+                        gap: 6,
+                    }}>
+                        <Text style={{ fontSize: 16 }}>🔥</Text>
+                        <Text style={{ fontSize: 14, fontWeight: '700', color: dailyStreak > 0 ? '#D97706' : '#9CA3AF' }}>
+                            {dailyStreak} Day{dailyStreak !== 1 ? 's' : ''}
+                        </Text>
+                    </View>
+                    <View style={{ flex: 1 }} />
+                </View>
+
                 {/* SECTION 1: YOUR TURN (Horizontal Scroll) */}
                 <Text style={styles.hubSectionTitle}>Your Turn</Text>
 
@@ -603,6 +670,20 @@ export default function GameSandbox() {
                                         <Text style={styles.cardStatus}>{statusText}</Text>
                                     </View>
 
+                                    {/* Game Type & Difficulty Badges */}
+                                    <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 4, marginBottom: 8 }}>
+                                        <View style={{ backgroundColor: item.gameType === 'pindrop' ? '#EF4444' : item.gameType === 'travelbattle' ? '#F59E0B' : '#3B82F6', paddingHorizontal: 6, paddingVertical: 3, borderRadius: 4 }}>
+                                            <Text style={{ color: 'white', fontSize: 10, fontWeight: '700' }}>
+                                                {item.gameType === 'pindrop' ? 'PIN DROP' : item.gameType === 'travelbattle' ? 'BATTLE' : 'FLAG DASH'}
+                                            </Text>
+                                        </View>
+                                        <View style={{ backgroundColor: item.difficulty === 'easy' ? '#10B981' : item.difficulty === 'hard' ? '#EF4444' : '#F59E0B', paddingHorizontal: 6, paddingVertical: 3, borderRadius: 4 }}>
+                                            <Text style={{ color: 'white', fontSize: 10, fontWeight: '700' }}>
+                                                {item.difficulty?.toUpperCase() || 'MEDIUM'}
+                                            </Text>
+                                        </View>
+                                    </View>
+
                                     <View style={styles.playButtonSmall}>
                                         <Text style={styles.playButtonTextSmall}>
                                             {isInvite ? 'ACCEPT' : isResult ? 'VIEW' : 'PLAY'}
@@ -645,48 +726,66 @@ export default function GameSandbox() {
 
 
                 {/* SECTION 3: GAME SELECTION */}
-                <Text style={styles.hubSectionTitle}>Solo Play</Text>
 
-                {/* Game Cards Row */}
-                <View style={{ flexDirection: 'row', paddingHorizontal: 20, gap: 12, marginBottom: 16 }}>
+                {/* Game Cards Row - Horizontal Square Tiles */}
+                <View style={{ flexDirection: 'row', marginHorizontal: 20, gap: 10, marginBottom: 16 }}>
                     {/* Flag Dash Card */}
                     <TouchableOpacity
-                        style={[
-                            styles.gameCard,
-                            { flex: 1, backgroundColor: '#4F46E5' }
-                        ]}
-                        onPress={() => {
-                            setSelectedGameType('flagdash');
-                            handleStart();
+                        style={{
+                            flex: 1,
+                            aspectRatio: 1,
+                            backgroundColor: '#3B82F6',
+                            borderRadius: 16,
+                            padding: 10,
+                            justifyContent: 'center',
+                            alignItems: 'center',
                         }}
+                        onPress={() => setPreviewGame('flagdash')}
                     >
-                        <View style={styles.gameCardIcon}>
-                            <Feather name="flag" size={24} color="#4F46E5" />
+                        <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.2)', justifyContent: 'center', alignItems: 'center', marginBottom: 6 }}>
+                            <Feather name="flag" size={18} color="white" />
                         </View>
-                        <Text style={styles.gameCardTitle}>Flag Dash</Text>
-                        <Text style={styles.gameCardSubtitle}>Guess the flag!</Text>
+                        <Text style={{ color: 'white', fontSize: 11, fontWeight: '700', textAlign: 'center' }}>Flag Dash</Text>
                     </TouchableOpacity>
 
                     {/* Pin Drop Card */}
                     <TouchableOpacity
-                        style={[
-                            styles.gameCard,
-                            { flex: 1, backgroundColor: '#10B981' }
-                        ]}
-                        onPress={() => {
-                            setSelectedGameType('pindrop');
+                        style={{
+                            flex: 1,
+                            aspectRatio: 1,
+                            backgroundColor: '#EF4444',
+                            borderRadius: 16,
+                            padding: 10,
+                            justifyContent: 'center',
+                            alignItems: 'center',
                         }}
+                        onPress={() => setPreviewGame('pindrop')}
                     >
-                        <View style={styles.gameCardIcon}>
-                            <Feather name="map-pin" size={24} color="#10B981" />
+                        <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.2)', justifyContent: 'center', alignItems: 'center', marginBottom: 6 }}>
+                            <Feather name="map-pin" size={18} color="white" />
                         </View>
-                        <Text style={styles.gameCardTitle}>Pin Drop</Text>
-                        <Text style={styles.gameCardSubtitle}>Find the location!</Text>
+                        <Text style={{ color: 'white', fontSize: 11, fontWeight: '700', textAlign: 'center' }}>Pin Drop</Text>
+                    </TouchableOpacity>
+
+                    {/* Travel Battle Card */}
+                    <TouchableOpacity
+                        style={{
+                            flex: 1,
+                            aspectRatio: 1,
+                            backgroundColor: '#F59E0B',
+                            borderRadius: 16,
+                            padding: 10,
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                        }}
+                        onPress={() => setPreviewGame('travelbattle')}
+                    >
+                        <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.2)', justifyContent: 'center', alignItems: 'center', marginBottom: 6 }}>
+                            <Feather name="globe" size={18} color="white" />
+                        </View>
+                        <Text style={{ color: 'white', fontSize: 11, fontWeight: '700', textAlign: 'center' }}>Travel Battle</Text>
                     </TouchableOpacity>
                 </View>
-
-                {/* Difficulty Selector - for Flag Dash */}
-                {renderDifficultySelector()}
 
                 {/* Friend Challenge Button (Prominent Green) */}
                 <TouchableOpacity
@@ -696,12 +795,12 @@ export default function GameSandbox() {
                         alignItems: 'center',
                         gap: 10,
                         marginBottom: 40,
-                        backgroundColor: '#6366F1',
+                        backgroundColor: '#10B981',
                         paddingVertical: 14,
                         paddingHorizontal: 24,
                         borderRadius: 16,
                         marginHorizontal: 20,
-                        shadowColor: '#6366F1',
+                        shadowColor: '#10B981',
                         shadowOffset: { width: 0, height: 4 },
                         shadowOpacity: 0.3,
                         shadowRadius: 8,
@@ -732,24 +831,31 @@ export default function GameSandbox() {
         setSubmittingScore(true);
         const finalScore = state.score;
 
-        // 1. Always save to leaderboard (if permitted)
-        // LeaderboardService handles high-score logic internally? 
-        // No, it handles "Is this better than my last?". We just send it.
-        try {
-            await leaderboardService.saveScore(finalScore, state.difficulty);
-        } catch (e) {
-            console.error('Leaderboard save failed:', e);
-        }
+        // Note: Regular game scores are submitted via GameService.submitScoreToServer()
+        // which calls the submitGameScore Cloud Function.
+        // Here we only handle challenge score submission.
 
-        // 2. If Challenge, submit to service
+        // If Challenge, submit to service
         if (activeChallenge) {
             try {
-                const result = await challengeService.submitScore(activeChallenge.id, finalScore);
+                // Challenge submitScore now requires answers and gameTimeMs
+                // For sandbox testing, we pass minimal data
+                const result = await challengeService.submitScore(
+                    activeChallenge.id,
+                    finalScore,
+                    [], // answers - empty for sandbox testing
+                    30000 // gameTimeMs - simulate 30 seconds
+                );
                 setChallengeResult(result);
             } catch (e) {
                 console.error('Challenge submit failed:', e);
             }
         }
+
+        // Record daily game streak
+        const streakResult = await streakService.recordGamePlayed();
+        setDailyStreak(streakResult.streak);
+
         setSubmittingScore(false);
     };
 
@@ -854,6 +960,7 @@ export default function GameSandbox() {
                     gameService.stopGame();
                     // Reset to start screen (flag dash menu)
                     setState(prev => ({ ...prev, gameOver: false, isPlaying: false }));
+                    setSelectedGameType(null); // Return to game hub
                 }}
             >
                 <Feather name="home" size={18} color="#6B7280" />
@@ -866,20 +973,7 @@ export default function GameSandbox() {
                     gameService.stopGame();
                     // Reset state first to prevent UI glitches
                     setState(prev => ({ ...prev, gameOver: false, isPlaying: false }));
-                    // Navigate after state update
-                    setTimeout(() => router.push('/sandbox/' as any), 50);
-                }}
-            >
-                <Feather name="grid" size={18} color="#6B7280" />
-                <Text style={styles.gameOverNavText}>Test Lab</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-                style={styles.gameOverNavButton}
-                onPress={() => {
-                    gameService.stopGame();
-                    // Reset state first to prevent UI glitches
-                    setState(prev => ({ ...prev, gameOver: false, isPlaying: false }));
+                    setSelectedGameType(null);
                     // Navigate after state update
                     setTimeout(() => router.push('/' as any), 50);
                 }}
@@ -926,24 +1020,30 @@ export default function GameSandbox() {
 
                 {/* Question Area */}
                 <View style={styles.card}>
-                    <Image
-                        source={{ uri: state.currentQuestion.flagUrl }}
-                        style={styles.flagImage}
-                        resizeMode="contain"
-                    />
+                    {state.currentQuestion.flagUrl ? (
+                        <Image
+                            source={{ uri: state.currentQuestion.flagUrl }}
+                            style={styles.flagImage}
+                            contentFit="contain"
+                        />
+                    ) : (
+                        <View style={{ justifyContent: 'center', alignItems: 'center' }}>
+                            <Feather name="help-circle" size={64} color="#E5E7EB" />
+                        </View>
+                    )}
                 </View>
 
-                <Text style={styles.promptText}>Which country is this?</Text>
+                <Text style={styles.promptText}>{state.currentQuestion.text || 'Which country is this?'}</Text>
 
                 {/* Options Grid */}
                 <View style={styles.optionsGrid}>
                     {state.currentQuestion.options.map((option) => (
                         <TouchableOpacity
-                            key={option.code}
+                            key={option.id}
                             style={styles.optionButton}
-                            onPress={() => handleAnswer(option.code)}
+                            onPress={() => handleAnswer(option.id)}
                         >
-                            <Text style={styles.optionText}>{option.name}</Text>
+                            <Text style={styles.optionText}>{option.text}</Text>
                         </TouchableOpacity>
                     ))}
                 </View>
@@ -1009,7 +1109,7 @@ export default function GameSandbox() {
             ) : (
                 <ScrollView style={styles.leaderboardTabList} contentContainerStyle={{ paddingBottom: 20 }}>
                     {leaderboardData.map((entry, index) => (
-                        <View key={`${entry.odUid}_${entry.gameType || 'flagdash'}`} style={styles.leaderboardRow}>
+                        <View key={`${entry.odUid}_${entry.gameType || 'flagdash'}_${index}`} style={styles.leaderboardRow}>
                             <View style={styles.rankBadge}>
                                 <Text style={[
                                     styles.rankText,
@@ -1053,15 +1153,21 @@ export default function GameSandbox() {
         </View>
     );
 
+    // DEBUG: Log render path
+    console.log('[GameSandbox] Render state:', { selectedGameType, gameOver: state.gameOver, isPlaying: state.isPlaying });
+
     return (
         <SafeAreaView style={styles.container}>
             {/* Pin Drop Full Screen Game */}
             {selectedGameType === 'pindrop' && (
                 <PinDropGame
                     difficulty={pinDropDifficulty}
-                    onGameOver={(score) => {
-                        // Save to leaderboard with 'pindrop' game type and return to home
-                        leaderboardService.saveScore(score, pinDropDifficulty as Difficulty, 'pindrop').catch(console.error);
+                    onGameOver={async (score) => {
+                        // Note: PinDrop scores are now submitted via Cloud Functions
+                        // The PinDropGame component handles score submission internally
+                        // Record streak
+                        const result = await streakService.recordGamePlayed();
+                        setDailyStreak(result.streak);
                         setSelectedGameType(null);
                     }}
                     onQuit={() => {
@@ -1070,109 +1176,214 @@ export default function GameSandbox() {
                 />
             )}
 
-            {/* Flag Dash Game (Original) OR Swipeable Tabs */}
-            {selectedGameType !== 'pindrop' && (
+            {/* Flag Dash Game - Original inline implementation */}
+            {selectedGameType === 'flagdash' && state.isPlaying && !state.gameOver && (
+                <>
+                    {renderQuitConfirmationModal()}
+                    {renderGame()}
+                </>
+            )}
+
+            {/* Flag Dash Game Over */}
+            {selectedGameType === 'flagdash' && state.gameOver && (
+                <>
+                    {renderGameOver()}
+                </>
+            )}
+
+            {/* Travel Battle Game (NEW - with Trivia) */}
+            {selectedGameType === 'travelbattle' && (
+                <TravelBattleGame
+                    difficulty={selectedDifficulty}
+                    gameMode="travelbattle"
+                    onGameOver={async (score) => {
+                        setState(prev => ({ ...prev, score, gameOver: true }));
+                        // Record streak
+                        const result = await streakService.recordGamePlayed();
+                        setDailyStreak(result.streak);
+                    }}
+                    onQuit={() => {
+                        handleQuit();
+                    }}
+                    onGameMenu={() => {
+                        gameService.stopGame();
+                        setSelectedGameType(null);
+                    }}
+                    onExit={() => {
+                        gameService.stopGame();
+                        setSelectedGameType(null);
+                        router.push('/' as any);
+                    }}
+                />
+            )}
+
+            {/* Hub (Start Screen) - Only show if NO game selected */}
+            {!selectedGameType && (
                 <>
                     <Stack.Screen options={{ title: '' }} />
                     {renderQuitConfirmationModal()}
 
-                    {/* Animated Tab Container (only when not playing) */}
-                    {!state.isPlaying && !state.gameOver ? (
-                        <Animated.View
-                            style={{
-                                flex: 1,
-                                flexDirection: 'row',
-                                width: width * 2,
-                                transform: [{ translateX: tabTranslateX }],
-                            }}
-                            {...panResponder.panHandlers}
-                        >
-                            {/* Home Tab */}
-                            <ScrollView
-                                style={[styles.content, { width }]}
-                                contentContainerStyle={styles.contentContainer}
-                                showsVerticalScrollIndicator={false}
-                            >
-                                {renderStartScreen()}
-                            </ScrollView>
-
-                            {/* Leaderboard Tab */}
-                            <View style={{ width }}>
-                                {renderLeaderboardTab()}
-                            </View>
-                        </Animated.View>
-                    ) : (
-                        /* Playing or Game Over - No tabs, just game content */
+                    {/* Animated Tab Container */}
+                    <Animated.View
+                        style={{
+                            flex: 1,
+                            flexDirection: 'row',
+                            width: width * 2,
+                            transform: [{ translateX: tabTranslateX }],
+                        }}
+                        {...panResponder.panHandlers}
+                    >
+                        {/* Home Tab */}
                         <ScrollView
-                            style={styles.content}
+                            style={[styles.content, { width }]}
                             contentContainerStyle={styles.contentContainer}
                             showsVerticalScrollIndicator={false}
                         >
-                            {state.isPlaying && renderGame()}
-                            {state.gameOver && renderGameOver()}
+                            {renderStartScreen()}
                         </ScrollView>
-                    )}
+
+                        {/* Leaderboard Tab */}
+                        <View style={{ width }}>
+                            {renderLeaderboardTab()}
+                        </View>
+                    </Animated.View>
 
                     {/* Bottom Navigation */}
-                    {!state.isPlaying && renderBottomNav()}
+                    {renderBottomNav()}
                 </>
             )}
-
-            {/* Friend Picker Modal */}
+            {/* Pre-Game Bottom Sheet Modal */}
             <Modal
-                visible={showChallengePicker}
+                visible={!!previewGame}
                 animationType="slide"
                 transparent={true}
-                onRequestClose={() => setShowChallengePicker(false)}
+                onRequestClose={() => setPreviewGame(null)}
             >
-                <View style={styles.modalOverlay}>
-                    <View style={styles.modalContent}>
-                        <View style={styles.modalHeader}>
-                            <Text style={styles.modalTitle}>⚔️ Challenge a Friend</Text>
-                            <Text style={styles.modalSubtitle}>{selectedDifficulty.toUpperCase()} Mode</Text>
-                            <TouchableOpacity
-                                style={styles.closeButton}
-                                onPress={() => setShowChallengePicker(false)}
-                            >
-                                <Feather name="x" size={24} color="#6B7280" />
+                <View style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.5)' }}>
+                    <View style={{
+                        backgroundColor: 'white',
+                        borderTopLeftRadius: 24,
+                        borderTopRightRadius: 24,
+                        padding: 24,
+                        paddingBottom: 40,
+                    }}>
+                        {/* Handle Bar */}
+                        <View style={{ width: 40, height: 4, backgroundColor: '#E5E7EB', borderRadius: 2, alignSelf: 'center', marginBottom: 20 }} />
+
+                        {/* Game Header */}
+                        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 24 }}>
+                            <View style={{
+                                width: 56,
+                                height: 56,
+                                borderRadius: 16,
+                                backgroundColor: previewGame === 'flagdash' ? '#4F46E5' : previewGame === 'pindrop' ? '#10B981' : '#F59E0B',
+                                justifyContent: 'center',
+                                alignItems: 'center',
+                                marginRight: 16,
+                            }}>
+                                <Feather
+                                    name={previewGame === 'flagdash' ? 'flag' : previewGame === 'pindrop' ? 'map-pin' : 'globe'}
+                                    size={28}
+                                    color="white"
+                                />
+                            </View>
+                            <View style={{ flex: 1 }}>
+                                <Text style={{ fontSize: 22, fontWeight: '800', color: '#1F2937' }}>
+                                    {previewGame === 'flagdash' ? 'Flag Dash' : previewGame === 'pindrop' ? 'Pin Drop' : 'Travel Battle'}
+                                </Text>
+                                <Text style={{ fontSize: 14, color: '#6B7280', marginTop: 2 }}>
+                                    {previewGame === 'flagdash' ? 'Guess flags & capitals' : previewGame === 'pindrop' ? 'Find locations on the map' : 'Trivia, flags & more!'}
+                                </Text>
+                            </View>
+                            <TouchableOpacity onPress={() => setPreviewGame(null)}>
+                                <Feather name="x" size={24} color="#9CA3AF" />
                             </TouchableOpacity>
                         </View>
 
-                        {loadingFriends ? (
-                            <View style={styles.loadingContainer}>
-                                <ActivityIndicator size="large" color="#4F46E5" />
-                                <Text style={styles.loadingText}>Loading friends...</Text>
-                            </View>
-                        ) : friends.length === 0 ? (
-                            <View style={styles.emptyContainer}>
-                                <Feather name="users" size={48} color="#9CA3AF" />
-                                <Text style={styles.emptyText}>No friends yet</Text>
-                                <Text style={styles.emptySubtext}>Add friends to challenge them!</Text>
-                            </View>
-                        ) : (
-                            <ScrollView style={styles.leaderboardList}>
-                                {friends.map((friend) => (
-                                    <TouchableOpacity
-                                        key={friend.uid}
-                                        style={styles.friendRow}
-                                        onPress={() => sendChallenge(friend.uid)}
-                                    >
-                                        <View style={styles.friendInfo}>
-                                            <View style={styles.friendAvatar}>
-                                                <Feather name="user" size={20} color="#6B7280" />
-                                            </View>
-                                            <Text style={styles.friendName}>{friend.username}</Text>
-                                        </View>
-                                        <View style={styles.challengeSendButton}>
-                                            <Feather name="send" size={16} color="#10B981" />
-                                        </View>
-                                    </TouchableOpacity>
-                                ))}
-                            </ScrollView>
-                        )}
+                        {/* High Score */}
+                        <View style={{
+                            backgroundColor: '#F9FAFB',
+                            borderRadius: 12,
+                            padding: 16,
+                            marginBottom: 20,
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                        }}>
+                            <Feather name="award" size={20} color="#F59E0B" />
+                            <Text style={{ marginLeft: 10, fontSize: 14, color: '#6B7280' }}>High Score:</Text>
+                            <Text style={{ marginLeft: 8, fontSize: 18, fontWeight: '700', color: '#1F2937' }}>{state.highScore}</Text>
+                        </View>
+
+                        {/* Difficulty Selector */}
+                        <Text style={{ fontSize: 12, fontWeight: '600', color: '#9CA3AF', letterSpacing: 1, marginBottom: 12 }}>DIFFICULTY</Text>
+                        <View style={{ flexDirection: 'row', gap: 10, marginBottom: 24 }}>
+                            {(['easy', 'medium', 'hard'] as Difficulty[]).map((diff) => (
+                                <TouchableOpacity
+                                    key={diff}
+                                    style={{
+                                        flex: 1,
+                                        paddingVertical: 12,
+                                        borderRadius: 12,
+                                        backgroundColor: selectedDifficulty === diff ? '#4F46E5' : '#F3F4F6',
+                                        alignItems: 'center',
+                                    }}
+                                    onPress={() => {
+                                        setSelectedDifficulty(diff);
+                                        setPinDropDifficulty(diff as PinDropDifficulty);
+                                    }}
+                                >
+                                    <Text style={{
+                                        fontSize: 14,
+                                        fontWeight: '700',
+                                        color: selectedDifficulty === diff ? 'white' : '#6B7280'
+                                    }}>
+                                        {diff.toUpperCase()}
+                                    </Text>
+                                </TouchableOpacity>
+                            ))}
+                        </View>
+
+                        {/* Start Game Button */}
+                        <TouchableOpacity
+                            style={{
+                                backgroundColor: previewGame === 'flagdash' ? '#4F46E5' : previewGame === 'pindrop' ? '#10B981' : '#F59E0B',
+                                paddingVertical: 16,
+                                borderRadius: 16,
+                                alignItems: 'center',
+                                flexDirection: 'row',
+                                justifyContent: 'center',
+                                gap: 10,
+                            }}
+                            onPress={() => {
+                                const gameToStart = previewGame;
+                                setPreviewGame(null);
+                                if (gameToStart) {
+                                    // Start the gameService for flagdash and travelbattle
+                                    if (gameToStart === 'flagdash' || gameToStart === 'travelbattle') {
+                                        gameService.startGame(selectedDifficulty, gameToStart);
+                                    }
+                                    setSelectedGameType(gameToStart);
+                                }
+                            }}
+                        >
+                            <Feather name="play" size={20} color="white" />
+                            <Text style={{ color: 'white', fontSize: 18, fontWeight: '700' }}>Start Game</Text>
+                        </TouchableOpacity>
                     </View>
                 </View>
             </Modal>
+
+            {/* Challenge Friend Modal (Scalable with Search) */}
+            <ChallengeFriendModal
+                visible={showChallengePicker}
+                onClose={() => setShowChallengePicker(false)}
+                friends={friends}
+                difficulty={selectedDifficulty}
+                loadingFriends={loadingFriends}
+                onSendChallenge={async (friend, gameType, difficulty) => {
+                    await sendChallenge(friend.uid, gameType, difficulty);
+                }}
+            />
         </SafeAreaView>
     );
 }
@@ -1338,19 +1549,17 @@ const styles = StyleSheet.create({
         textAlign: 'center',
     },
     optionsGrid: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        gap: 12,
-        justifyContent: 'space-between',
+        flexDirection: 'column',
+        gap: isSmallScreen ? 8 : 10,
+        paddingHorizontal: isSmallScreen ? 0 : 8,
     },
     optionButton: {
-        width: '48%',
+        width: '100%',
         backgroundColor: 'white',
-        paddingVertical: isSmallScreen ? 12 : 16,
-        paddingHorizontal: 12,
-        borderRadius: 14,
+        paddingVertical: isSmallScreen ? 12 : 14,
+        paddingHorizontal: 16,
+        borderRadius: 12,
         alignItems: 'center',
-        minHeight: 48,
         justifyContent: 'center',
         shadowColor: "#000",
         shadowOffset: { width: 0, height: 2 },
@@ -1361,7 +1570,7 @@ const styles = StyleSheet.create({
         borderColor: 'transparent',
     },
     optionText: {
-        fontSize: 16,
+        fontSize: 14,
         fontWeight: '600',
         color: '#374151',
     },
@@ -1798,8 +2007,10 @@ const styles = StyleSheet.create({
         paddingBottom: 10,
     },
     activeGameCard: {
-        width: 160,
-        height: 200,
+        width: 165,
+        height: 230,
+        flexGrow: 0,
+        flexShrink: 0,
         backgroundColor: 'white',
         borderRadius: 20,
         padding: 16,

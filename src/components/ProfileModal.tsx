@@ -2,11 +2,14 @@ import { Feather } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import React, { useEffect, useMemo, useState } from 'react';
 import { Dimensions, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import { useMemoryStore } from '../store/useMemoryStore';
-import { toggleHiddenFriend, getUserProfile, TripListItem, addToTriplist, removeFromTriplist, updateTriplistStatus } from '../services/userService';
+import { toggleHiddenFriend, getUserProfile, BucketListItem, addToBucketList, removeFromBucketList, updateBucketListStatus } from '../services/userService';
 import { CountryPickerModal } from './CountryPickerModal';
+import { EditProfileModal } from './EditProfileModal';
 import { Country, COUNTRIES } from '../data/countries';
+import { BucketListActionModal } from './BucketListActionModal';
 
 const { width, height } = Dimensions.get('window');
 
@@ -17,6 +20,10 @@ const PIN_COLOR_MAP: Record<string, string> = {
     blue: '#0066FF',
     cyan: '#00DDDD',
     red: '#FF3333',
+    black: '#1A1A1A',
+    purple: '#8B5CF6',
+    silver: '#C0C0C0',
+    white: '#FFFFFF',
 };
 
 interface ProfileModalProps {
@@ -25,6 +32,12 @@ interface ProfileModalProps {
     userId: string | null;
     onFilterMap?: (userId: string) => void;
     onPlayStory?: (userId: string, story?: Story) => void;
+    // Settings callbacks (for own profile)
+    onEditUsername?: () => void;
+    onEditAvatar?: () => void;
+    onPinColorChange?: (color: string) => void;
+    onOpenSettings?: () => void;
+    onViewBucketListItem?: (location: any) => void;
 }
 
 import { storyService, Story } from '../services/StoryService';
@@ -36,10 +49,16 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
     onClose,
     userId,
     onFilterMap,
-    onPlayStory
+    onPlayStory,
+    onEditUsername,
+    onEditAvatar,
+    onPinColorChange,
+    onOpenSettings,
+    onViewBucketListItem
 }) => {
     // Animation state
     const animation = useSharedValue(0);
+    const insets = useSafeAreaInsets();
 
     // Get user data and pins from store
     const memories = useMemoryStore(state => state.memories);
@@ -48,21 +67,29 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
     const currentUserId = useMemoryStore(state => state.currentUserId);
     const myUsername = useMemoryStore(state => state.username);
     const myAvatar = useMemoryStore(state => state.avatarUri);
+    const myBio = useMemoryStore(state => state.bio);
     const myPinColor = useMemoryStore(state => state.pinColor);
-    const { hiddenFriendIds, toggleHiddenFriend: toggleHiddenFriendLocal } = useMemoryStore();
+    const hiddenFriendIds = useMemoryStore(state => state.hiddenFriendIds);
+    const toggleHiddenFriendLocal = useMemoryStore(state => state.toggleHiddenFriend);
 
     const isMe = userId === currentUserId;
 
     // State for fetched friend profile
     const [friendUsername, setFriendUsername] = useState<string | null>(null);
     const [friendAvatar, setFriendAvatar] = useState<string | null>(null);
-    const [friendPinColor, setFriendPinColor] = useState<string>('magenta');
+    const [friendPinColor, setFriendPinColor] = useState<string>('orange');
+    const [myFetchedPinColor, setMyFetchedPinColor] = useState<string | null>(null); // Fetched from Firestore for own profile
+    const [friendBio, setFriendBio] = useState<string | null>(null);
+    const [friendHidePinsFrom, setFriendHidePinsFrom] = useState<string[]>([]);
 
-    // Triplist State
-    const [triplist, setTriplist] = useState<TripListItem[]>([]);
-    const [isCountryPickerVisible, setIsCountryPickerVisible] = useState(false);
+    // Bucket List State (was Triplist)
+    const [bucketList, setBucketList] = useState<BucketListItem[]>([]);
+    const [selectedBucketItem, setSelectedBucketItem] = useState<BucketListItem | null>(null);
 
-    // Fetch profile data (including triplist)
+    // Refresh key to force re-fetch when profile is edited
+    const [refreshKey, setRefreshKey] = useState(0);
+
+    // Fetch profile data
     useEffect(() => {
         if (visible && userId) {
             getUserProfile(userId).then(profile => {
@@ -70,19 +97,34 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                     if (!isMe) {
                         setFriendUsername(profile.username);
                         setFriendAvatar(profile.avatarUrl || null);
-                        setFriendPinColor(profile.pinColor || 'magenta');
+                        // Normalize pinColor to lowercase for consistent lookup
+                        setFriendPinColor((profile.pinColor || 'orange').toLowerCase().trim());
+                        setFriendBio(profile.bio || null);
+                        setFriendHidePinsFrom(profile.hidePinsFrom || []);
+                    } else {
+                        // For own profile, fetch pinColor from Firestore to ensure consistency
+                        if (profile.pinColor) {
+                            // Normalize pinColor to lowercase for consistent lookup
+                            const normalizedColor = profile.pinColor.toLowerCase().trim();
+                            setMyFetchedPinColor(normalizedColor);
+                            useMemoryStore.getState().setPinColor(normalizedColor);
+                        }
                     }
-                    // Set triplist for both me and friend
-                    setTriplist(profile.triplist || []);
+                    // Load Bucket List (fallback to triplist if migration needed, but for now just bucketList)
+                    setBucketList(profile.bucketList || []);
+
+                    // Streak (Only relevant to display? Maybe add to stats)
                 }
             });
         }
-    }, [visible, userId, isMe]);
+    }, [visible, userId, isMe, refreshKey]);
 
     // Stories Logic
     const [stories, setStories] = useState<Story[]>([]);
     const [isStoryEditorVisible, setIsStoryEditorVisible] = useState(false);
     const [editingStory, setEditingStory] = useState<Story | null>(null);
+    const [isEditProfileVisible, setIsEditProfileVisible] = useState(false);
+    const [isCountryPickerVisible, setIsCountryPickerVisible] = useState(false);
 
     useEffect(() => {
         if (visible && userId) {
@@ -91,6 +133,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
         }
     }, [visible, userId]);
 
+    // Button Handlers
     const handleCreateStory = () => {
         setEditingStory(null);
         setIsStoryEditorVisible(true);
@@ -113,53 +156,15 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
     };
 
     // 1. Try to find user info from memories (most reliable for avatar/name of creator if not me)
-    const userPins = useMemo(() =>
-        userId ? memories.filter(m => m.creatorId === userId) : [],
-        [userId, memories]);
-
-    // Determine display values - use fetched friend profile for non-self users
-    let displayUsername = isMe ? myUsername : (friendUsername || 'Loading...');
-    let displayAvatar = isMe ? myAvatar : friendAvatar;
-    let displayPinColorName = isMe ? myPinColor : friendPinColor;
-
-    // Resolve hex color
-    const themeColor = PIN_COLOR_MAP[displayPinColorName] || '#FF00FF';
-
-    // STATS
-    const pinCount = userPins.length;
-    // Rough country count based on unique location text (imperfect but functional for now)
-    const countryCount = useMemo(() => {
-        const uniqueLocations = new Set();
-        userPins.forEach(p => {
-            if (p.locationName) {
-                const parts = p.locationName.split(',');
-                if (parts.length > 0) {
-                    uniqueLocations.add(parts[parts.length - 1].trim());
-                }
-            }
-        });
-        return uniqueLocations.size;
-    }, [userPins]);
-
-
-    // Animation Logic
-    useEffect(() => {
-        if (visible) {
-            animation.value = 1;
-        } else {
-            animation.value = 0;
+    const userPins = useMemo(() => {
+        if (!userId) return [];
+        // Privacy Check: If this is a friend's profile, and they hide pins from me, show nothing.
+        if (!isMe && currentUserId && friendHidePinsFrom.includes(currentUserId)) {
+            return [];
         }
-    }, [visible]);
+        return memories.filter(m => m.creatorId === userId);
+    }, [userId, memories, isMe, currentUserId, friendHidePinsFrom]);
 
-    const animatedStyle = useAnimatedStyle(() => ({
-        opacity: withSpring(animation.value, { damping: 20, stiffness: 300 }),
-        transform: [
-            { scale: withSpring(0.9 + animation.value * 0.1, { damping: 15, stiffness: 200 }) },
-            { translateY: withSpring((1 - animation.value) * 50, { damping: 18, stiffness: 180 }) }
-        ]
-    }));
-
-    // Wire up buttons
     const handleFilter = () => {
         if (userId && onFilterMap) {
             onFilterMap(userId);
@@ -187,25 +192,94 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
         }
     };
 
+
+    // ... Stats Calculation ...
+    // Determine display values
+    let displayUsername = isMe ? myUsername : (friendUsername || 'Loading...');
+    let displayAvatar = isMe ? myAvatar : friendAvatar;
+    // Default to white ring if no avatar is set (placeholder look), otherwise use selected color
+    // For own profile, prefer Firestore-fetched value over Zustand for consistency
+    const effectivePinColor = isMe ? (myFetchedPinColor || myPinColor || 'orange') : (friendPinColor || 'orange');
+    const colorKey = (effectivePinColor || 'orange').toLowerCase().trim();
+    const mappedColor = PIN_COLOR_MAP[colorKey];
+    console.log('[DEBUG] ProfileModal themeColor lookup:', { isMe, myPinColor, myFetchedPinColor, effectivePinColor, colorKey, mappedColor, hasMappedColor: !!mappedColor });
+    let themeColor = displayAvatar
+        ? (mappedColor || '#FF8C00')
+        : '#FFFFFF';
+
+    // Stats
+    const pinCount = userPins.length;
+    // Visited Countries: Pins + BucketList visited
+    const countryCount = useMemo(() => {
+        const unique = new Set<string>();
+        // From Pins
+        userPins.forEach(p => {
+            if (p.locationName) {
+                const parts = p.locationName.split(',');
+                if (parts.length > 0) unique.add(parts[parts.length - 1].trim());
+            }
+        });
+        // From Bucket List (Visited)
+        bucketList.filter(b => b.status === 'visited' && b.countryName).forEach(b => unique.add(b.countryName!));
+        return unique.size;
+    }, [userPins, bucketList]);
+
+    // Streak Stat (Need to fetch from profile or store?)
+    // Basic approach: we fetched profile above. But we didn't store streak in state.
+    // Let's add streak state.
+    const [streak, setStreak] = useState(0);
+    useEffect(() => {
+        if (userId) getUserProfile(userId).then(p => setStreak(p?.streak?.current || 0));
+    }, [userId, visible]);
+
+
+    // Animation Logic
+    useEffect(() => {
+        if (visible) animation.value = 1;
+        else animation.value = 0;
+    }, [visible]);
+
+    const animatedStyle = useAnimatedStyle(() => ({
+        opacity: withSpring(animation.value, { damping: 20 }),
+        transform: [{ scale: withSpring(0.9 + animation.value * 0.1) }, { translateY: withSpring((1 - animation.value) * 50) }]
+    }));
+
+
     if (!visible) return null;
 
     return (
         <View style={styles.overlay}>
-            {/* Backdrop tap to close */}
             <TouchableOpacity style={StyleSheet.absoluteFill} onPress={onClose} activeOpacity={1}>
                 <Animated.View style={[styles.backdrop, { opacity: animation }]} />
             </TouchableOpacity>
 
-            {/* Glass Card */}
-            <Animated.View style={[styles.cardContainer, animatedStyle]}>
-                <View style={[styles.glassCard, { backgroundColor: 'rgba(255,255,255,0.95)' }]}>
+            <Animated.View style={[styles.cardContainer, animatedStyle, { marginTop: insets.top + 10, maxHeight: height - insets.top - insets.bottom - 40 }]}>
+                {/* Fixed Header Buttons - Outside ScrollView */}
+                <View style={{ position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10, flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 24, paddingTop: 20 }}>
+                    {isMe ? (
+                        <TouchableOpacity onPress={onOpenSettings}>
+                            <Feather name="settings" size={22} color="rgba(0,0,0,0.5)" />
+                        </TouchableOpacity>
+                    ) : <View style={{ width: 22 }} />}
+                    <View style={{ flexDirection: 'row', gap: 16 }}>
+                        {isMe && (
+                            <TouchableOpacity onPress={() => setIsEditProfileVisible(true)}>
+                                <Feather name="edit-2" size={22} color="rgba(0,0,0,0.5)" />
+                            </TouchableOpacity>
+                        )}
+                        <TouchableOpacity onPress={onClose} testID="profile-close-button">
+                            <Feather name="x" size={24} color="rgba(0,0,0,0.5)" />
+                        </TouchableOpacity>
+                    </View>
+                </View>
 
-                    {/* Close Button */}
-                    <TouchableOpacity style={styles.closeButton} onPress={onClose}>
-                        <Feather name="x" size={24} color="rgba(0,0,0,0.5)" />
-                    </TouchableOpacity>
+                <View
+                    style={[styles.glassCard, { backgroundColor: 'rgba(255,255,255,0.95)', paddingTop: 50, alignItems: 'center', paddingBottom: 16 }]}
+                >
 
-                    {/* Avatar - Half in/out */}
+                    {/* ===== FIXED TOP SECTION ===== */}
+
+                    {/* Avatar */}
                     <View style={styles.avatarContainer}>
                         <View style={[styles.avatarRing, { borderColor: themeColor }]}>
                             {displayAvatar ? (
@@ -216,17 +290,20 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                                 </View>
                             )}
                         </View>
+                        {/* Streak Badge */}
+                        {streak > 0 && (
+                            <View style={{ position: 'absolute', bottom: 0, right: 0, backgroundColor: '#FF4500', borderRadius: 12, paddingHorizontal: 6, paddingVertical: 2, borderWidth: 2, borderColor: 'white' }}>
+                                <Text style={{ color: 'white', fontSize: 10, fontWeight: 'bold' }}>🔥 {streak}</Text>
+                            </View>
+                        )}
                     </View>
 
-                    {/* User Info */}
                     <View style={styles.infoContainer}>
                         <Text style={styles.username}>{displayUsername || 'Unknown'}</Text>
-                        <View style={styles.statusBadge}>
-                            <Text style={styles.statusText}>{isMe ? 'You' : 'Traveller'}</Text>
-                        </View>
+                        {(isMe ? myBio : friendBio) && <Text style={styles.bio}>{isMe ? myBio : friendBio}</Text>}
                     </View>
 
-                    {/* Stats Row */}
+                    {/* Stats */}
                     <View style={styles.statsRow}>
                         <View style={styles.statItem}>
                             <Text style={styles.statValue}>{countryCount}</Text>
@@ -239,143 +316,19 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                         </View>
                         <View style={styles.divider} />
                         <View style={styles.statItem}>
-                            <Text style={styles.statValue}>{new Date().getFullYear()}</Text>
-                            <Text style={styles.statLabel}>Active Since</Text>
+                            <Text style={styles.statValue}>{streak}</Text>
+                            <Text style={styles.statLabel}>Explore Streak</Text>
                         </View>
                     </View>
 
-                    {/* TRIPLIST SECTION */}
-                    <View style={styles.storiesSection}>
-                        <View style={styles.sectionHeader}>
-                            <Text style={styles.sectionTitle}>Triplist</Text>
-                            {isMe && (
-                                <TouchableOpacity onPress={() => setIsCountryPickerVisible(true)}>
-                                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                        <Feather name="plus" size={14} color="#4F46E5" />
-                                        <Text style={[styles.createStoryText, { marginLeft: 4 }]}>Add</Text>
-                                    </View>
-                                </TouchableOpacity>
-                            )}
-                        </View>
-
-                        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.storiesList} contentContainerStyle={{ paddingRight: 16 }}>
-                            {/* List Items - Filter out any corrupted entries (missing code/name) */}
-                            {triplist
-                                .filter(item => item.countryCode && item.countryName)
-                                .map(item => (
-                                    <TouchableOpacity
-                                        key={item.countryCode}
-                                        style={[styles.tripCard, item.status === 'booked' && styles.tripCardBooked]}
-                                        onPress={() => {
-                                            if (!isMe) return;
-                                            Alert.alert(
-                                                item.countryName,
-                                                'Update status or remove?',
-                                                [
-                                                    { text: 'Cancel', style: 'cancel' },
-                                                    {
-                                                        text: item.status === 'wishlist' ? 'Mark as Booked 🎟️' : 'Mark as Wishlist 💭',
-                                                        onPress: () => {
-                                                            const newStatus = item.status === 'wishlist' ? 'booked' : 'wishlist';
-                                                            updateTriplistStatus(currentUserId!, item.countryCode, newStatus);
-                                                            // Optimistic update
-                                                            setTriplist(prev => prev.map(p => p.countryCode === item.countryCode ? { ...p, status: newStatus } : p));
-                                                        }
-                                                    },
-                                                    {
-                                                        text: 'Remove',
-                                                        style: 'destructive',
-                                                        onPress: () => {
-                                                            removeFromTriplist(currentUserId!, item.countryCode);
-                                                            setTriplist(prev => prev.filter(p => p.countryCode !== item.countryCode));
-                                                        }
-                                                    }
-                                                ]
-                                            );
-                                        }}
-                                    >
-                                        <Text style={styles.tripFlag}>{COUNTRIES.find(c => c.code === item.countryCode)?.flag || '🏳️'}</Text>
-                                        <Text style={styles.tripName} numberOfLines={1}>{item.countryName}</Text>
-                                        {item.status === 'booked' ? (
-                                            <View style={styles.bookedBadge}>
-                                                <Feather name="check" size={10} color="white" />
-                                            </View>
-                                        ) : (
-                                            <View style={styles.wishlistBadge}>
-                                                <Feather name="bookmark" size={10} color="white" />
-                                            </View>
-                                        )}
-                                    </TouchableOpacity>
-                                ))}
-
-                            {/* Empty State / Add Button for Me */}
-                            {isMe && triplist.length === 0 && (
-                                <TouchableOpacity
-                                    style={styles.emptyTripCard}
-                                    onPress={() => setIsCountryPickerVisible(true)}
-                                >
-                                    <Feather name="plus-circle" size={24} color="#ccc" />
-                                    <Text style={styles.emptyStoryText}>Add Country</Text>
-                                </TouchableOpacity>
-                            )}
-                            {!isMe && triplist.length === 0 && (
-                                <View style={styles.emptyTripCard}>
-                                    <Text style={styles.emptyStoryText}>No plans yet</Text>
-                                </View>
-                            )}
-                        </ScrollView>
-                    </View>
-
-                    {/* Stories Section */}
-                    {(stories.length > 0 || isMe) && (
-                        <View style={styles.storiesSection}>
-                            <View style={styles.sectionHeader}>
-                            </View>
-
-                            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.storiesList}>
-                                {stories.map(story => {
-                                    const coverPin = userPins.find(p => p.id === story.coverPinId) || userPins.find(p => p.id === story.pinIds[0]);
-                                    return (
-                                        <TouchableOpacity
-                                            key={story.id}
-                                            style={styles.storyCard}
-                                            onPress={() => handlePlay(story)}
-                                            onLongPress={() => isMe && handleEditStory(story)}
-                                        >
-                                            <Image
-                                                source={{ uri: coverPin?.imageUris?.[0] || 'https://via.placeholder.com/150' }}
-                                                style={styles.storyCover}
-                                            />
-                                            <View style={styles.storyOverlay}>
-                                                <Text style={styles.storyTitle} numberOfLines={1}>{story.title}</Text>
-                                                <Text style={styles.storyCount}>{story.pinIds.length} Pins</Text>
-                                            </View>
-                                            {isMe && (
-                                                <TouchableOpacity
-                                                    style={styles.deleteStoryBtn}
-                                                    onPress={() => handleDeleteStory(story.id)}
-                                                >
-                                                    <Feather name="x" size={12} color="white" />
-                                                </TouchableOpacity>
-                                            )}
-                                        </TouchableOpacity>
-                                    );
-                                })}
-
-                            </ScrollView>
-                        </View>
-                    )}
-
-                    {/* Actions */}
-                    <View style={styles.actionsContainer}>
-
-
+                    {/* View Pins Button - Moved to fixed section */}
+                    <View style={{ flexDirection: 'row', gap: 8, marginTop: 12, marginBottom: 16, paddingHorizontal: 16 }}>
                         <TouchableOpacity
-                            style={[styles.actionButton, styles.secondaryButton]}
+                            style={[styles.actionButton, styles.secondaryButton, { flex: 1 }]}
                             onPress={handleFilter}
                         >
                             <Feather name="globe" size={20} color="#1a1a1a" />
-                            <Text style={styles.secondaryButtonText} numberOfLines={1} adjustsFontSizeToFit>Map View</Text>
+                            <Text style={styles.secondaryButtonText}>View Pins</Text>
                         </TouchableOpacity>
 
                         {!isMe && userId && (
@@ -391,6 +344,73 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                             </TouchableOpacity>
                         )}
                     </View>
+
+                    {/* ===== SCROLLABLE TILES SECTION ===== */}
+                    <ScrollView
+                        horizontal
+                        showsHorizontalScrollIndicator={false}
+                        style={{ flexGrow: 0, marginBottom: 16 }}
+                        contentContainerStyle={{ paddingHorizontal: 16, gap: 12 }}
+                    >
+                        {/* Bucket List Items */}
+                        {bucketList.map((item, index) => (
+                            <TouchableOpacity
+                                key={`bucket-${index}`}
+                                style={styles.storyCard}
+                                onPress={() => setSelectedBucketItem(item)}
+                            >
+                                {item.imageUrl ? (
+                                    <Image source={{ uri: item.imageUrl }} style={styles.storyCover} contentFit="cover" />
+                                ) : (
+                                    <View style={[styles.storyCover, { backgroundColor: '#eee', justifyContent: 'center', alignItems: 'center' }]}>
+                                        <Feather name="map-pin" size={24} color="#ccc" />
+                                    </View>
+                                )}
+                                <View style={styles.storyOverlay}>
+                                    <Text style={styles.storyTitle} numberOfLines={2}>{item.locationName}</Text>
+                                    <Text style={styles.storyCount}>{item.status === 'visited' ? '✅ Visited' : '💭 Wishlist'}</Text>
+                                </View>
+                            </TouchableOpacity>
+                        ))}
+
+                        {/* Journey Stories */}
+                        {stories.map(story => {
+                            const coverPin = userPins.find(p => p.id === story.coverPinId) || userPins.find(p => p.id === story.pinIds[0]);
+                            return (
+                                <TouchableOpacity
+                                    key={story.id}
+                                    style={styles.storyCard}
+                                    onPress={() => handlePlay(story)}
+                                    onLongPress={() => isMe && handleEditStory(story)}
+                                >
+                                    <Image
+                                        source={{ uri: coverPin?.imageUris?.[0] || 'https://via.placeholder.com/150' }}
+                                        style={styles.storyCover}
+                                    />
+                                    <View style={styles.storyOverlay}>
+                                        <Text style={styles.storyTitle} numberOfLines={1}>{story.title}</Text>
+                                        <Text style={styles.storyCount}>{story.pinIds.length} Pins</Text>
+                                    </View>
+                                    {isMe && (
+                                        <TouchableOpacity
+                                            style={styles.deleteStoryBtn}
+                                            onPress={() => handleDeleteStory(story.id)}
+                                        >
+                                            <Feather name="x" size={12} color="white" />
+                                        </TouchableOpacity>
+                                    )}
+                                </TouchableOpacity>
+                            );
+                        })}
+
+                        {/* Empty State if no items */}
+                        {bucketList.length === 0 && stories.length === 0 && (
+                            <View style={[styles.emptyStoryCard, { width: 120, height: 160 }]}>
+                                <Feather name="map" size={24} color="#ccc" />
+                                <Text style={styles.emptyStoryText}>Explore to add</Text>
+                            </View>
+                        )}
+                    </ScrollView>
 
                 </View>
             </Animated.View >
@@ -414,28 +434,94 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                 onClose={() => setIsCountryPickerVisible(false)}
                 onSelect={(countries) => {
                     if (currentUserId && countries.length > 0) {
-                        const newItems: TripListItem[] = [];
+                        const newItems: BucketListItem[] = [];
 
                         countries.forEach(country => {
-                            // Avoid adding duplicates on client side check (Service also checks)
-                            if (!triplist.some(t => t.countryCode === country.countryCode)) {
-                                const newItem: TripListItem = {
-                                    countryCode: country.countryCode,
+                            // Avoid adding duplicates on client side check
+                            // Note: bucketList check might fail if locationName doesn't exactly match countryName, 
+                            // but for CountryPicker, locationName IS countryName.
+                            if (!bucketList.some(b => b.locationName === country.countryName)) {
+                                const newItem: BucketListItem = {
+                                    locationName: country.countryName,
                                     countryName: country.countryName,
-                                    status: country.status || 'wishlist',
+                                    countryCode: country.countryCode,
+                                    location: [0, 0], // Placeholder, or we could look up country coords from COUNTRIES if added
+                                    status: country.status, // Directly use status from picker ('wishlist' | 'visited')
                                     addedAt: Date.now(),
+                                    // imageUrl: NO image for simple country add, unless we fetch it.
                                 };
                                 newItems.push(newItem);
-                                addToTriplist(currentUserId, newItem); // Fire and forget (or could await all)
+                                addToBucketList(currentUserId, newItem);
                             }
                         });
 
                         if (newItems.length > 0) {
                             // Optimistic update
-                            setTriplist(prev => [...prev, ...newItems]);
+                            setBucketList(prev => [...prev, ...newItems]);
                         }
                         setIsCountryPickerVisible(false);
                     }
+                }}
+            />
+
+
+
+            {/* Edit Profile Modal - only for own profile */}
+            <EditProfileModal
+                visible={isEditProfileVisible}
+                onClose={() => {
+                    setIsEditProfileVisible(false);
+                    // Force re-fetch profile to get updated pinColor
+                    setRefreshKey(prev => prev + 1);
+                }}
+                username={myUsername}
+                avatarUri={myAvatar}
+                bio={myBio}
+                pinColor={myPinColor}
+                onEditUsername={() => {
+                    setIsEditProfileVisible(false);
+                    onEditUsername?.();
+                }}
+                onEditAvatar={() => {
+                    setIsEditProfileVisible(false);
+                    onEditAvatar?.();
+                }}
+            />
+            {/* Bucket List Action Modal */}
+            <BucketListActionModal
+                visible={!!selectedBucketItem}
+                onClose={() => setSelectedBucketItem(null)}
+                item={selectedBucketItem}
+                isOwner={userId === currentUserId}
+                onView={(item) => {
+                    setSelectedBucketItem(null);
+                    onClose(); // Close profile modal too
+                    onViewBucketListItem?.(item);
+                }}
+                onRemove={(item) => {
+                    // Ask confirmation, or just do it? User wants UI change, assume standard confirm is ok or better yet, built-in to modal? 
+                    // I put pure callback in modal. I should handle Alert here or simple remove. 
+                    // Let's do Alert here for safety, or just remove. 
+                    // The previous flow had "Remove" -> "Confirm Remove".
+                    // I'll add the Alert here to maintain safety.
+                    Alert.alert(
+                        "Remove from Bucket List?",
+                        `Are you sure you want to remove ${item.locationName}?`,
+                        [
+                            { text: "Cancel", style: "cancel" },
+                            {
+                                text: "Remove",
+                                style: "destructive",
+                                onPress: async () => {
+                                    if (currentUserId) {
+                                        await removeFromBucketList(currentUserId, item);
+                                        setBucketList(prev => prev.filter(b => b.locationName !== item.locationName));
+                                        setSelectedBucketItem(null);
+                                    }
+                                }
+                            }
+                        ]
+                    );
                 }}
             />
         </View >
@@ -455,7 +541,7 @@ const styles = StyleSheet.create({
     },
     backdrop: {
         ...StyleSheet.absoluteFillObject,
-        backgroundColor: 'rgba(0,0,0,0.5)',
+        backgroundColor: 'transparent',
     },
     cardContainer: {
         width: width * 0.90,
@@ -476,15 +562,31 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: 'rgba(255,255,255,0.8)',
     },
+    settingsButton: {
+        position: 'absolute',
+        top: 16,
+        left: 16,
+        padding: 8,
+        zIndex: 100,
+    },
     closeButton: {
         position: 'absolute',
         top: 16,
         right: 16,
         padding: 8,
-        zIndex: 10,
+        zIndex: 100,
+    },
+    editButton: {
+        position: 'absolute',
+        top: 16,
+        right: 60, // Left of close button
+        padding: 8,
+        zIndex: 100,
     },
     avatarContainer: {
         marginBottom: 16,
+        marginTop: 24, // Clear the top buttons
+        zIndex: 1,
     },
     avatarRing: {
         width: 100,
@@ -492,7 +594,7 @@ const styles = StyleSheet.create({
         borderRadius: 50,
         borderWidth: 3,
         padding: 4,
-        borderColor: '#FF00FF', // Default, dynamic override inline
+        borderColor: '#FF8C00', // Default, dynamic override inline
         justifyContent: 'center',
         alignItems: 'center',
     },
@@ -514,9 +616,15 @@ const styles = StyleSheet.create({
     username: {
         fontSize: 24,
         fontWeight: 'bold',
-        color: '#1a1a1a', // Dark text
+        color: '#1a1a1a',
         marginBottom: 6,
         letterSpacing: 0.5,
+    },
+    bio: {
+        fontSize: 14,
+        color: 'rgba(0,0,0,0.5)',
+        textAlign: 'center',
+        marginTop: 4,
     },
     statusBadge: {
         paddingHorizontal: 12,
@@ -620,10 +728,11 @@ const styles = StyleSheet.create({
         paddingHorizontal: 4,
     },
     storyCard: {
-        width: 120,
-        height: 160,
-        borderRadius: 16,
-        marginRight: 12,
+        // Responsive tile size: smaller on narrow screens
+        width: width < 380 ? 100 : 120,
+        height: width < 380 ? 130 : 160,
+        borderRadius: 14,
+        marginRight: width < 380 ? 8 : 12,
         overflow: 'hidden',
         backgroundColor: '#eee',
         position: 'relative',
@@ -697,7 +806,8 @@ const styles = StyleSheet.create({
     },
     tripFlag: {
         fontSize: 32,
-        marginBottom: 8,
+        marginTop: -20,
+        marginBottom: 2,
     },
     tripName: {
         fontSize: 12,
@@ -707,29 +817,37 @@ const styles = StyleSheet.create({
     },
     bookedBadge: {
         position: 'absolute',
-        top: 6,
+        bottom: 6,
+        left: 6,
         right: 6,
-        width: 16,
-        height: 16,
-        borderRadius: 8,
+        paddingVertical: 3,
+        paddingHorizontal: 6,
+        borderRadius: 6,
         backgroundColor: '#22CC66',
-        justifyContent: 'center',
         alignItems: 'center',
-        borderWidth: 1,
-        borderColor: 'white',
+    },
+    bookedBadgeText: {
+        fontSize: 9,
+        fontWeight: '700',
+        color: 'white',
     },
     wishlistBadge: {
         position: 'absolute',
-        top: 6,
+        bottom: 6,
+        left: 6,
         right: 6,
-        width: 16,
-        height: 16,
-        borderRadius: 8,
-        backgroundColor: '#4F46E5', // Indigo
-        justifyContent: 'center',
-        alignItems: 'center',
+        paddingVertical: 3,
+        paddingHorizontal: 6,
+        borderRadius: 6,
+        backgroundColor: 'white',
         borderWidth: 1,
-        borderColor: 'white',
+        borderColor: '#D1D5DB',
+        alignItems: 'center',
+    },
+    wishlistBadgeText: {
+        fontSize: 9,
+        fontWeight: '700',
+        color: '#6B7280',
     },
     emptyTripCard: {
         width: 100,

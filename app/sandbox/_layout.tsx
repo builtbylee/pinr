@@ -30,6 +30,13 @@ export default function SandboxLayout() {
                         title: 'Notification Test'
                     }}
                 />
+                <Stack.Screen
+                    name="games"
+                    options={{
+                        title: 'Games',
+                        headerShown: true,
+                    }}
+                />
             </Stack>
         </View>
     );

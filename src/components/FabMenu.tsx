@@ -9,28 +9,35 @@ const isSmallScreen = SCREEN_WIDTH < 380;
 
 interface ProfileMenuProps {
     avatarUri: string | null;
+    pinColor?: string; // User's pin color for ring
     onPressProfile: () => void;
     onPressFriends: () => void;
     onPressAddPin: () => void;
     onPressGames?: () => void;
     onPressCreateStory?: () => void;
+    onPressExplore?: () => void;
     // Badge counts
     friendRequestCount?: number;
     gameInviteCount?: number;
     newPinCount?: number;
 }
 
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
 export const ProfileMenu: React.FC<ProfileMenuProps> = ({
     avatarUri,
+    pinColor,
     onPressProfile,
     onPressFriends,
     onPressAddPin,
     onPressGames,
     onPressCreateStory,
+    onPressExplore,
     friendRequestCount = 0,
     gameInviteCount = 0,
     newPinCount = 0,
 }) => {
+    const insets = useSafeAreaInsets();
     const [isOpen, setIsOpen] = useState(false);
     const animation = useSharedValue(0);
     const rotationValue = useSharedValue(0);
@@ -73,7 +80,7 @@ export const ProfileMenu: React.FC<ProfileMenuProps> = ({
         pulseTimeoutRef.current = setTimeout(() => {
             ringPulse.value = withTiming(1, { duration: 200 });
             ringOpacity.value = withTiming(1, { duration: 200 });
-        }, 3000);
+        }, 3000) as any;
     };
 
     // Trigger pulse on notification count increase or on mount with existing notifications
@@ -128,83 +135,91 @@ export const ProfileMenu: React.FC<ProfileMenuProps> = ({
         transform: [{ rotate: `${rotationValue.value}deg` }]
     }));
 
-    // Menu circles animate in with staggered timing
-    const circleStyle = (index: number) => useAnimatedStyle(() => ({
-        opacity: withSpring(animation.value, { damping: 20, stiffness: 300 }),
+    // Animated pill bar style - slides from right to left
+    const pillBarStyle = useAnimatedStyle(() => ({
+        opacity: animation.value,
         transform: [
-            { translateX: withSpring((1 - animation.value) * (40 + index * 10), { damping: 18, stiffness: 180 }) },
-            { scale: withSpring(0.8 + animation.value * 0.2, { damping: 15, stiffness: 200 }) }
-        ]
+            { translateX: withSpring((1 - animation.value) * 300, { damping: 20, stiffness: 200 }) },
+            { scale: withSpring(0.9 + animation.value * 0.1, { damping: 15, stiffness: 200 }) }
+        ],
     }));
 
-    const circleSize = isSmallScreen ? 44 : 50;
+    const circleSize = isSmallScreen ? 40 : 44;
+    const iconSize = isSmallScreen ? 18 : 20;
 
     // Combined Badge for Friends Icon (Requests + New Pins)
     const combinedFriendBadge = friendRequestCount + newPinCount;
 
     return (
-        <View style={styles.container} pointerEvents="box-none">
-            {/* Circular Menu Options */}
-            <View style={styles.menuRow} pointerEvents={isOpen ? 'auto' : 'none'}>
+        <View style={[styles.container, { bottom: 20 + (insets.bottom || 20) }]} pointerEvents="box-none">
+            {/* Pill-shaped Menu Bar */}
+            <Animated.View
+                style={[styles.pillBar, pillBarStyle]}
+                pointerEvents={isOpen ? 'auto' : 'none'}
+            >
                 {/* Add Pin */}
-                <Animated.View style={[circleStyle(0)]}>
-                    <TouchableOpacity
-                        style={[styles.circleButton, { width: circleSize, height: circleSize }]}
-                        onPress={() => handleMenuPress(onPressAddPin)}
-                    >
-                        <Feather name="map-pin" size={20} color="#1a1a1a" />
-                    </TouchableOpacity>
-                </Animated.View>
+                <TouchableOpacity
+                    style={[styles.pillIcon, { width: circleSize, height: circleSize }]}
+                    onPress={() => handleMenuPress(onPressAddPin)}
+                >
+                    <Feather name="map-pin" size={iconSize} color="#4B5563" />
+                </TouchableOpacity>
 
                 {/* Friends */}
-                <Animated.View style={[circleStyle(1)]}>
+                <TouchableOpacity
+                    style={[styles.pillIcon, { width: circleSize, height: circleSize }]}
+                    onPress={() => handleMenuPress(onPressFriends)}
+                >
+                    <Feather name="users" size={iconSize} color="#4B5563" />
+                    {combinedFriendBadge > 0 && (
+                        <View style={styles.badge}>
+                            <Text style={styles.badgeText}>
+                                {combinedFriendBadge > 9 ? '9+' : combinedFriendBadge}
+                            </Text>
+                        </View>
+                    )}
+                </TouchableOpacity>
+
+                {/* Games */}
+                {onPressGames && (
                     <TouchableOpacity
-                        style={[styles.circleButton, { width: circleSize, height: circleSize }]}
-                        onPress={() => handleMenuPress(onPressFriends)}
+                        style={[styles.pillIcon, { width: circleSize, height: circleSize }]}
+                        onPress={() => handleMenuPress(onPressGames)}
                     >
-                        <Feather name="users" size={20} color="#1a1a1a" />
-                        {combinedFriendBadge > 0 && (
+                        <Feather name="dribbble" size={iconSize} color="#4B5563" />
+                        {gameInviteCount > 0 && (
                             <View style={styles.badge}>
                                 <Text style={styles.badgeText}>
-                                    {combinedFriendBadge > 9 ? '9+' : combinedFriendBadge}
+                                    {gameInviteCount > 9 ? '9+' : gameInviteCount}
                                 </Text>
                             </View>
                         )}
                     </TouchableOpacity>
-                </Animated.View>
-
-                {/* Games */}
-                {onPressGames && (
-                    <Animated.View style={[circleStyle(2)]}>
-                        <TouchableOpacity
-                            style={[styles.circleButton, { width: circleSize, height: circleSize }]}
-                            onPress={() => handleMenuPress(onPressGames)}
-                        >
-                            <Feather name="dribbble" size={20} color="#1a1a1a" />
-                            {gameInviteCount > 0 && (
-                                <View style={styles.badge}>
-                                    <Text style={styles.badgeText}>
-                                        {gameInviteCount > 9 ? '9+' : gameInviteCount}
-                                    </Text>
-                                </View>
-                            )}
-                        </TouchableOpacity>
-                    </Animated.View>
                 )}
 
-                {/* Profile/Settings */}
-                <Animated.View style={[circleStyle(4)]}>
+                {/* Explore / Search */}
+                {onPressExplore && (
                     <TouchableOpacity
-                        style={[styles.circleButton, { width: circleSize, height: circleSize }]}
-                        onPress={() => handleMenuPress(onPressProfile)}
+                        testID="fab-search-button"
+                        style={[styles.pillIcon, { width: circleSize, height: circleSize }]}
+                        onPress={() => handleMenuPress(onPressExplore)}
                     >
-                        <Feather name="user" size={20} color="#1a1a1a" />
+                        <Feather name="search" size={iconSize} color="#4B5563" />
                     </TouchableOpacity>
-                </Animated.View>
-            </View>
+                )}
+
+                {/* Profile */}
+                <TouchableOpacity
+                    testID="fab-profile-button"
+                    style={[styles.pillIcon, { width: circleSize, height: circleSize }]}
+                    onPress={() => handleMenuPress(onPressProfile)}
+                >
+                    <Feather name="user" size={iconSize} color="#4B5563" />
+                </TouchableOpacity>
+            </Animated.View>
 
             {/* Avatar Trigger Button */}
-            <TouchableOpacity onPress={toggleMenu} activeOpacity={0.8} style={styles.fabShadowWrapper}>
+            <TouchableOpacity testID="fab-menu-toggle" onPress={toggleMenu} activeOpacity={0.8} style={styles.fabShadowWrapper}>
                 <Animated.View style={[styles.fab, rotationStyle]}>
                     {avatarUri ? (
                         <Image
@@ -214,7 +229,7 @@ export const ProfileMenu: React.FC<ProfileMenuProps> = ({
                         />
                     ) : (
                         <View style={styles.defaultAvatar}>
-                            <Feather name="user" size={28} color="white" />
+                            <Feather name="user" size={28} color="rgba(0,0,0,0.3)" />
                         </View>
                     )}
                     {/* Animated red ring overlay when notifications exist */}
@@ -229,13 +244,19 @@ export const ProfileMenu: React.FC<ProfileMenuProps> = ({
                         />
                     ) : (
                         <View
-                            style={styles.borderOverlay}
+                            style={[
+                                styles.borderOverlay,
+                                {
+                                    borderColor: avatarUri && pinColor ? pinColor : '#FFFFFF',
+                                    borderWidth: 3
+                                }
+                            ]}
                             pointerEvents="none"
                         />
                     )}
                 </Animated.View>
             </TouchableOpacity>
-        </View>
+        </View >
     );
 };
 
@@ -252,24 +273,27 @@ const styles = StyleSheet.create({
         justifyContent: 'flex-end',
         alignItems: 'center',
     },
-    menuRow: {
+    pillBar: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: isSmallScreen ? 8 : 10,
-        marginRight: 12,
-    },
-    circleButton: {
+        backgroundColor: 'rgba(255, 255, 255, 0.98)',
         borderRadius: 999,
-        backgroundColor: 'rgba(255, 255, 255, 0.95)',
+        paddingHorizontal: isSmallScreen ? 8 : 12,
+        paddingVertical: 8,
+        marginRight: 12,
+        gap: isSmallScreen ? 4 : 8,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.15,
+        shadowRadius: 12,
+        elevation: 8,
+        borderWidth: 1,
+        borderColor: 'rgba(0, 0, 0, 0.06)',
+    },
+    pillIcon: {
         justifyContent: 'center',
         alignItems: 'center',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.15,
-        shadowRadius: 4,
-        elevation: 4,
-        borderWidth: 1,
-        borderColor: 'rgba(0, 0, 0, 0.05)',
+        borderRadius: 999,
     },
     fabShadowWrapper: {
         width: 64,
@@ -289,7 +313,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         overflow: 'hidden',
-        backgroundColor: '#1a1a1a',
+        backgroundColor: '#e0e0e0',
     },
     avatarImage: {
         width: '100%',
@@ -301,7 +325,7 @@ const styles = StyleSheet.create({
         height: '100%',
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: '#1a1a1a',
+        backgroundColor: '#e0e0e0',
     },
     borderOverlay: {
         ...StyleSheet.absoluteFillObject,

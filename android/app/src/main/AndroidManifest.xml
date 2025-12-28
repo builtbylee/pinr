@@ -34,7 +34,6 @@
         <category android:name="android.intent.category.DEFAULT"/>
         <category android:name="android.intent.category.BROWSABLE"/>
         <data android:scheme="app80days"/>
-        <data android:scheme="com.builtbylee.app80days"/>
         <data android:scheme="exp+80days"/>
       </intent-filter>
     </activity>

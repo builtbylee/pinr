@@ -4,7 +4,6 @@ import { Feather, MaterialIcons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import { Memory } from '../store/useMemoryStore';
 import { storyService, Story, MAX_PINS_PER_STORY } from '../services/StoryService';
-import { PinThumbnail } from './PinThumbnail'; // Assuming we might want a helper, but I'll implement inline first
 import * as Haptics from 'expo-haptics';
 
 interface StoryEditorModalProps {

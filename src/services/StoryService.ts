@@ -1,4 +1,6 @@
 import firestore from '@react-native-firebase/firestore';
+import functions from '@react-native-firebase/functions';
+import { deletePin } from './firestoreService';
 import { Memory } from '../store/useMemoryStore';
 import { uploadImage } from './storageService';
 import { addPin } from './firestoreService';
@@ -30,47 +32,36 @@ export const MAX_PINS_PER_STORY = 10;
 
 class StoryService {
     /**
-     * Create a new story for a user.
-     * Enforces limits: 5 stories per user, 10 pins per story.
+     * Create a new story for a user (via Cloud Function for limit enforcement)
      */
     async createStory(userId: string, data: Pick<Story, 'title' | 'description' | 'pinIds' | 'coverPinId'>): Promise<{ success: boolean; storyId?: string; error?: string }> {
         try {
-            // 1. Validate Pin Count
-            if (data.pinIds.length > MAX_PINS_PER_STORY) {
-                return { success: false, error: `A story can have at most ${MAX_PINS_PER_STORY} pins.` };
+            // Call Cloud Function for server-side limit enforcement
+            const result = await functions().httpsCallable('createStory')({
+                title: data.title,
+                description: data.description,
+                pinIds: data.pinIds,
+                coverPinId: data.coverPinId,
+            });
+
+            const response = result.data as any;
+
+            if (!response.success) {
+                return { success: false, error: response.error || 'Failed to create story' };
             }
 
-            // 2. Validate Story Count
-            const userStoriesSnapshot = await firestore()
-                .collection(STORIES_COLLECTION)
-                .where('creatorId', '==', userId)
-                .get();
+            console.log('[StoryService] Created story via Cloud Function:', response.storyId);
+            return { success: true, storyId: response.storyId };
 
-            if (userStoriesSnapshot.size >= MAX_STORIES_PER_USER) {
+        } catch (error: any) {
+            console.error('[StoryService] Error creating story:', error);
+            // Handle specific error codes
+            if (error.code === 'functions/resource-exhausted') {
                 return { success: false, error: `You can only have up to ${MAX_STORIES_PER_USER} stories.` };
             }
-
-            // 3. Create Story
-            const newStoryRef = firestore().collection(STORIES_COLLECTION).doc();
-            const timestamp = Date.now();
-
-            const story: Story = {
-                id: newStoryRef.id,
-                creatorId: userId,
-                title: data.title,
-                description: data.description || '',
-                pinIds: data.pinIds,
-                coverPinId: data.coverPinId || (data.pinIds.length > 0 ? data.pinIds[0] : undefined),
-                createdAt: timestamp,
-                updatedAt: timestamp,
-            };
-
-            await newStoryRef.set(story);
-            console.log('[StoryService] Created story:', story.id);
-            return { success: true, storyId: story.id };
-
-        } catch (error) {
-            console.error('[StoryService] Error creating story:', error);
+            if (error.code === 'functions/invalid-argument') {
+                return { success: false, error: error.message || 'Invalid story data.' };
+            }
             return { success: false, error: 'Failed to create story.' };
         }
     }
@@ -198,6 +189,19 @@ class StoryService {
      */
     async deleteStory(storyId: string): Promise<boolean> {
         try {
+            // 1. Get story to find associated pins
+            const story = await this.getStory(storyId);
+            if (!story) return false;
+
+            // 2. Delete all associated pins
+            if (story.pinIds && story.pinIds.length > 0) {
+                console.log(`[StoryService] Deleting ${story.pinIds.length} pins for story ${storyId}`);
+                await Promise.all(story.pinIds.map(pinId => deletePin(pinId).catch(e => {
+                    console.warn(`[StoryService] Failed to delete pin ${pinId}:`, e);
+                })));
+            }
+
+            // 3. Delete story document
             await firestore().collection(STORIES_COLLECTION).doc(storyId).delete();
             console.log('[StoryService] Deleted story:', storyId);
             return true;
@@ -254,8 +258,13 @@ class StoryService {
                     const stories = snapshot.docs.map(doc => doc.data() as Story);
                     callback(stories);
                 },
-                (error) => {
-                    console.error('[StoryService] Subscription error:', error);
+                (error: any) => {
+                    // permission-denied is expected when user logs out while subscribed
+                    if (error?.code === 'firestore/permission-denied') {
+                        console.log('[StoryService] Subscription ended (user logged out)');
+                    } else {
+                        console.error('[StoryService] Subscription error:', error);
+                    }
                 }
             );
     }

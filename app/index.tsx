@@ -5,20 +5,27 @@ import { FabMenu } from '@/src/components/FabMenu';
 import { FrostedPin } from '@/src/components/FrostedPin';
 import { GradientPin } from '@/src/components/GradientPin';
 import { ProfileModal } from '@/src/components/ProfileModal';
+import { SettingsModal } from '@/src/components/SettingsModal';
 import { BriefcasePin } from '@/src/components/BriefcasePin';
 import { AvatarPin } from '@/src/components/AvatarPin';
-import { SettingsModal } from '@/src/components/SettingsModal';
-import { SettingsButton } from '@/src/components/SettingsButton';
-import { UsernameModal } from '@/src/components/UsernameModal';
 import { FriendsModal } from '@/src/components/FriendsModal';
 import { StoryModeController } from '@/src/components/StoryModeController';
 import { StoryEditorModal } from '@/src/components/StoryEditorModal';
 import { StoryCreationFlow } from '@/src/components/StoryCreationFlow';
 import { ToastNotification } from '@/src/components/ToastNotification';
+import { ExploreSearchBar } from '@/src/components/ExploreSearchBar';
+import { ExploreInfoCard } from '@/src/components/ExploreInfoCard';
+import { UsernameModal } from '@/src/components/UsernameModal';
+import { GeocodingResult } from '@/src/services/geocodingService';
+
 import { useMemoryStore, Memory } from '@/src/store/useMemoryStore';
 import { subscribeToPins, addPin, deletePin, updatePin } from '@/src/services/firestoreService';
 import { uploadImage } from '@/src/services/storageService';
-import { getUserProfile, saveUserProfile, saveUserAvatar, saveUserPinColor, getFriendRequests, subscribeToFriendRequests, sendFriendRequest, getUserByUsername } from '@/src/services/userService';
+import { getUserProfile, saveUserProfile, saveUserAvatar, saveUserPinColor, getFriendRequests, subscribeToFriendRequests, sendFriendRequest, getUserByUsername, toggleHiddenPin as toggleHiddenPinService, toggleHiddenFriend as toggleHiddenFriendService, getFriends, savePushToken, checkExplorationStreak } from '@/src/services/userService';
+import { StreakCelebrationModal } from '@/src/components/StreakCelebrationModal';
+
+
+
 import { challengeService } from '@/src/services/ChallengeService';
 import { notificationService } from '@/src/services/NotificationService';
 import { useAppLocation } from '@/src/hooks/useAppLocation';
@@ -32,11 +39,12 @@ import ImageCropPicker from 'react-native-image-crop-picker';
 import * as SplashScreen from 'expo-splash-screen';
 import * as Haptics from 'expo-haptics';
 import React, { useEffect, useRef, useState, useMemo } from 'react';
-import { StyleSheet, View, TouchableOpacity, Alert, Image, Text, Linking, BackHandler } from 'react-native';
-import Animated, { useSharedValue, useAnimatedStyle, withSpring, withTiming, Easing as ReanimatedEasing } from 'react-native-reanimated';
+import { StyleSheet, View, Text, Image, Alert, Linking, BackHandler, Dimensions, TouchableOpacity, AppState, LayoutAnimation, UIManager, Platform, ActivityIndicator, Modal } from 'react-native';
+import Animated, { useSharedValue, useAnimatedStyle, withSpring, withTiming, withRepeat, Easing as ReanimatedEasing } from 'react-native-reanimated';
 import { useMapClusters, Point } from '@/src/hooks/useMapClusters';
 import { ClusterPin } from '@/src/components/ClusterPin';
 import { ClusterListModal } from '@/src/components/ClusterListModal';
+import { PinContextMenu } from '@/src/components/PinContextMenu';
 
 
 // Style JSON wrapper to set lightPreset config
@@ -60,15 +68,24 @@ const DAY_STYLE = {
 };
 
 export default function App() {
-    const { memories, setMemories, selectedMemoryId, selectMemory, addMemory, addPhotoToMemory, username, setUsername, avatarUri, setAvatarUri, pinColor, setPinColor, currentUserId, friends, setFriends, hiddenFriendIds, setHiddenFriendIds } = useMemoryStore();
+    const { memories, setMemories, selectedMemoryId, selectMemory, addMemory, addPhotoToMemory, username, setUsername, avatarUri, setAvatarUri, pinColor, setPinColor, currentUserId, friends, setFriends, hiddenFriendIds, setHiddenFriendIds, hiddenPinIds, toggleHiddenPin: toggleHiddenPinLocal, toggleHiddenFriend: toggleHiddenFriendLocal, setHiddenPinIds } = useMemoryStore();
     const router = useRouter();
+    console.log('[App] Rendering Index');
     const [isCreationModalVisible, setIsCreationModalVisible] = useState(false);
     const [editingMemory, setEditingMemory] = useState<Memory | null>(null); // Track memory being edited
+    const [contextMenuPinId, setContextMenuPinId] = useState<string | null>(null); // Pin ID for context menu
     const [isFriendsVisible, setIsFriendsVisible] = useState(false);
     const [selectedUserProfileId, setSelectedUserProfileId] = useState<string | null>(null);
     const [isSettingsVisible, setIsSettingsVisible] = useState(false);
     const [isUsernameModalVisible, setIsUsernameModalVisible] = useState(false);
-    const [isFirstTimeUser, setIsFirstTimeUser] = useState(false);
+
+    // Explore Mode State
+    const [isExploreSearchVisible, setIsExploreSearchVisible] = useState(false);
+    const [selectedExplorePlace, setSelectedExplorePlace] = useState<GeocodingResult | null>(null);
+    const [isExploreInfoVisible, setIsExploreInfoVisible] = useState(false);
+    const [showStreakCelebration, setShowStreakCelebration] = useState(false);
+    const [celebrationStreak, setCelebrationStreak] = useState(0);
+    const [highlightedPinId, setHighlightedPinId] = useState<string | null>(null);
 
     // Global Story Editor State (For "Create Story from Pin" flow)
     const [isGlobalStoryEditorVisible, setIsGlobalStoryEditorVisible] = useState(false);
@@ -94,6 +111,7 @@ export default function App() {
     const [newPinCount, setNewPinCount] = useState(0); // For New Pin badge
     const [hiddenByCreators, setHiddenByCreators] = useState<string[]>([]); // Creators who have hidden their pins from me
     const [storyPinIds, setStoryPinIds] = useState<Set<string>>(new Set()); // Pin IDs that belong to stories
+    const [hiddenStoryPinIds, setHiddenStoryPinIds] = useState<Set<string>>(new Set()); // IDs of pins that should be hidden (part of story but not cover)
     const [pinToStoryMap, setPinToStoryMap] = useState<Record<string, Story>>({}); // Map pin ID to its Story
 
     // Fetch badge counts for FAB (Real-time for requests)
@@ -108,9 +126,70 @@ export default function App() {
 
     // Clustering State
     const [mapBounds, setMapBounds] = useState<any>(null); // [minLng, minLat, maxLng, maxLat]
+
     const [zoomLevel, setZoomLevel] = useState(1.5);
     const [selectedClusterLeaves, setSelectedClusterLeaves] = useState<any[] | null>(null); // For List Modal
 
+
+    // Fetch avatars for visible memories
+
+    const storyPins = useMemo(() => {
+        if (!storyModeUserId) return [];
+        const userPins = memories.filter(m => m.creatorId === storyModeUserId);
+
+        // If playing a specific story, filter and order by the story's pinIds
+        if (storyModeData?.story) {
+            const orderedPins: Memory[] = [];
+            storyModeData.story.pinIds.forEach(id => {
+                const found = userPins.find(p => p.id === id);
+                if (found) orderedPins.push(found);
+            });
+            return orderedPins;
+        }
+
+        // Otherwise play all, sorted by date (oldest first?)
+        return userPins.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    }, [memories, storyModeUserId, storyModeData]);
+
+    const visibleMemories = useMemo(() => {
+        // If in Story Mode with a specific user, show ALL their pins (including multiple per story)
+        if (storyModeUserId) {
+            return memories.filter(m => m.creatorId === storyModeUserId);
+        }
+
+        return memories.filter(m => {
+            // 1. Filter by specific user
+            if (filteredUserId && m.creatorId !== filteredUserId) return false;
+
+            // 2. Hide pins if creator has hidden them from me
+            if (hiddenByCreators.includes(m.creatorId)) return false;
+
+            // 3. Hide locally hidden pins
+            if (hiddenPinIds.includes(m.id)) return false;
+
+            // 4. Hide pins from non-friends (unless self)
+            // Note: This logic depends on what is in 'memories'. If 'memories' only contains friends/self, this is redundant.
+            // But good for safety.
+            const isMine = m.creatorId === currentUserId;
+            const isFriend = friends.includes(m.creatorId);
+            if (!isMine && !isFriend) return false;
+
+            // 5. Journey Logic: Only show the "Cover Pin" (first pin)
+            // If this pin is in a story, we check if it is the primary pin.
+            if (storyPinIds.has(m.id)) {
+                const story = pinToStoryMap[m.id];
+                if (story) {
+                    const primaryPin = story.coverPinId || (story.pinIds && story.pinIds.length > 0 ? story.pinIds[0] : null);
+                    // If this pin is NOT the primary pin, hide it.
+                    if (primaryPin && m.id !== primaryPin) {
+                        return false;
+                    }
+                }
+            }
+
+            return true;
+        });
+    }, [memories, filteredUserId, friends, currentUserId, hiddenByCreators, hiddenPinIds, storyPinIds, pinToStoryMap, storyModeUserId]);
 
     // Fetch avatars for visible memories
     useEffect(() => {
@@ -144,42 +223,6 @@ export default function App() {
             fetchAvatars();
         }
     }, [visibleMemories, currentUserId, avatarUri]);
-
-    // Convert visible memories to GeoJSON points for clustering
-    const visibleMemories = useMemo(() => {
-        // If in Story Mode with a specific user, show ALL their pins (including multiple per story)
-        if (storyModeUserId) {
-            return memories.filter(m => m.creatorId === storyModeUserId);
-        }
-
-        // Standard Filter
-        return memories.filter(m => {
-            // 1. Filter by specific user (e.g. clicking a friend in list)
-            if (filteredUserId && m.creatorId !== filteredUserId) return false;
-
-            // 2. Hide pins from muted friends (implied by not being in 'friends' list? No, friends list is explicit)
-            // Actually, we usually only show pins from friends + self
-            const isMine = m.creatorId === currentUserId;
-            const isFriend = friends.includes(m.creatorId);
-            if (!isMine && !isFriend) return false;
-
-            // 3. Hide pins if creator has hidden them from me
-            if (hiddenByCreators.includes(m.creatorId)) return false;
-
-            // 4. Story Pin Logic: Only show the "Cover Pin" for a story
-            // If this pin is part of a story...
-            if (storyPinIds.has(m.id)) {
-                const story = pinToStoryMap[m.id];
-                if (story) {
-                    // Show only if it is the cover pin (or first pin)
-                    const primaryPin = story.coverPinId || story.pinIds[0];
-                    return m.id === primaryPin;
-                }
-            }
-
-            return true;
-        });
-    }, [memories, filteredUserId, friends, currentUserId, hiddenByCreators, storyPinIds, pinToStoryMap, storyModeUserId]);
 
     // Convert visible memories to GeoJSON points for clustering
     const points = useMemo<Point[]>(() => {
@@ -307,8 +350,26 @@ export default function App() {
         // OneSignal Identification
         notificationService.login(currentUserId);
 
+        // Verify OneSignal configuration on startup (debug)
+        notificationService.verifyConfiguration().then(config => {
+            console.log('[App] OneSignal Config Check:', {
+                appId: config.appId,
+                restApiKeyLoaded: config.restApiKeyLoaded,
+                restApiKeyLength: config.restApiKeyLength,
+                restApiKeyPreview: config.restApiKeyPreview,
+            });
+            if (config.issues.length > 0) {
+                console.warn('[App] OneSignal Configuration Issues:', config.issues);
+            }
+        }).catch(err => console.error('[App] Config check failed:', err));
+
         // Ensure token (once)
-        notificationService.registerForPushNotificationsAsync().catch(err =>
+        notificationService.registerForPushNotificationsAsync().then(token => {
+            if (token && currentUserId) {
+                console.log('[App] Saving push token:', token);
+                savePushToken(currentUserId, token);
+            }
+        }).catch(err =>
             console.error('[App] Token registration failed:', err)
         );
 
@@ -328,6 +389,38 @@ export default function App() {
             } else if (data.type === 'game_invite') {
                 // Just open games
                 router.push('/sandbox/games' as any);
+            } else if (data.type === 'new_pin' && data.lat && data.lon) {
+                // Deep link to new pin location
+                console.log('[App] Flying to new pin at:', data.lat, data.lon);
+                setTimeout(() => {
+                    if (cameraRef.current) {
+                        cameraRef.current.setCamera({
+                            centerCoordinate: [data.lon, data.lat],
+                            zoomLevel: 4,
+                            animationDuration: 2000,
+                            animationMode: 'flyTo',
+                        });
+                        // Set highlighted pin for pulse effect
+                        if (data.pinId) {
+                            setHighlightedPinId(data.pinId);
+                            // Clear highlight after 5 seconds
+                            setTimeout(() => setHighlightedPinId(null), 5000);
+                        }
+                    }
+                }, 500);
+            } else if (data.type === 'new_story' && data.lat && data.lon) {
+                // Deep link to story cover location
+                console.log('[App] Flying to new story at:', data.lat, data.lon);
+                setTimeout(() => {
+                    if (cameraRef.current) {
+                        cameraRef.current.setCamera({
+                            centerCoordinate: [data.lon, data.lat],
+                            zoomLevel: 4,
+                            animationDuration: 2000,
+                            animationMode: 'flyTo',
+                        });
+                    }
+                }, 500);
             }
         });
 
@@ -340,18 +433,29 @@ export default function App() {
             const newPinToStoryMap: Record<string, Story> = {};
             const newStoryPinIds = new Set<string>();
 
+            const newHiddenStoryPinIds = new Set<string>();
+
             stories.forEach(story => {
-                if (story.pinIds && Array.isArray(story.pinIds)) {
+                if (story.pinIds && Array.isArray(story.pinIds) && story.pinIds.length > 0) {
+                    // Identify the primary pin (cover)
+                    const primaryPinId = story.coverPinId || story.pinIds[0];
+
                     story.pinIds.forEach(pinId => {
                         newPinToStoryMap[pinId] = story;
                         newStoryPinIds.add(pinId);
+
+                        // If NOT the primary pin, add to hidden set
+                        if (pinId !== primaryPinId) {
+                            newHiddenStoryPinIds.add(pinId);
+                        }
                     });
                 }
             });
 
-            console.log('[App] Stories updated. Mapped pins:', newStoryPinIds.size);
+            console.log('[App] Stories updated. Mapped pins:', newStoryPinIds.size, 'Hidden pins:', newHiddenStoryPinIds.size);
             setPinToStoryMap(newPinToStoryMap);
             setStoryPinIds(newStoryPinIds);
+            setHiddenStoryPinIds(newHiddenStoryPinIds);
         });
 
 
@@ -385,6 +489,45 @@ export default function App() {
                     );
                 }
             }
+
+            // Handle pin deep links: pinr://pin/{pinId}
+            if (url.includes('pin/')) {
+                const pinId = url.split('pin/')[1]?.split('?')[0]; // Handle any query params
+                if (pinId) {
+                    console.log('[App] Deep link to pin:', pinId);
+                    // Find the pin and fly to it
+                    const pin = memories.find(m => m.id === pinId);
+                    if (pin && cameraRef.current) {
+                        cameraRef.current.setCamera({
+                            centerCoordinate: [pin.longitude, pin.latitude],
+                            zoomLevel: 4,
+                            animationDuration: 2000,
+                            animationMode: 'flyTo',
+                        });
+                        // Highlight the pin
+                        setHighlightedPinId(pinId);
+                        setTimeout(() => setHighlightedPinId(null), 5000);
+                    } else if (!pin) {
+                        // Pin not in local cache, try to fetch it
+                        try {
+                            const { getPin } = require('../src/services/firestoreService');
+                            const fetchedPin = await getPin(pinId);
+                            if (fetchedPin && cameraRef.current) {
+                                cameraRef.current.setCamera({
+                                    centerCoordinate: [fetchedPin.longitude, fetchedPin.latitude],
+                                    zoomLevel: 4,
+                                    animationDuration: 2000,
+                                    animationMode: 'flyTo',
+                                });
+                                setHighlightedPinId(pinId);
+                                setTimeout(() => setHighlightedPinId(null), 5000);
+                            }
+                        } catch (err) {
+                            console.error('[App] Failed to fetch pin for deep link:', err);
+                        }
+                    }
+                }
+            }
         };
 
         const subscription = Linking.addEventListener('url', handleDeepLink);
@@ -405,8 +548,36 @@ export default function App() {
     useEffect(() => {
         const onBackPress = () => {
             // Priority 1: Modals (most specific first)
-            if (isUsernameModalVisible) {
-                setIsUsernameModalVisible(false);
+            if (isExploreSearchVisible) {
+                setIsExploreSearchVisible(false);
+                return true;
+            }
+            if (isExploreInfoVisible) {
+                // Determine if we should go back to search or just close
+                setIsExploreInfoVisible(false);
+                setSelectedExplorePlace(null);
+                return true;
+            }
+            if (selectedClusterLeaves) {
+                setSelectedClusterLeaves(null);
+                return true;
+            }
+            if (isGlobalStoryEditorVisible) {
+                setIsGlobalStoryEditorVisible(false);
+                setStoryEditorInitialPinId(null);
+                return true;
+            }
+            if (storyModeData) {
+                setStoryModeData(null);
+                setPulsingPinId(null);
+                // Reset camera on exit?
+                if (cameraRef.current) {
+                    cameraRef.current.setCamera({
+                        zoomLevel: 1.5,
+                        pitch: 45,
+                        animationDuration: 2000,
+                    });
+                }
                 return true;
             }
             if (selectedUserProfileId) {
@@ -436,7 +607,7 @@ export default function App() {
 
         const backHandler = BackHandler.addEventListener('hardwareBackPress', onBackPress);
         return () => backHandler.remove();
-    }, [isUsernameModalVisible, isCreationModalVisible, isSettingsVisible, isFriendsVisible, selectedMemoryId, selectedUserProfileId]);
+    }, [isExploreSearchVisible, isExploreInfoVisible, isCreationModalVisible, isSettingsVisible, isFriendsVisible, selectedMemoryId, selectedUserProfileId, selectedClusterLeaves, isGlobalStoryEditorVisible, storyModeData]);
 
     // Handle Logout / Null User
     useEffect(() => {
@@ -523,7 +694,10 @@ export default function App() {
             setAuthorColors(prev => {
                 const next = { ...prev };
                 results.forEach(({ uid, profile }) => {
-                    if (profile?.pinColor) next[uid] = profile.pinColor;
+                    if (profile?.pinColor) {
+                        // Store lowercase to ensure consistent lookup in colorMap
+                        next[uid] = profile.pinColor.toLowerCase().trim();
+                    }
                 });
                 return next;
             });
@@ -552,30 +726,42 @@ export default function App() {
         if (firestoreProfile) {
             if (firestoreProfile.username) setUsername(firestoreProfile.username);
             if (firestoreProfile.avatarUrl) setAvatarUri(firestoreProfile.avatarUrl);
-            if (firestoreProfile.pinColor) setPinColor(firestoreProfile.pinColor);
+            if (firestoreProfile.pinColor) {
+                console.log('[DEBUG] Syncing pinColor from Firestore:', firestoreProfile.pinColor, '| typeof:', typeof firestoreProfile.pinColor);
+                setPinColor(firestoreProfile.pinColor);
+            }
 
-            const newFriends = firestoreProfile.friends || [];
-            setFriends(newFriends);
+            // LEGACY: const newFriends = firestoreProfile.friends || [];
+            // SECURE: Fetch from Request System
+            (async () => {
+                if (currentUserId) {
+                    try {
+                        const secureFriends = await getFriends(currentUserId);
+                        console.log('[App] Hydrated secure friends:', secureFriends.length);
+                        setFriends(secureFriends);
+
+                        // Toast Logic for New Friends
+                        // We compare against the PREVIOUSLY loaded list in ref
+                        if (prevFriendsRef.current.length > 0 && secureFriends.length > prevFriendsRef.current.length) {
+                            const addedIds = secureFriends.filter(id => !prevFriendsRef.current.includes(id));
+                            if (addedIds.length > 0) {
+                                useMemoryStore.getState().showToast('New Connection! You made a new friend.', 'success');
+                            }
+                        }
+                        prevFriendsRef.current = secureFriends;
+
+                    } catch (e) {
+                        console.error('[App] Failed to hydrate friends:', e);
+                    }
+                }
+            })();
 
             // Sync hidden friends
             const newHiddenFriends = firestoreProfile.hiddenFriendIds || [];
             setHiddenFriendIds(newHiddenFriends);
 
-            // New Friend Toast
-            if (prevFriendsRef.current.length > 0 && newFriends.length > prevFriendsRef.current.length) {
-                const addedFriendIds = newFriends.filter((id: string) => !prevFriendsRef.current.includes(id));
-                if (addedFriendIds.length > 0) {
-                    // Lazy load helper to show toast
-                    const showToast = useMemoryStore.getState().showToast;
-                    showToast('New Connection! You made a new friend.', 'success');
-                }
-            }
-            prevFriendsRef.current = newFriends;
-        } else if (profileLoaded && currentUserId && !isFirstTimeUser) {
-            // Profile loaded but is null => First time user
-            console.log('[App] Profile loaded but empty, showing username modal.');
-            setIsFirstTimeUser(true);
-            setIsUsernameModalVisible(true);
+            const newHiddenPins = firestoreProfile.hiddenPinIds || [];
+            setHiddenPinIds(newHiddenPins);
         }
     }, [firestoreProfile, profileLoaded, currentUserId]);
 
@@ -583,34 +769,6 @@ export default function App() {
     const onMapStyleLoaded = () => {
         console.log(`[Map] Style loaded. Mode: DAY`);
         SplashScreen.hideAsync();
-    };
-
-
-    // Handle username save
-    // Handle username save
-    const handleSaveUsername = async (newUsername: string) => {
-        if (!currentUserId) return;
-
-        try {
-            await saveUserProfile(currentUserId, newUsername);
-
-            // Reload profile to ensure we have latest data (e.g. avatar from recovery)
-            const profile = await getUserProfile(currentUserId);
-            if (profile) {
-                setUsername(profile.username);
-                if (profile.avatarUrl) {
-                    setAvatarUri(profile.avatarUrl);
-                }
-                if (profile.friends) {
-                    setFriends(profile.friends);
-                }
-            }
-
-            setIsUsernameModalVisible(false);
-            setIsFirstTimeUser(false);
-        } catch (error) {
-            console.error('[App] Error saving username:', error);
-        }
     };
 
     // Handle avatar change
@@ -805,11 +963,15 @@ export default function App() {
         blue: '#0066FF',
         cyan: '#00DDDD',
         red: '#FF3333',
+        black: '#1A1A1A',
+        purple: '#8B5CF6',
+        silver: '#C0C0C0',
+        white: '#FFFFFF',
     };
     const memoryPinSource = featureCollection(
         memories.map((m) => point(m.location, {
             id: m.id,
-            color: colorMap[m.pinColor] || '#FF00FF'
+            color: colorMap[(m.pinColor || 'orange').toLowerCase()] || '#FF8C00'
         }))
     );
 
@@ -825,11 +987,108 @@ export default function App() {
 
     const handlePlayStory = (userId: string, story?: Story) => {
         console.log('[App] Playing story for user:', userId, story ? `(${story.title})` : '(All)');
+        // Close ProfileModal before starting story mode to prevent it blocking map after story ends
+        setSelectedUserProfileId(null);
         setStoryModeData({ userId, story });
     };
 
+    const handleExploreSelect = async (location: GeocodingResult) => {
+        setIsExploreSearchVisible(false);
+        setSelectedExplorePlace(location);
+
+        // Fly to location
+        if (cameraRef.current) {
+            cameraRef.current.setCamera({
+                centerCoordinate: location.center,
+                zoomLevel: 2,
+                animationDuration: 2000,
+                animationMode: 'flyTo',
+            });
+        }
+
+        // Track exploration streak
+        if (currentUserId) {
+            const streakResult = await checkExplorationStreak(currentUserId);
+            if (streakResult.increased) {
+                setCelebrationStreak(streakResult.streak);
+                // Delay celebration to after info card is shown
+                setTimeout(() => {
+                    setShowStreakCelebration(true);
+                }, 2500);
+            }
+        }
+
+        // Show info card after arrival (roughly)
+        setTimeout(() => {
+            setIsExploreInfoVisible(true);
+        }, 2000);
+    };
+
+    // Explore Pulse & Glow Animation
+    const pulseAnim = useSharedValue(1);
+    const glowAnim = useSharedValue(0);
+
+    useEffect(() => {
+        // Main Pulse (Scale)
+        pulseAnim.value = withRepeat(
+            withTiming(1.2, { duration: 1500, easing: ReanimatedEasing.ease }),
+            -1,
+            true
+        );
+
+        // Glow Ring (Radar Ping)
+        glowAnim.value = withRepeat(
+            withTiming(1, { duration: 1500, easing: ReanimatedEasing.out(ReanimatedEasing.ease) }),
+            -1,
+            false
+        );
+    }, []);
+
+    const pulseAnimatedStyle = useAnimatedStyle(() => ({
+        transform: [{ scale: pulseAnim.value }],
+    }));
+
+    const glowRingStyle = useAnimatedStyle(() => ({
+        opacity: 1 - glowAnim.value, // Fade out
+        transform: [{ scale: 1 + glowAnim.value * 1.5 }], // Scale 1 -> 2.5
+    }));
+
+    // Helper to get hex color from pinColor name (magenta, etc)
+    const getUserHexColor = () => colorMap[(pinColor || 'orange').toLowerCase()] || '#FF8C00';
+
+    // Callback for viewing item from Bucket List (Simulate Explore Search)
+    const handleViewBucketItem = (item: any) => {
+        const targetLocation = item.location && (item.location[0] !== 0 || item.location[1] !== 0)
+            ? item.location
+            : [0, 0];
+
+        const exploreResult: GeocodingResult = {
+            id: `bucket-${Date.now()}`,
+            text: item.locationName,
+            place_name: item.locationName,
+            center: targetLocation,
+            context: []
+        };
+
+        handleExploreSelect(exploreResult);
+    };
+
+    // Prevent rendering until profile is loaded to avoid white screens/race conditions
+    if (!profileLoaded) {
+        return (
+            <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+                <ActivityIndicator size="large" color="#1a1a1a" />
+                <Text style={{ marginTop: 20, color: '#1a1a1a', fontSize: 16 }}>Preparing your journey...</Text>
+            </View>
+        );
+    }
+
     return (
         <View style={[styles.container, { backgroundColor: '#B8DEE8' }]}>
+
+
+
+
             <Mapbox.MapView
                 key="day"
                 ref={mapRef}
@@ -840,11 +1099,9 @@ export default function App() {
                 attributionEnabled={false}
                 scaleBarEnabled={false}
                 onDidFinishLoadingStyle={() => {
-                    console.log(`[Map] Style finished loading! Mode: DAY`);
                     SplashScreen.hideAsync();
                 }}
                 onRegionDidChange={onRegionDidChange}
-
             >
 
                 {/* Map Events for Clustering */}
@@ -858,127 +1115,215 @@ export default function App() {
                     onUserTrackingModeChange={() => { }}
                 />
 
-                {/* 
-                  We need to listen to region changes to update clusters. 
-                  MapView's onRegionDidChange is perfect.
-                */}
+                {/* Explore SEARCH MARKER (Pulsing User Pin) */}
+                {
+                    selectedExplorePlace && !isExploreInfoVisible && (
+                        <Mapbox.MarkerView
+                            key="explore-marker"
+                            id="explore-marker"
+                            coordinate={selectedExplorePlace.center}
+                            anchor={{ x: 0.5, y: 0.5 }}
+                        >
+                            <View style={{ alignItems: 'center', justifyContent: 'center' }}>
+                                {/* Radar Glow Ring */}
+                                <Animated.View style={[
+                                    {
+                                        position: 'absolute',
+                                        width: 44,
+                                        height: 44,
+                                        borderRadius: 22,
+                                        backgroundColor: getUserHexColor(),
+                                        zIndex: -1,
+                                    },
+                                    glowRingStyle
+                                ]} />
 
-
-
+                                {/* Pulsing Avatar */}
+                                <Animated.View style={[pulseAnimatedStyle]}>
+                                    {avatarUri ? (
+                                        <Image
+                                            source={{ uri: avatarUri }}
+                                            style={{
+                                                width: 44,
+                                                height: 44,
+                                                borderRadius: 22,
+                                                borderWidth: 3,
+                                                borderColor: getUserHexColor(), // User Color
+                                                backgroundColor: 'white',
+                                                // Glow Shadow
+                                                shadowColor: getUserHexColor(),
+                                                shadowOffset: { width: 0, height: 0 },
+                                                shadowOpacity: 0.8,
+                                                shadowRadius: 10,
+                                            }}
+                                        />
+                                    ) : (
+                                        <View style={{
+                                            width: 30, // Fallback icon size
+                                            height: 30,
+                                            borderRadius: 15,
+                                            backgroundColor: getUserHexColor(),
+                                            borderWidth: 2,
+                                            borderColor: 'white',
+                                            justifyContent: 'center',
+                                            alignItems: 'center',
+                                            shadowColor: getUserHexColor(),
+                                            shadowOffset: { width: 0, height: 0 },
+                                            shadowOpacity: 0.8,
+                                            shadowRadius: 10,
+                                        }}>
+                                            <Feather name="user" size={16} color="white" />
+                                        </View>
+                                    )}
+                                </Animated.View>
+                            </View>
+                        </Mapbox.MarkerView>
+                    )
+                }
 
                 {/* Render CLUSTERS and PINS */}
-                {clusters.map((point) => {
-                    const { geometry, properties } = point;
-                    const coordinates = geometry.coordinates;
-                    const isCluster = properties.cluster;
+                {
+                    clusters.map((point) => {
+                        const { geometry, properties } = point;
+                        const coordinates = geometry.coordinates;
+                        const isCluster = properties.cluster;
 
 
-                    // 1. CLUSTER MARKER
-                    if (isCluster) {
+                        // 1. CLUSTER MARKER
+                        if (isCluster) {
+
+                            return (
+                                <Mapbox.MarkerView
+                                    key={`cluster-${properties.cluster_id}`}
+                                    coordinate={coordinates}
+                                    anchor={{ x: 0.5, y: 0.5 }}
+                                    allowOverlap={true}
+                                    allowOverlapWithPuck={true}
+                                >
+                                    <TouchableOpacity
+                                        activeOpacity={0.8}
+                                        onPress={async () => {
+                                            const clusterId = properties.cluster_id;
+
+                                            // Always open list logic (No Zooming)
+                                            // User request: "let's adjustment have the logic be that a cluster... opens a list. no zoom."
+                                            const leaves = getLeaves(clusterId, 100);
+                                            setSelectedClusterLeaves(leaves);
+                                        }}
+                                    >
+                                        <ClusterPin count={properties.point_count} />
+                                    </TouchableOpacity>
+                                </Mapbox.MarkerView>
+                            );
+                        }
+
+                        // 2. INDIVIDUAL PIN (Leaf)
+                        const memory = properties.memory as Memory;
 
                         return (
                             <Mapbox.MarkerView
-                                key={`cluster-${properties.cluster_id}`}
+                                key={`pin-${memory.id}`}
+                                id={`marker-${memory.id}`}
                                 coordinate={coordinates}
                                 anchor={{ x: 0.5, y: 0.5 }}
                                 allowOverlap={true}
                                 allowOverlapWithPuck={true}
                             >
                                 <TouchableOpacity
-                                    activeOpacity={0.8}
-                                    onPress={async () => {
-                                        const clusterId = properties.cluster_id;
-
-                                        // Always open list logic (No Zooming)
-                                        // User request: "let's adjustment have the logic be that a cluster... opens a list. no zoom."
-                                        const leaves = getLeaves(clusterId, 100);
-                                        setSelectedClusterLeaves(leaves);
+                                    onPress={() => {
+                                        if (storyPinIds.has(memory.id)) {
+                                            const story = pinToStoryMap[memory.id];
+                                            handlePlayStory(memory.creatorId, story);
+                                        } else {
+                                            selectMemory(memory.id);
+                                        }
+                                    }}
+                                    activeOpacity={0.7}
+                                    onLongPress={() => {
+                                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                                        setContextMenuPinId(memory.id);
                                     }}
                                 >
-                                    <ClusterPin count={properties.point_count} />
+                                    <AvatarPin
+                                        avatarUri={
+                                            memory.creatorId === currentUserId
+                                                ? avatarUri
+                                                : (authorAvatars[memory.creatorId] || null)
+                                        }
+                                        ringColor={
+                                            colorMap[
+                                            (memory.creatorId === currentUserId
+                                                ? pinColor
+                                                : (authorColors[memory.creatorId] || memory.pinColor))?.toLowerCase() || 'orange'
+                                            ] || '#FF8C00'
+                                        }
+                                        isPulsing={memory.id === pulsingPinId}
+                                        isStory={(() => {
+                                            if (storyPinIds.has(memory.id)) {
+                                                const story = pinToStoryMap[memory.id];
+                                                if (story) {
+                                                    const primaryPin = story.coverPinId || story.pinIds[0];
+                                                    return memory.id === primaryPin;
+                                                }
+                                            }
+                                            return false;
+                                        })()}
+                                    />
                                 </TouchableOpacity>
                             </Mapbox.MarkerView>
                         );
-                    }
-
-                    // 2. INDIVIDUAL PIN (Leaf)
-                    const memory = properties.memory as Memory;
-
-                    return (
-                        <Mapbox.MarkerView
-                            key={`pin-${memory.id}`}
-                            id={`marker-${memory.id}`}
-                            coordinate={coordinates}
-                            anchor={{ x: 0.5, y: 0.5 }}
-                            allowOverlap={true}
-                            allowOverlapWithPuck={true}
-                        >
-                            <TouchableOpacity
-                                onPress={() => {
-                                    if (storyPinIds.has(memory.id)) {
-                                        const story = pinToStoryMap[memory.id];
-                                        handlePlayStory(memory.creatorId, story);
-                                    } else {
-                                        selectMemory(memory.id);
-                                    }
-                                }}
-                                activeOpacity={0.7}
-                            >
-                                <AvatarPin
-                                    avatarUri={
-                                        memory.creatorId === currentUserId
-                                            ? avatarUri
-                                            : (authorAvatars[memory.creatorId] || null)
-                                    }
-                                    ringColor={
-                                        colorMap[
-                                        memory.creatorId === currentUserId
-                                            ? pinColor
-                                            : (authorColors[memory.creatorId] || memory.pinColor)
-                                        ] || '#FF00FF'
-                                    }
-                                    isPulsing={memory.id === pulsingPinId}
-                                    isStory={(() => {
-                                        if (storyPinIds.has(memory.id)) {
-                                            const story = pinToStoryMap[memory.id];
-                                            if (story) {
-                                                const primaryPin = story.coverPinId || story.pinIds[0];
-                                                return memory.id === primaryPin;
-                                            }
-                                        }
-                                        return false;
-                                    })()}
-                                />
-                            </TouchableOpacity>
-                        </Mapbox.MarkerView>
-                    );
-                })}
+                    })
+                }
 
                 {/* 3. CLUSTER LIST MODAL (To be implemented) */}
 
-            </Mapbox.MapView>
+            </Mapbox.MapView >
+
+            {/* Explore UI Overlays - Rendering AFTER map forces correct Android Elevation/Touch handling */}
+            <ExploreSearchBar
+                visible={isExploreSearchVisible}
+                onClose={() => setIsExploreSearchVisible(false)}
+                onSelectLocation={handleExploreSelect}
+            />
+
+            <Modal
+                transparent
+                visible={isExploreInfoVisible && !!selectedExplorePlace}
+                animationType="fade"
+                onRequestClose={() => {
+                    setIsExploreInfoVisible(false);
+                    setSelectedExplorePlace(null);
+                }}
+            >
+                {selectedExplorePlace && (
+                    <ExploreInfoCard
+                        placeName={selectedExplorePlace.place_name}
+                        location={selectedExplorePlace}
+                        onClose={() => {
+                            setIsExploreInfoVisible(false);
+                            setSelectedExplorePlace(null);
+                        }}
+                    />
+                )}
+            </Modal>
+
+
+
 
             {/* UI Elements - Hide when in Story Mode */}
             {
                 !storyModeUserId && (
                     <>
-                        {/* Settings Button - Top Right */}
-                        <TouchableOpacity
-                            style={styles.settingsButton}
-                            onPress={() => setIsSettingsVisible(true)}
-                        >
-                            <Feather name="settings" size={22} color="white" />
-                        </TouchableOpacity>
 
 
 
                         <FabMenu
                             avatarUri={avatarUri}
+                            pinColor={getUserHexColor()}
+                            onPressExplore={() => setIsExploreSearchVisible(true)}
                             onPressProfile={() => {
                                 if (currentUserId) {
                                     setSelectedUserProfileId(currentUserId);
-                                } else {
-                                    setIsUsernameModalVisible(true);
                                 }
                             }}
                             onPressFriends={() => {
@@ -1044,26 +1389,13 @@ export default function App() {
                 )
             }
 
+
+
             {/* Story Mode Controller */}
             {
                 storyModeData && storyModeUserId && (
                     <StoryModeController
-                        pins={(() => {
-                            const userPins = memories.filter(m => m.creatorId === storyModeUserId);
-
-                            // If playing a specific story, filter and order by the story's pinIds
-                            if (storyModeData.story) {
-                                const orderedPins: Memory[] = [];
-                                storyModeData.story.pinIds.forEach(id => {
-                                    const found = userPins.find(p => p.id === id);
-                                    if (found) orderedPins.push(found);
-                                });
-                                return orderedPins;
-                            }
-
-                            // Otherwise play all, sorted by date (oldest first?)
-                            return userPins.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-                        })()}
+                        pins={storyPins}
                         cameraRef={cameraRef}
                         onExit={() => {
                             setStoryModeData(null);
@@ -1080,8 +1412,8 @@ export default function App() {
                         onPulsingPinChange={setPulsingPinId}
                         userColor={
                             storyModeUserId === currentUserId
-                                ? (pinColor || '#FF00FF')
-                                : (authorColors[storyModeUserId] || colorMap[memories.find(m => m.creatorId === storyModeUserId)?.pinColor || 'magenta'] || '#FF00FF')
+                                ? (colorMap[(pinColor || 'orange').toLowerCase()] || '#FF8C00')
+                                : (authorColors[storyModeUserId] || colorMap[(memories.find(m => m.creatorId === storyModeUserId)?.pinColor || 'orange').toLowerCase()] || '#FF8C00')
                         }
                     />
                 )
@@ -1096,6 +1428,38 @@ export default function App() {
                     setFilteredUserId(uid);
                 }}
                 onPlayStory={handlePlayStory}
+                onEditUsername={() => {
+                    // UsernameModal will open over ProfileModal
+                    setIsUsernameModalVisible(true);
+                }}
+                onEditAvatar={handleEditAvatar}
+                onPinColorChange={async (color) => {
+                    setPinColor(color);
+                    if (currentUserId) {
+                        await saveUserPinColor(currentUserId, color);
+                    }
+                }}
+                onOpenSettings={() => setIsSettingsVisible(true)}
+                onViewBucketListItem={handleViewBucketItem}
+            />
+
+            <SettingsModal
+                visible={isSettingsVisible}
+                onClose={() => setIsSettingsVisible(false)}
+            />
+
+            <UsernameModal
+                visible={isUsernameModalVisible}
+                onClose={() => setIsUsernameModalVisible(false)}
+                onSave={async (newUsername) => {
+                    if (currentUserId) {
+                        await saveUserProfile(currentUserId, { username: newUsername });
+                        setUsername(newUsername);
+                    }
+                    setIsUsernameModalVisible(false);
+                }}
+                currentUsername={username}
+                currentUserId={currentUserId}
             />
 
             {
@@ -1192,6 +1556,123 @@ export default function App() {
                 }}
             />
 
+            {/* Pin Context Menu */}
+            {
+                contextMenuPinId && (() => {
+                    const pin = memories.find(m => m.id === contextMenuPinId);
+                    const isOwner = pin?.creatorId === currentUserId;
+                    // Get creator name (fallback to 'User')
+                    // Note: authorAvatars keys are UIDs, but values are URIs. We don't have names easily available here.
+                    // We'll rely on the profile modal to show full info or fetch if needed. 
+                    // For now, "User" is safe.
+
+                    return (
+                        <PinContextMenu
+                            visible={!!contextMenuPinId}
+                            onClose={() => setContextMenuPinId(null)}
+                            pinId={contextMenuPinId}
+                            pinTitle={pin?.title || 'Pin'}
+                            locationName={pin?.locationName || 'Unknown'}
+                            isOwner={!!isOwner}
+                            creatorName={"User"}
+                            onViewProfile={() => {
+                                if (pin) setSelectedUserProfileId(pin.creatorId);
+                                setContextMenuPinId(null);
+                            }}
+                            onShare={async () => {
+                                const { Share } = require('react-native');
+                                const shareUrl = `https://builtbylee.github.io/pinr/pin.html?id=${contextMenuPinId}`;
+
+                                // Get the creator's username for personalized message
+                                let creatorUsername = '';
+                                if (pin?.creatorId) {
+                                    try {
+                                        creatorUsername = await getUsername(pin.creatorId) || '';
+                                    } catch (e) {
+                                        console.warn('[Share] Could not fetch username:', e);
+                                    }
+                                }
+
+                                const viewText = creatorUsername
+                                    ? `View ${creatorUsername}'s pin on Pinr`
+                                    : 'View on Pinr';
+                                const message = `📍 ${pin?.title || 'Pin'} - ${pin?.locationName || 'Location'}\n\n${viewText}: ${shareUrl}`;
+
+                                await Share.share({
+                                    message: message,
+                                    title: `Check out my pin!`,
+                                });
+                                setContextMenuPinId(null);
+                            }}
+                            onEdit={() => {
+                                setEditingMemory(pin || null);
+                                setIsCreationModalVisible(true);
+                                setContextMenuPinId(null);
+                            }}
+                            onDelete={() => {
+                                Alert.alert(
+                                    'Delete Pin',
+                                    'Are you sure you want to delete this memory?',
+                                    [
+                                        { text: 'Cancel', style: 'cancel' },
+                                        {
+                                            text: 'Delete',
+                                            style: 'destructive',
+                                            onPress: async () => {
+                                                if (pin) {
+                                                    await deletePin(pin.id);
+                                                    useMemoryStore.getState().deleteMemory(pin.id);
+                                                }
+                                                setContextMenuPinId(null);
+                                            }
+                                        }
+                                    ]
+                                );
+                            }}
+                            onHidePin={async () => {
+                                if (currentUserId && pin) {
+                                    // 1. Optimistic update
+                                    toggleHiddenPinLocal(pin.id);
+                                    setContextMenuPinId(null);
+                                    useMemoryStore.getState().showToast('Pin hidden from your map', 'success');
+
+                                    // 2. Persist
+                                    try {
+                                        await toggleHiddenPinService(currentUserId, pin.id, true);
+                                    } catch (e) {
+                                        console.error('Failed to hide pin remotely:', e);
+                                        // Revert if failed? For now keep local.
+                                    }
+                                }
+                            }}
+                            onHideUser={async () => {
+                                if (currentUserId && pin) {
+                                    Alert.alert(
+                                        'Hide All Pins',
+                                        `Hide all pins from this user? You remain friends.`,
+                                        [
+                                            { text: 'Cancel', style: 'cancel' },
+                                            {
+                                                text: 'Hide All',
+                                                style: 'destructive',
+                                                onPress: async () => {
+                                                    // 1. Optimistic
+                                                    toggleHiddenFriendLocal(pin.creatorId);
+                                                    setContextMenuPinId(null);
+
+                                                    // 2. Persist
+                                                    await toggleHiddenFriendService(currentUserId, pin.creatorId, true);
+                                                }
+                                            }
+                                        ]
+                                    );
+                                }
+                            }}
+                        />
+                    );
+                })()
+            }
+
             {
                 selectedMemory && (
                     <DestinationCard
@@ -1213,39 +1694,7 @@ export default function App() {
                 )
             }
 
-            {/* Settings Modal */}
-            <SettingsModal
-                visible={isSettingsVisible}
-                onClose={() => setIsSettingsVisible(false)}
-                username={username}
-                avatarUri={avatarUri}
-                pinColor={pinColor}
-                onEditUsername={() => {
-                    setIsSettingsVisible(false);
-                    setIsFirstTimeUser(false);
-                    setIsUsernameModalVisible(true);
-                }}
-                onEditAvatar={() => {
-                    setIsSettingsVisible(false);
-                    handleEditAvatar();
-                }}
-                onPinColorChange={async (color) => {
-                    setPinColor(color);
-                    if (currentUserId) {
-                        await saveUserPinColor(currentUserId, color);
-                    }
-                }}
-            />
 
-            {/* Username Modal */}
-            <UsernameModal
-                visible={isUsernameModalVisible}
-                onClose={() => setIsUsernameModalVisible(false)}
-                onSave={handleSaveUsername}
-                currentUsername={username}
-                currentUserId={currentUserId}
-                isFirstTime={isFirstTimeUser}
-            />
 
             {/* Global Toast Notification */}
             <ToastNotification />
@@ -1265,6 +1714,13 @@ export default function App() {
                         selectMemory(memory.id);
                     }
                 }}
+            />
+
+            {/* Explore Streak Celebration Modal */}
+            <StreakCelebrationModal
+                visible={showStreakCelebration}
+                streakCount={celebrationStreak}
+                onDismiss={() => setShowStreakCelebration(false)}
             />
 
         </View >

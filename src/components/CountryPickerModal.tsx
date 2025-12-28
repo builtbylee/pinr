@@ -2,17 +2,23 @@ import React, { useState, useMemo } from 'react';
 import { StyleSheet, View, Text, TouchableOpacity, Modal, FlatList, TextInput, KeyboardAvoidingView, Platform, Dimensions } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { COUNTRIES, Country } from '../data/countries';
-import { TripListItem } from '../services/userService';
+// Removed TripListItem dependency
+
+interface CountrySelection {
+    countryCode: string;
+    countryName: string;
+    status: 'wishlist' | 'visited';
+}
 
 interface CountryPickerModalProps {
     visible: boolean;
     onClose: () => void;
-    onSelect: (items: Omit<TripListItem, 'addedAt'>[]) => void;
+    onSelect: (items: CountrySelection[]) => void;
 }
 
 const { height } = Dimensions.get('window');
 
-type TripStatus = 'wishlist' | 'booked';
+type TripStatus = 'wishlist' | 'visited';
 
 export const CountryPickerModal: React.FC<CountryPickerModalProps> = ({ visible, onClose, onSelect }) => {
     const [searchQuery, setSearchQuery] = useState('');
@@ -51,7 +57,7 @@ export const CountryPickerModal: React.FC<CountryPickerModalProps> = ({ visible,
     };
 
     const handleDone = () => {
-        const results: Omit<TripListItem, 'addedAt'>[] = Object.entries(selectedStates).map(([code, status]) => {
+        const results: CountrySelection[] = Object.entries(selectedStates).map(([code, status]) => {
             const country = COUNTRIES.find(c => c.code === code);
             return {
                 countryCode: code,
@@ -87,12 +93,12 @@ export const CountryPickerModal: React.FC<CountryPickerModalProps> = ({ visible,
                     <TouchableOpacity
                         style={[
                             styles.statusBtn,
-                            currentStatus === 'booked' && styles.bookedActive
+                            currentStatus === 'visited' && styles.bookedActive // reusing style name for simplicity or rename later
                         ]}
-                        onPress={() => toggleStatus(item.code, 'booked')}
+                        onPress={() => toggleStatus(item.code, 'visited')}
                     >
-                        <Text style={[styles.statusBtnText, currentStatus === 'booked' && styles.activeBtnText]}>
-                            Booked
+                        <Text style={[styles.statusBtnText, currentStatus === 'visited' && styles.activeBtnText]}>
+                            Visited
                         </Text>
                     </TouchableOpacity>
                 </View>

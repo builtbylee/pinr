@@ -118,7 +118,12 @@ export const StoryModeController: React.FC<StoryModeControllerProps> = ({
         } else {
             console.log('[StoryMode] End of story reached, exiting...');
             setIsPlaying(false);
-            onExit(); // Auto-exit when done
+            // Ensure all state is reset before exiting
+            onPulsingPinChange?.(null);
+            // Small delay to ensure card is fully closed before unmounting
+            setTimeout(() => {
+                onExit();
+            }, 100);
         }
     };
 
@@ -142,7 +147,7 @@ export const StoryModeController: React.FC<StoryModeControllerProps> = ({
                 <Animated.View
                     style={[StyleSheet.absoluteFill, { zIndex: 1000 }]}
                     entering={ZoomIn.springify().damping(12)}
-                    exiting={ZoomOut.duration(300)}
+                    pointerEvents="box-none"
                 >
                     <DestinationCard
                         memory={currentPin}
@@ -158,7 +163,7 @@ export const StoryModeController: React.FC<StoryModeControllerProps> = ({
             )}
 
             {/* Top Bar - Progress */}
-            <Animated.View entering={FadeIn.delay(500)} style={[styles.topBar, { zIndex: 2001 }]}>
+            <Animated.View entering={FadeIn.delay(500)} style={[styles.topBar, { zIndex: 2001 }]} pointerEvents="box-none">
                 <View style={styles.progressBar}>
                     {pins.map((_, idx) => (
                         <View
@@ -178,7 +183,7 @@ export const StoryModeController: React.FC<StoryModeControllerProps> = ({
             </Animated.View>
 
             {/* Controls */}
-            <View style={[styles.controls, { zIndex: 2001 }]}>
+            <View style={[styles.controls, { zIndex: 2001 }]} pointerEvents="box-none">
                 <View style={[styles.controlBlur, { backgroundColor: 'rgba(255, 255, 255, 0.6)' }]}>
                     <TouchableOpacity onPress={handlePrev} disabled={currentIndex === 0} style={[styles.controlButton, currentIndex === 0 && styles.disabledButton]}>
                         <Feather name="skip-back" size={20} color="#1a1a1a" />

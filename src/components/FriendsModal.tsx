@@ -11,7 +11,9 @@ import {
     TextInput,
     TouchableOpacity,
     View,
-    ActivityIndicator
+    ActivityIndicator,
+    Modal,
+    Pressable
 } from 'react-native';
 import { useMemoryStore } from '../store/useMemoryStore';
 import {
@@ -24,8 +26,10 @@ import {
     getUserProfile,
     getUsername,
     getUserByUsername,
-    toggleHiddenFriend
+    toggleHiddenFriend,
+    getFriends
 } from '../services/userService';
+import { shareService } from '../services/ShareService';
 import { AvatarPin } from './AvatarPin';
 
 interface FriendsModalProps {
@@ -78,6 +82,9 @@ export const FriendsModal: React.FC<FriendsModalProps> = ({ visible, onClose, on
     const [scanned, setScanned] = useState(false);
     const [isProcessingScan, setIsProcessingScan] = useState(false);
 
+    // Friend Actions Menu State
+    const [selectedFriend, setSelectedFriend] = useState<Friend | null>(null);
+
     // Load friends and requests
     useEffect(() => {
         if (visible && currentUserId) {
@@ -95,20 +102,22 @@ export const FriendsModal: React.FC<FriendsModalProps> = ({ visible, onClose, on
             const requestsData = await getFriendRequests(currentUserId);
             setFriendRequests(requestsData);
 
-            // Get friends from user profile
-            const profile = await getUserProfile(currentUserId);
-            if (profile?.friends && profile.friends.length > 0) {
+            // Get friends using new Request-Based logic
+            const friendIds = await getFriends(currentUserId);
+
+            if (friendIds.length > 0) {
                 const friendsList: Friend[] = [];
-                // 1. Update data fetching
-                await Promise.all(profile.friends.map(async (friendUid) => {
+                await Promise.all(friendIds.map(async (friendUid) => {
                     const friendProfile = await getUserProfile(friendUid);
                     friendsList.push({
                         uid: friendUid,
                         username: friendProfile?.username || 'Unknown',
                         avatarUrl: friendProfile?.avatarUrl,
-                        pinColor: friendProfile?.pinColor || 'magenta', // Add pinColor
+                        pinColor: friendProfile?.pinColor || 'orange',
                     });
                 }));
+                // Sort alphabetically
+                friendsList.sort((a, b) => a.username.localeCompare(b.username));
                 setFriends(friendsList);
             } else {
                 setFriends([]);
@@ -312,6 +321,15 @@ export const FriendsModal: React.FC<FriendsModalProps> = ({ visible, onClose, on
                         <ScrollView contentContainerStyle={styles.scrollContent}>
                             {/* Friend Filter */}
                             <View style={styles.section}>
+                                {/* Invite Friends Button */}
+                                <TouchableOpacity
+                                    style={styles.inviteButton}
+                                    onPress={() => shareService.shareAppInvite()}
+                                >
+                                    <Feather name="share-2" size={18} color="white" />
+                                    <Text style={styles.inviteButtonText}>Invite Friends to Pinr</Text>
+                                </TouchableOpacity>
+
                                 <View style={styles.searchRow}>
                                     <TextInput
                                         style={styles.searchInput}
@@ -362,47 +380,41 @@ export const FriendsModal: React.FC<FriendsModalProps> = ({ visible, onClose, on
                                 {friends.length > 0 ? (
                                     friends
                                         .filter(f => f.username.toLowerCase().includes(filterText.toLowerCase()))
-                                        .map(friend => (
-                                            <View key={friend.uid} style={styles.friendRow}>
-                                                <TouchableOpacity
-                                                    style={styles.userInfo}
-                                                    onPress={() => onSelectUser(friend.uid)}
-                                                >
-                                                    <View style={{ width: 40, height: 40, alignItems: 'center', justifyContent: 'center' }}>
-                                                        <View style={{ transform: [{ scale: 0.7 }] }}>
-                                                            <AvatarPin
-                                                                avatarUri={friend.avatarUrl || null}
-                                                                ringColor={friend.pinColor || 'magenta'}
-                                                            />
-                                                        </View>
-                                                    </View>
-                                                    <Text style={styles.userName}>{friend.username}</Text>
-                                                </TouchableOpacity>
-                                                <View style={styles.friendActions}>
+                                        .map(friend => {
+                                            const isHidden = hiddenFriendIds.includes(friend.uid);
+
+                                            return (
+                                                <View key={friend.uid} style={styles.friendRow}>
                                                     <TouchableOpacity
-                                                        style={styles.hideButton}
-                                                        onPress={async () => {
-                                                            if (!currentUserId) return;
-                                                            const isHidden = hiddenFriendIds.includes(friend.uid);
-                                                            toggleHiddenFriendLocal(friend.uid); // Optimistic update
-                                                            await toggleHiddenFriend(currentUserId, friend.uid, !isHidden);
-                                                        }}
+                                                        style={styles.friendInfo}
+                                                        onPress={() => onSelectUser(friend.uid)}
+                                                        activeOpacity={0.7}
                                                     >
-                                                        <Feather
-                                                            name={hiddenFriendIds.includes(friend.uid) ? 'eye-off' : 'eye'}
-                                                            size={20}
-                                                            color={hiddenFriendIds.includes(friend.uid) ? '#999' : '#007AFF'}
-                                                        />
+                                                        <View style={{ width: 40, height: 40, alignItems: 'center', justifyContent: 'center' }}>
+                                                            <View style={{ transform: [{ scale: 0.7 }] }}>
+                                                                <AvatarPin
+                                                                    avatarUri={friend.avatarUrl || null}
+                                                                    ringColor={friend.pinColor || 'orange'}
+                                                                />
+                                                            </View>
+                                                        </View>
+                                                        <Text style={styles.userName} numberOfLines={1}>{friend.username}</Text>
+                                                        {isHidden && (
+                                                            <View style={styles.hiddenBadge}>
+                                                                <Feather name="eye-off" size={12} color="#666" />
+                                                            </View>
+                                                        )}
                                                     </TouchableOpacity>
                                                     <TouchableOpacity
-                                                        style={styles.removeButton}
-                                                        onPress={() => handleRemoveFriend(friend.uid, friend.username)}
+                                                        style={styles.menuButton}
+                                                        onPress={() => setSelectedFriend(friend)}
+                                                        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                                                     >
-                                                        <Feather name="x-circle" size={22} color="#FF3B30" />
+                                                        <Feather name="more-vertical" size={20} color="#666" />
                                                     </TouchableOpacity>
                                                 </View>
-                                            </View>
-                                        ))
+                                            );
+                                        })
                                 ) : (
                                     <Text style={styles.emptyText}>No friends yet. Add some!</Text>
                                 )}
@@ -491,7 +503,7 @@ export const FriendsModal: React.FC<FriendsModalProps> = ({ visible, onClose, on
                                 <View style={{ marginBottom: 16, marginTop: 40, transform: [{ scale: 1.2 }] }}>
                                     <AvatarPin
                                         avatarUri={avatarUri}
-                                        ringColor={pinColor || 'magenta'}
+                                        ringColor={pinColor || 'orange'}
                                     />
                                 </View>
                                 <Text style={styles.qrUsername}>{username}</Text>
@@ -501,6 +513,11 @@ export const FriendsModal: React.FC<FriendsModalProps> = ({ visible, onClose, on
                                         size={200}
                                         color="black"
                                         backgroundColor="white"
+                                        logo={require('../../assets/images/qr-logo-cropped.png')}
+                                        logoSize={35}
+                                        logoBackgroundColor="transparent"
+                                        logoBorderRadius={8}
+                                        ecl="H"
                                     />
                                 </View>
                                 <Text style={styles.qrHint}>Scan to add me as a friend</Text>
@@ -509,6 +526,65 @@ export const FriendsModal: React.FC<FriendsModalProps> = ({ visible, onClose, on
                     }
                 </View >
             </View >
+
+            {/* Friend Actions Modal */}
+            <Modal
+                visible={!!selectedFriend}
+                transparent={true}
+                animationType="fade"
+                onRequestClose={() => setSelectedFriend(null)}
+            >
+                <Pressable
+                    style={styles.menuOverlay}
+                    onPress={() => setSelectedFriend(null)}
+                >
+                    <View style={styles.menuPopup}>
+                        {selectedFriend && (
+                            <>
+                                <View style={styles.menuHeader}>
+                                    <Text style={styles.menuTitle}>{selectedFriend.username}</Text>
+                                </View>
+                                <TouchableOpacity
+                                    style={styles.menuOption}
+                                    onPress={async () => {
+                                        if (!currentUserId || !selectedFriend) return;
+                                        const isHidden = hiddenFriendIds.includes(selectedFriend.uid);
+                                        toggleHiddenFriendLocal(selectedFriend.uid);
+                                        await toggleHiddenFriend(currentUserId, selectedFriend.uid, !isHidden);
+                                        setSelectedFriend(null);
+                                    }}
+                                >
+                                    <Feather
+                                        name={hiddenFriendIds.includes(selectedFriend.uid) ? 'eye' : 'eye-off'}
+                                        size={20}
+                                        color="#1a1a1a"
+                                    />
+                                    <Text style={styles.menuOptionText}>
+                                        {hiddenFriendIds.includes(selectedFriend.uid) ? 'Show Pins' : 'Hide Pins'}
+                                    </Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity
+                                    style={[styles.menuOption, styles.menuOptionDanger]}
+                                    onPress={() => {
+                                        if (!selectedFriend) return;
+                                        handleRemoveFriend(selectedFriend.uid, selectedFriend.username);
+                                        setSelectedFriend(null);
+                                    }}
+                                >
+                                    <Feather name="user-x" size={20} color="#FF3B30" />
+                                    <Text style={[styles.menuOptionText, styles.menuOptionTextDanger]}>Remove Friend</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity
+                                    style={styles.menuCancel}
+                                    onPress={() => setSelectedFriend(null)}
+                                >
+                                    <Text style={styles.menuCancelText}>Cancel</Text>
+                                </TouchableOpacity>
+                            </>
+                        )}
+                    </View>
+                </Pressable>
+            </Modal>
         </View >
     );
 };
@@ -588,7 +664,7 @@ const styles = StyleSheet.create({
     },
     searchButton: {
         backgroundColor: '#1a1a1a',
-        borderRadius: 12,
+        borderRadius: 25,
         padding: 14,
         justifyContent: 'center',
         alignItems: 'center',
@@ -608,9 +684,11 @@ const styles = StyleSheet.create({
         marginTop: 12,
     },
     userInfo: {
+        flexShrink: 1,
         flexDirection: 'row',
         alignItems: 'center',
         gap: 12,
+        marginRight: 8,
     },
     userAvatar: {
         width: 36,
@@ -640,7 +718,7 @@ const styles = StyleSheet.create({
         backgroundColor: '#34C759',
         paddingVertical: 8,
         paddingHorizontal: 14,
-        borderRadius: 20,
+        borderRadius: 25,
         gap: 6,
     },
     addButtonText: {
@@ -676,40 +754,139 @@ const styles = StyleSheet.create({
     friendRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'space-between',
-        backgroundColor: 'rgba(255,255,255,0.7)',
-        padding: 14,
-        borderRadius: 12,
+        backgroundColor: 'white',
+        padding: 12,
+        paddingHorizontal: 14,
         marginBottom: 8,
+        borderRadius: 12,
+        gap: 12,
+    },
+    swipeAction: {
+        justifyContent: 'center',
+        alignItems: 'center',
+        width: 80,
+        height: '100%',
+        marginBottom: 8,
+        borderRadius: 12,
+    },
+    swipeActionHide: {
+        backgroundColor: '#1a1a1a',
+    },
+    swipeActionShow: {
+        backgroundColor: '#10B981',
+    },
+    swipeActionRemove: {
+        backgroundColor: '#FF3B30',
+    },
+    swipeActionText: {
+        color: 'white',
+        fontSize: 11,
+        fontWeight: '600',
+        marginTop: 4,
+    },
+    hiddenBadge: {
+        backgroundColor: '#F2F2F7',
+        paddingHorizontal: 6,
+        paddingVertical: 2,
+        borderRadius: 10,
+    },
+    friendInfo: {
+        flex: 1,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+    },
+    menuButton: {
+        padding: 8,
+    },
+    menuOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    menuPopup: {
+        backgroundColor: 'white',
+        borderRadius: 16,
+        width: '80%',
+        maxWidth: 300,
+        overflow: 'hidden',
+    },
+    menuHeader: {
+        padding: 16,
+        borderBottomWidth: 1,
+        borderBottomColor: '#F0F0F0',
+        alignItems: 'center',
+    },
+    menuTitle: {
+        fontSize: 16,
+        fontWeight: '700',
+        color: '#1a1a1a',
+    },
+    menuOption: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        padding: 16,
+        gap: 12,
+        borderBottomWidth: 1,
+        borderBottomColor: '#F0F0F0',
+    },
+    menuOptionText: {
+        fontSize: 16,
+        color: '#1a1a1a',
+    },
+    menuOptionDanger: {
+        borderBottomWidth: 0,
+    },
+    menuOptionTextDanger: {
+        color: '#FF3B30',
+    },
+    menuCancel: {
+        padding: 16,
+        alignItems: 'center',
+        backgroundColor: '#F8F8F8',
+    },
+    menuCancelText: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: '#666',
     },
     friendActions: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 16,
+        gap: 6,
     },
-    hideButton: {
-        padding: 10,
-        backgroundColor: 'white',
-        borderRadius: 12,
-        borderWidth: 1,
-        borderColor: 'rgba(0,0,0,0.1)',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.05,
-        shadowRadius: 2,
-        elevation: 1,
+    actionButtonPill: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: 6,
+        paddingHorizontal: 8, // Reduced padding
+        borderRadius: 25,
     },
-    removeButton: {
-        padding: 10,
-        backgroundColor: 'white',
-        borderRadius: 12,
-        borderWidth: 1,
-        borderColor: 'rgba(0,0,0,0.1)',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.05,
-        shadowRadius: 2,
-        elevation: 1,
+    actionButtonPillActive: { // Hidden state
+        backgroundColor: '#F2F2F7',
+        borderColor: '#E5E5EA',
+    },
+    actionButtonPillInactive: { // Visible state (Active action)
+        backgroundColor: '#1a1a1a',
+        borderColor: '#1a1a1a',
+    },
+    actionButtonText: {
+        fontSize: 11, // Slightly smaller text
+        fontWeight: '600',
+    },
+    removeButtonPill: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: 6,
+        paddingHorizontal: 8, // Reduced padding
+        borderRadius: 25,
+        borderColor: '#FFC0C0',
+    },
+    removeButtonText: {
+        fontSize: 11, // Slightly smaller text
+        fontWeight: '600',
+        color: '#FF3B30',
     },
     emptyText: {
         color: 'rgba(0,0,0,0.4)',
@@ -829,5 +1006,21 @@ const styles = StyleSheet.create({
     qrHint: {
         fontSize: 14,
         color: 'rgba(0,0,0,0.5)',
+    },
+    inviteButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: '#34C759',
+        paddingVertical: 14,
+        paddingHorizontal: 20,
+        borderRadius: 12,
+        marginBottom: 16,
+        gap: 10,
+    },
+    inviteButtonText: {
+        color: 'white',
+        fontWeight: '600',
+        fontSize: 16,
     },
 });

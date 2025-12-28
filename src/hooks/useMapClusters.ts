@@ -33,7 +33,7 @@ export const useMapClusters = ({ points, bounds, zoom }: UseMapClustersProps) =>
 
     // Initialize supercluster with points
     useEffect(() => {
-        if (points && points.length > 0) {
+        if (points) {
             superclusterRef.current.load(points);
         }
     }, [points]);
@@ -42,10 +42,19 @@ export const useMapClusters = ({ points, bounds, zoom }: UseMapClustersProps) =>
     useEffect(() => {
         if (bounds && superclusterRef.current) {
             // Get clusters for current view
-            const clusteredPoints = superclusterRef.current.getClusters(bounds, Math.floor(zoom));
-            setClusters(clusteredPoints);
+            try {
+                // STABILITY FIX: Cluster the entire world instead of just visible bounds.
+                // This prevents pins from disappearing when spinning the globe (bounds calculation lag).
+                // Mapbox native view handles the clipping of off-screen markers.
+                const worldBounds: BBox = [-180, -90, 180, 90];
+                const clusteredPoints = superclusterRef.current.getClusters(worldBounds, Math.floor(zoom));
+                setClusters(clusteredPoints);
+            } catch (error) {
+                console.warn('[useMapClusters] Failed to get clusters:', error);
+                setClusters([]);
+            }
         }
-    }, [points, bounds, zoom]);
+    }, [points, zoom]); // Removed 'bounds' dependency for stability
 
     const getLeaves = (clusterId: number, limit = 10, offset = 0) => {
         if (!superclusterRef.current) return [];

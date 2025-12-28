@@ -158,14 +158,21 @@ async function verifyNotificationSystem() {
         const result = await response.json();
         console.log('  API Response:', JSON.stringify(result, null, 2));
 
-        if (result.data && result.data[0]?.status === 'ok') {
-            console.log('  ✅ NOTIFICATION SENT SUCCESSFULLY');
-            console.log('  📱 Check device for:', testUser.username);
-        } else if (result.data && result.data[0]?.status === 'error') {
-            console.log('  ❌ NOTIFICATION FAILED');
-            console.log('  Error:', result.data[0].message);
+        if (result.data) {
+            const status = Array.isArray(result.data) ? result.data[0]?.status : result.data.status;
+            const message = Array.isArray(result.data) ? result.data[0]?.message : result.data.message;
+
+            if (status === 'ok') {
+                console.log('  ✅ NOTIFICATION SENT SUCCESSFULLY');
+                console.log('  📱 Check device for:', testUser.username);
+            } else if (status === 'error') {
+                console.log('  ❌ NOTIFICATION FAILED');
+                console.log('  Error:', message);
+            } else {
+                console.log('  ⚠️ UNEXPECTED RESPONSE:', JSON.stringify(result.data));
+            }
         } else {
-            console.log('  ⚠️ UNEXPECTED RESPONSE');
+            console.log('  ⚠️ UNEXPECTED RESPONSE (No data field):', JSON.stringify(result));
         }
     }
 

@@ -128,7 +128,6 @@ const styles = StyleSheet.create({
         borderTopRightRadius: 23,
         borderBottomRightRadius: 23,
         borderBottomLeftRadius: 0,
-        borderBottomLeftRadius: 0,
         transform: [{ rotate: '-45deg' }],
         // Shadow for depth (matches ClusterPin)
         shadowColor: '#000',

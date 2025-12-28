@@ -3,7 +3,7 @@ import { StyleSheet, Text, View, TouchableOpacity, ScrollView, ActivityIndicator
 import { Feather } from '@expo/vector-icons';
 import { notificationService } from '../../src/services/NotificationService';
 import { getCurrentUser } from '../../src/services/authService';
-import { getUserProfile } from '../../src/services/userService';
+import { getUserProfile, getFriends } from '../../src/services/userService';
 import { OneSignal } from 'react-native-onesignal';
 
 export default function NotificationTest() {
@@ -36,7 +36,7 @@ export default function NotificationTest() {
             setPermissionStatus(granted ? 'granted' : 'denied');
             if (granted) {
                 // Get the player ID / push subscription ID
-                const id = OneSignal.User.pushSubscription.getValidPushToken();
+                const id = OneSignal.User.pushSubscription.getPushSubscriptionId();
                 setPushToken(id || 'Registered (ID hidden)');
                 addLog(`Success! Subscription ID available`);
             } else {
@@ -73,15 +73,16 @@ export default function NotificationTest() {
 
             const myProfile = await getUserProfile(currentUser.uid);
             addLog(`My profile found: ${!!myProfile}`);
-            addLog(`My friends list: ${JSON.stringify(myProfile?.friends || [])}`);
+            const friendIds = await getFriends(currentUser.uid);
+            addLog(`My friends list: ${JSON.stringify(friendIds || [])}`);
 
-            if (!myProfile?.friends || myProfile.friends.length === 0) {
+            if (!friendIds || friendIds.length === 0) {
                 addLog('ERROR: You have no friends to send to');
                 setLoading(false);
                 return;
             }
 
-            const friendUid = myProfile.friends[0];
+            const friendUid = friendIds[0];
             addLog(`Sending to first friend: ${friendUid}`);
 
             const result = await notificationService.sendGameInvite(friendUid, 'Test Invite');

@@ -2,8 +2,13 @@ import auth from '@react-native-firebase/auth';
 import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
 
 // Configure Google Sign-In (call this once at app startup)
+const GOOGLE_WEB_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID;
+if (!GOOGLE_WEB_CLIENT_ID) {
+    console.error('[AuthService] CRITICAL: EXPO_PUBLIC_GOOGLE_CLIENT_ID environment variable is not set!');
+}
+
 GoogleSignin.configure({
-    webClientId: '760973100570-m7rblrrm2fkcjk61mjnu9bruvkrs03qp.apps.googleusercontent.com',
+    webClientId: GOOGLE_WEB_CLIENT_ID,
 });
 
 /**
@@ -227,4 +232,15 @@ export const reauthenticateUser = async (password: string) => {
     const credential = auth.EmailAuthProvider.credential(user.email, password);
     await user.reauthenticateWithCredential(credential);
     console.log('[AuthService] User re-authenticated');
+};
+
+/**
+ * Delete the current user account (for signup cleanup when username is taken)
+ */
+export const deleteCurrentUser = async (): Promise<void> => {
+    const user = auth().currentUser;
+    if (user) {
+        await user.delete();
+        console.log('[AuthService] Current user deleted (signup cleanup)');
+    }
 };

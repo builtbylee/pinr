@@ -1,8 +1,10 @@
 import firestore from '@react-native-firebase/firestore';
+import functions from '@react-native-firebase/functions';
 import { getCurrentUser } from './authService';
 import { getUserProfile } from './userService';
 import { notificationService } from './NotificationService';
 import { Difficulty } from './GameService';
+import logger from '../utils/logger';
 
 export type ChallengeStatus = 'pending' | 'accepted' | 'completed' | 'expired';
 
@@ -15,6 +17,7 @@ export interface GameChallenge {
     opponentUsername: string;
     opponentAvatarUrl?: string;
     difficulty: Difficulty;
+    gameType?: 'flagdash' | 'pindrop' | 'travelbattle'; // Which game the challenge is for
     status: ChallengeStatus;
     challengerScore?: number;
     opponentScore?: number;
@@ -33,7 +36,7 @@ class ChallengeService {
     /**
      * Create a new challenge and send invite notification
      */
-    async createChallenge(opponentId: string, difficulty: Difficulty): Promise<GameChallenge | null> {
+    async createChallenge(opponentId: string, difficulty: Difficulty, gameType: 'flagdash' | 'pindrop' | 'travelbattle' = 'flagdash'): Promise<GameChallenge | null> {
         try {
             const user = getCurrentUser();
             if (!user) {
@@ -60,6 +63,7 @@ class ChallengeService {
                 opponentUsername: opponentProfile.username,
                 opponentAvatarUrl: opponentProfile.avatarUrl,
                 difficulty,
+                gameType,
                 status: 'pending',
                 createdAt: now,
                 expiresAt: now + (CHALLENGE_EXPIRY_HOURS * 60 * 60 * 1000),
@@ -88,7 +92,7 @@ class ChallengeService {
                 console.warn('[ChallengeService] Notification failed:', notifResult.error);
             }
 
-            console.log('[ChallengeService] Challenge created:', challenge.id);
+            logger.log('[ChallengeService] Challenge created:', challenge.id);
             return challenge;
         } catch (error) {
             console.error('[ChallengeService] Failed to create challenge:', error);
@@ -147,99 +151,64 @@ class ChallengeService {
     }
 
     /**
-     * Submit a score for a challenge
+     * Submit a score for a challenge (now uses Cloud Function for validation)
      */
-    async submitScore(challengeId: string, score: number): Promise<{ completed: boolean; won?: boolean; error?: string }> {
+    async submitScore(
+        challengeId: string,
+        score: number,
+        answers: Array<{ questionCode: string; selectedAnswer: string; isCorrect: boolean }>,
+        gameTimeMs: number
+    ): Promise<{ completed: boolean; won?: boolean; error?: string }> {
         try {
             const user = getCurrentUser();
-            if (!user) return { completed: false };
+            if (!user) return { completed: false, error: 'Not authenticated' };
 
-            const docRef = firestore().collection(CHALLENGES_COLLECTION).doc(challengeId);
-            const doc = await docRef.get();
+            // Call Cloud Function for server-side validation
+            const result = await functions().httpsCallable('submitChallengeScore')({
+                challengeId,
+                answers,
+                clientScore: score,
+                gameTimeMs,
+            });
 
-            if (!doc.exists) {
-                console.error('[ChallengeService] Challenge not found');
-                return { completed: false };
+            const data = result.data as any;
+
+            if (!data.success) {
+                return { completed: false, error: data.error || 'Score submission failed' };
             }
 
-            const challenge = { id: doc.id, ...doc.data() } as GameChallenge;
-            const isChallenger = challenge.challengerId === user.uid;
+            // If challenge is completed, send notification to other player
+            if (data.completed) {
+                const docRef = firestore().collection(CHALLENGES_COLLECTION).doc(challengeId);
+                const doc = await docRef.get();
+                const challenge = doc.data() as any;
 
-            // --- ANTI-CHEAT VALIDATION ---
-            const startedAt = isChallenger ? challenge.challengerStartedAt : challenge.opponentStartedAt;
-            // 30s game + 10s buffer/grace period = 40s max
-            const TIME_LIMIT_MS = 40 * 1000;
-            const now = Date.now();
-
-            if (!startedAt) {
-                // Should have called startChallengeAttempt.
-                // We can be lenient and allow it, OR strict.
-                // Let's be lenient for now but log it?
-                // Or maybe they played offline?
-                console.warn('[ChallengeService] Score submitted without start time.');
-            } else if ((now - startedAt) > TIME_LIMIT_MS) {
-                console.warn('[ChallengeService] Time limit exceeded. Forfeit?');
-                // We could reject the score or force it to 0.
-                // For now, let's accept it but maybe flag it?
-                // Or implementing strict forfeit:
-                // score = 0;
-            }
-            // -----------------------------
-
-            // Update the score based on who is submitting
-            const updateData: any = {
-                [isChallenger ? 'challengerScore' : 'opponentScore']: score,
-            };
-
-            // Check if both players have submitted
-            const otherScore = isChallenger ? challenge.opponentScore : challenge.challengerScore;
-
-            if (otherScore !== undefined) {
-                // Both scores in - determine winner
-                const myScore = score;
-                const theirScore = otherScore;
-                const winnerId = myScore > theirScore ? user.uid :
-                    theirScore > myScore ? (isChallenger ? challenge.opponentId : challenge.challengerId) :
-                        null; // Tie
-
-                updateData.status = 'completed';
-                updateData.completedAt = Date.now();
-                updateData.winnerId = winnerId;
-
-                await docRef.update(updateData);
-
-                // Notify the other player
+                const isChallenger = challenge.challengerId === user.uid;
                 const otherPlayerId = isChallenger ? challenge.opponentId : challenge.challengerId;
-                const otherPlayerName = isChallenger ? challenge.opponentUsername : challenge.challengerUsername;
                 const myName = isChallenger ? challenge.challengerUsername : challenge.opponentUsername;
-
-                // Scenario: I just submitted. `winnerId` is set.
-                // If I won: Notify other that I won.
-                // If I lost: Notify other that I lost (Wait, usually 'You Won' is better?).
-                // Let's decide notification perspective for RECEIVER.
-                // Receiver is `otherPlayerId`.
-                // Did receiver win?
-                const didReceiverWin = winnerId === otherPlayerId;
 
                 await notificationService.notifyChallengeComplete(
                     otherPlayerId,
                     'Flag Dash',
                     {
-                        won: didReceiverWin, // Tell them if THEY won
+                        won: !data.won, // Tell them if THEY won
                         opponentName: myName,
                         challengeId: challengeId
                     }
                 );
-
-                return { completed: true, won: winnerId === user.uid };
-            } else {
-                // Waiting for other player
-                await docRef.update(updateData);
-                return { completed: false };
             }
-        } catch (error) {
+
+            return {
+                completed: data.completed,
+                won: data.won,
+            };
+        } catch (error: any) {
             console.error('[ChallengeService] Failed to submit score:', error);
-            return { completed: false };
+            // Handle specific Cloud Function errors
+            if (error.code === 'functions/failed-precondition') {
+                return { completed: false, error: 'Time limit exceeded' };
+            }
+            return { completed: false, error: error.message || 'Failed to submit score' };
         }
     }
 

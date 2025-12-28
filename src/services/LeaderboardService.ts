@@ -1,6 +1,6 @@
 import firestore from '@react-native-firebase/firestore';
 import { getCurrentUser } from './authService';
-import { getUserProfile } from './userService';
+import { getUserProfile, getFriends } from './userService';
 import { Difficulty } from './GameService';
 
 export type GameType = 'flagdash' | 'pindrop';
@@ -18,63 +18,9 @@ export interface LeaderboardEntry {
 const LEADERBOARD_COLLECTION = 'game_leaderboard';
 
 class LeaderboardService {
-    /**
-     * Save a score to the leaderboard
-     * Now tracks best score per game type (flagdash vs pindrop)
-     */
-    async saveScore(score: number, difficulty: Difficulty, gameType: GameType = 'flagdash'): Promise<boolean> {
-        try {
-            const user = getCurrentUser();
-            if (!user) {
-                console.error('[LeaderboardService] No user logged in');
-                return false;
-            }
-
-            // Skip saving 0 scores
-            if (score <= 0) {
-                console.log('[LeaderboardService] Score is 0, not saving');
-                return false;
-            }
-
-            const profile = await getUserProfile(user.uid);
-            // Use user.uid + gameType as docId (one entry per user per game)
-            const docId = `${user.uid}_${gameType}`;
-
-            // Check if this beats their existing BEST score for this game type
-            const existingDoc = await firestore()
-                .collection(LEADERBOARD_COLLECTION)
-                .doc(docId)
-                .get();
-
-            if (existingDoc.exists()) {
-                const existingScore = existingDoc.data()?.score || 0;
-                if (score <= existingScore) {
-                    console.log('[LeaderboardService] Score not higher than existing best:', existingScore);
-                    return false;
-                }
-            }
-
-            // Save the new best score
-            await firestore()
-                .collection(LEADERBOARD_COLLECTION)
-                .doc(docId)
-                .set({
-                    odUid: user.uid,
-                    username: profile?.username || 'Traveller',
-                    photoURL: profile?.avatarUrl || null,
-                    score,
-                    difficulty,  // Store which difficulty the best score was achieved on
-                    gameType,    // Store which game
-                    timestamp: Date.now(),
-                });
-
-            console.log('[LeaderboardService] New best score saved:', score, 'on', difficulty, 'for', gameType);
-            return true;
-        } catch (error) {
-            console.error('[LeaderboardService] Failed to save score:', error);
-            return false;
-        }
-    }
+    // NOTE: saveScore() has been removed - scores are now submitted via
+    // the submitGameScore Cloud Function for server-side validation.
+    // See: functions/src/index.ts
 
     /**
      * Get leaderboard for friends only - shows best score across all difficulties
@@ -85,8 +31,8 @@ class LeaderboardService {
             const user = getCurrentUser();
             if (!user) return [];
 
-            const profile = await getUserProfile(user.uid);
-            const friendIds = profile?.friends || [];
+            // SECURE: Use getFriends() instead of profile.friends
+            const friendIds = await getFriends(user.uid);
 
             // Include self in the leaderboard
             const allIds = [user.uid, ...friendIds];

@@ -1,17 +1,59 @@
 import { Feather } from '@expo/vector-icons';
-import React from 'react';
+import React, { useEffect } from 'react';
 import { StyleSheet, View } from 'react-native';
+import Animated, {
+    useAnimatedStyle,
+    useSharedValue,
+    withRepeat,
+    withSequence,
+    withTiming,
+    Easing,
+} from 'react-native-reanimated';
 
 interface FrostedPinProps {
     color: string;
     selected?: boolean;
+    isHighlighted?: boolean;
 }
 
-export const FrostedPin: React.FC<FrostedPinProps> = ({ color, selected = false }) => {
+export const FrostedPin: React.FC<FrostedPinProps> = ({ color, selected = false, isHighlighted = false }) => {
+    const pulseScale = useSharedValue(1);
+    const pulseOpacity = useSharedValue(0.4);
+
+    useEffect(() => {
+        if (isHighlighted) {
+            // Animate pulse when highlighted
+            pulseScale.value = withRepeat(
+                withSequence(
+                    withTiming(1.3, { duration: 500, easing: Easing.out(Easing.ease) }),
+                    withTiming(1, { duration: 500, easing: Easing.in(Easing.ease) })
+                ),
+                -1,
+                true
+            );
+            pulseOpacity.value = withRepeat(
+                withSequence(
+                    withTiming(0.8, { duration: 500 }),
+                    withTiming(0.4, { duration: 500 })
+                ),
+                -1,
+                true
+            );
+        } else {
+            pulseScale.value = withTiming(1, { duration: 200 });
+            pulseOpacity.value = withTiming(0.4, { duration: 200 });
+        }
+    }, [isHighlighted]);
+
+    const animatedGlowStyle = useAnimatedStyle(() => ({
+        transform: [{ scale: pulseScale.value }],
+        opacity: pulseOpacity.value,
+    }));
+
     return (
         <View style={styles.container}>
-            {/* Ambient glow behind pin */}
-            <View style={[styles.glow, { backgroundColor: color }]} />
+            {/* Ambient glow behind pin - animated when highlighted */}
+            <Animated.View style={[styles.glow, { backgroundColor: color }, animatedGlowStyle]} />
 
             {/* Frosted glass pin body */}
             <View style={styles.pinBody}>
@@ -79,3 +121,4 @@ const styles = StyleSheet.create({
         shadowRadius: 2,
     },
 });
+

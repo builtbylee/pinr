@@ -14,16 +14,34 @@ import {
     KeyboardAvoidingView,
     Platform,
     Keyboard,
+    FlatList,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { Feather } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import ImageCropPicker from 'react-native-image-crop-picker';
 import { MAPBOX_TOKEN } from '../constants/Config';
+import { searchPlaces, GeocodingResult } from '../services/geocodingService';
 import DraggableFlatList, { RenderItemParams, ScaleDecorator } from 'react-native-draggable-flatlist';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import dayjs from 'dayjs';
+import { Calendar, LocaleConfig } from 'react-native-calendars';
+
+// Setup Calendar Locale
+LocaleConfig.locales['en'] = {
+    monthNames: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
+    monthNamesShort: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+    dayNames: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
+    dayNamesShort: ['S', 'M', 'T', 'W', 'T', 'F', 'S'],
+    today: "Today"
+};
+LocaleConfig.defaultLocale = 'en';
 
 const { width, height } = Dimensions.get('window');
+
+const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+const YEARS = Array.from({ length: 100 }, (_, i) => new Date().getFullYear() - 50 + i);
+
 
 // Types - exported for StoryService
 export interface PinDraft {
@@ -32,6 +50,7 @@ export interface PinDraft {
     title: string;
     location: { lat: number; lon: number; name: string } | null;
     visitDate: number | null;
+    visitEndDate?: number | null;
 }
 
 interface StoryCreationFlowProps {
@@ -61,10 +80,17 @@ export const StoryCreationFlow: React.FC<StoryCreationFlowProps> = ({
 
     // Location autocomplete state
     const [locationSearchQuery, setLocationSearchQuery] = useState('');
-    const [locationSuggestions, setLocationSuggestions] = useState<any[]>([]);
+    const [locationSuggestions, setLocationSuggestions] = useState<GeocodingResult[]>([]);
     const [isSearchingLocation, setIsSearchingLocation] = useState(false);
     const [isLocationFocused, setIsLocationFocused] = useState(false);
     const scrollViewRef = useRef<ScrollView>(null);
+
+    // Calendar state for date range selection
+    const [showCalendar, setShowCalendar] = useState(false);
+    const [showYearPicker, setShowYearPicker] = useState(false);
+    const [calendarCurrentDate, setCalendarCurrentDate] = useState(dayjs().format('YYYY-MM-DD'));
+    const [tempStartDate, setTempStartDate] = useState<string | null>(null);
+    const [tempEndDate, setTempEndDate] = useState<string | null>(null);
 
     // Back Handler - handle back gesture throughout flow
     useEffect(() => {
@@ -132,6 +158,9 @@ export const StoryCreationFlow: React.FC<StoryCreationFlowProps> = ({
                 maxFiles: remainingSlots,
                 mediaType: 'photo',
                 cropping: false,
+                compressImageQuality: 0.8,
+                compressImageMaxWidth: 1200,
+                compressImageMaxHeight: 1200,
             });
 
             if (images && images.length > 0) {
@@ -188,26 +217,15 @@ export const StoryCreationFlow: React.FC<StoryCreationFlowProps> = ({
 
     // Location autocomplete
     const fetchLocationSuggestions = async (query: string) => {
-        if (query.length < 2) {
+        if (query.length < 3) {
             setLocationSuggestions([]);
             return;
         }
 
         setIsSearchingLocation(true);
         try {
-            const token = MAPBOX_TOKEN;
-            if (!token || token === 'PLACEHOLDER_TOKEN') {
-                console.error('[StoryCreation] Mapbox token missing');
-                return;
-            }
-
-            const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json?access_token=${token}&types=place,locality,poi,address&limit=5`;
-            const response = await fetch(url);
-            const data = await response.json();
-
-            if (data.features) {
-                setLocationSuggestions(data.features);
-            }
+            const results = await searchPlaces(query);
+            setLocationSuggestions(results);
         } catch (error) {
             console.error('[StoryCreation] Location search error:', error);
         } finally {
@@ -292,6 +310,128 @@ export const StoryCreationFlow: React.FC<StoryCreationFlowProps> = ({
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     };
 
+    // --- Calendar Logic ---
+    const openCalendarForPin = () => {
+        const currentDraft = pinDrafts[currentDetailIndex];
+        if (currentDraft?.visitDate) {
+            // If there's an existing date, set it as the temp start/end
+            const startStr = dayjs(currentDraft.visitDate).format('YYYY-MM-DD');
+            setTempStartDate(startStr);
+            if (currentDraft.visitEndDate) {
+                const endStr = dayjs(currentDraft.visitEndDate).format('YYYY-MM-DD');
+                setTempEndDate(endStr);
+            } else {
+                setTempEndDate(null);
+            }
+            setCalendarCurrentDate(startStr);
+        } else {
+            setTempStartDate(null);
+            setTempEndDate(null);
+            setCalendarCurrentDate(dayjs().format('YYYY-MM-DD'));
+        }
+        setShowCalendar(true);
+    };
+
+    const onDayPress = useCallback((day: any) => {
+        if (!tempStartDate || (tempStartDate && tempEndDate)) {
+            // Start fresh selection
+            setTempStartDate(day.dateString);
+            setTempEndDate(null);
+        } else {
+            // Selecting end date
+            if (day.dateString < tempStartDate) {
+                setTempStartDate(day.dateString);
+                setTempEndDate(tempStartDate);
+            } else {
+                setTempEndDate(day.dateString);
+            }
+        }
+    }, [tempStartDate, tempEndDate]);
+
+    const getMarkedDates = useCallback(() => {
+        const marked: any = {};
+
+        if (tempStartDate && tempEndDate) {
+            // Range selection
+            let start = dayjs(tempStartDate);
+            const end = dayjs(tempEndDate);
+
+            marked[tempStartDate] = { startingDay: true, color: '#000000', textColor: 'white' };
+            marked[tempEndDate] = { endingDay: true, color: '#000000', textColor: 'white' };
+
+            let current = start.add(1, 'day');
+            while (current.isBefore(end)) {
+                marked[current.format('YYYY-MM-DD')] = { color: '#E5E7EB', textColor: '#1a1a1a' };
+                current = current.add(1, 'day');
+            }
+        } else if (tempStartDate) {
+            // Single date selection
+            marked[tempStartDate] = { selected: true, selectedColor: '#000000', selectedTextColor: 'white' };
+        }
+
+        return marked;
+    }, [tempStartDate, tempEndDate]);
+
+    const confirmDateSelection = () => {
+        const currentDraft = pinDrafts[currentDetailIndex];
+        if (currentDraft && tempStartDate) {
+            // Store start date as timestamp
+            const startTimestamp = dayjs(tempStartDate).valueOf();
+            updatePinDraft(currentDraft.tempId, 'visitDate', startTimestamp);
+
+            // Store end date if selected (and different from start)
+            if (tempEndDate && tempEndDate !== tempStartDate) {
+                const endTimestamp = dayjs(tempEndDate).valueOf();
+                updatePinDraft(currentDraft.tempId, 'visitEndDate', endTimestamp);
+            } else {
+                updatePinDraft(currentDraft.tempId, 'visitEndDate', null);
+            }
+        }
+        setShowCalendar(false);
+    };
+
+    // Helper for ordinal suffix
+    const getOrdinalSuffix = (day: number): string => {
+        if (day >= 11 && day <= 13) return 'th';
+        switch (day % 10) {
+            case 1: return 'st';
+            case 2: return 'nd';
+            case 3: return 'rd';
+            default: return 'th';
+        }
+    };
+
+    const getDateDisplayText = (visitDate: number | null, visitEndDate?: number | null) => {
+        if (!visitDate) return 'Tap to select date';
+
+        const startDay = dayjs(visitDate);
+        const startDayNum = startDay.date();
+        const startFormatted = `${startDayNum}${getOrdinalSuffix(startDayNum)} ${startDay.format('MMMM YYYY')}`;
+
+        if (visitEndDate && visitEndDate !== visitDate) {
+            const endDay = dayjs(visitEndDate);
+            const endDayNum = endDay.date();
+
+            // If same month and year, show "1st - 11th December 2025"
+            if (startDay.month() === endDay.month() && startDay.year() === endDay.year()) {
+                return `${startDayNum}${getOrdinalSuffix(startDayNum)} - ${endDayNum}${getOrdinalSuffix(endDayNum)} ${endDay.format('MMMM YYYY')}`;
+            }
+            // Different months: "1st December - 5th January 2026"
+            return `${startFormatted} - ${endDayNum}${getOrdinalSuffix(endDayNum)} ${endDay.format('MMMM YYYY')}`;
+        }
+
+        return startFormatted;
+    };
+
+    const handleYearMonthSelect = (year: number, monthIndex: number) => {
+        const newDate = dayjs().year(year).month(monthIndex).date(1).format('YYYY-MM-DD');
+        setCalendarCurrentDate(newDate);
+        setShowYearPicker(false);
+    };
+
+    const calendarCurrentYear = dayjs(calendarCurrentDate).year();
+    const calendarCurrentMonthIndex = dayjs(calendarCurrentDate).month();
+
     // Step 3: Reorder & Submit
     const movePin = (fromIndex: number, toIndex: number) => {
         if (toIndex < 0 || toIndex >= pinDrafts.length) return;
@@ -329,7 +469,7 @@ export const StoryCreationFlow: React.FC<StoryCreationFlowProps> = ({
 
             {selectedPhotos.length === 0 ? (
                 <TouchableOpacity style={styles.addPhotosButton} onPress={handlePickPhotos}>
-                    <Feather name="image" size={48} color="#6366F1" />
+                    <Feather name="image" size={48} color="#000000" />
                     <Text style={styles.addPhotosText}>Tap to select photos</Text>
                 </TouchableOpacity>
             ) : (
@@ -374,7 +514,7 @@ export const StoryCreationFlow: React.FC<StoryCreationFlowProps> = ({
                             ListFooterComponent={
                                 selectedPhotos.length < MAX_PHOTOS ? (
                                     <TouchableOpacity style={styles.addMoreBtn} onPress={handlePickPhotos}>
-                                        <Feather name="plus" size={24} color="#6366F1" />
+                                        <Feather name="plus" size={24} color="#000000" />
                                     </TouchableOpacity>
                                 ) : null
                             }
@@ -408,137 +548,169 @@ export const StoryCreationFlow: React.FC<StoryCreationFlowProps> = ({
         if (!currentDraft) return null;
 
         return (
-            <ScrollView
-                ref={scrollViewRef}
-                style={styles.stepContainerScroll}
-                contentContainerStyle={styles.stepContainerScrollContent}
-                keyboardShouldPersistTaps="handled"
-                showsVerticalScrollIndicator={false}
-            >
-                <View style={styles.detailsHeader}>
-                    <Text style={styles.stepTitle}>Add Details</Text>
-                    <Text style={styles.progressText}>
-                        {currentDetailIndex + 1} of {pinDrafts.length}
-                    </Text>
-                </View>
+            <View style={styles.stepWrapper}>
+                <ScrollView
+                    ref={scrollViewRef}
+                    style={styles.stepContainerScroll}
+                    contentContainerStyle={styles.stepContainerScrollContent}
+                    keyboardShouldPersistTaps="handled"
+                    showsVerticalScrollIndicator={false}
+                >
+                    <View style={styles.detailsHeader}>
+                        <Text style={styles.stepTitle}>Add Details</Text>
+                        <Text style={styles.progressText}>
+                            {currentDetailIndex + 1} of {pinDrafts.length}
+                        </Text>
+                    </View>
 
-                <View style={styles.detailCard}>
-                    <Image
-                        source={{ uri: currentDraft.localImageUri }}
-                        style={styles.detailCardImage}
-                        contentFit="cover"
-                    />
+                    <View style={styles.detailCard}>
+                        <Image
+                            source={{ uri: currentDraft.localImageUri }}
+                            style={styles.detailCardImage}
+                            contentFit="cover"
+                        />
 
-                    <View style={styles.detailFields}>
-                        <View style={styles.inputGroup}>
-                            <Text style={styles.inputLabel}>Title *</Text>
-                            <TextInput
-                                style={styles.textInput}
-                                placeholder="Give this memory a name"
-                                placeholderTextColor="#9CA3AF"
-                                value={currentDraft.title}
-                                onChangeText={text => updatePinDraft(currentDraft.tempId, 'title', text)}
-                            />
-                        </View>
+                        <View style={styles.detailFields}>
+                            <View style={styles.inputGroup}>
+                                <Text style={styles.inputLabel}>Title *</Text>
+                                <TextInput
+                                    style={styles.textInput}
+                                    placeholder="Give this pin a name"
+                                    placeholderTextColor="#9CA3AF"
+                                    value={currentDraft.title}
+                                    onChangeText={text => updatePinDraft(currentDraft.tempId, 'title', text)}
+                                />
+                            </View>
 
-                        <View style={styles.inputGroup}>
-                            <Text style={styles.inputLabel}>Location *</Text>
-                            {currentDraft.location ? (
+                            <View style={styles.inputGroup}>
+                                <Text style={styles.inputLabel}>Location *</Text>
+                                {currentDraft.location ? (
+                                    <TouchableOpacity
+                                        style={styles.locationSelected}
+                                        onPress={() => updatePinDraft(currentDraft.tempId, 'location', null)}
+                                    >
+                                        <Feather name="check-circle" size={18} color="#10B981" />
+                                        <Text style={styles.locationSelectedText} numberOfLines={1}>
+                                            {currentDraft.location.name}
+                                        </Text>
+                                        <Feather name="x" size={16} color="#6B7280" />
+                                    </TouchableOpacity>
+                                ) : (
+                                    <View style={styles.locationSearchRow}>
+                                        <Feather name="map-pin" size={18} color="#6B7280" />
+                                        <TextInput
+                                            style={styles.locationSearchInput}
+                                            placeholder="Search for a location..."
+                                            placeholderTextColor="#9CA3AF"
+                                            value={locationSearchQuery}
+                                            onChangeText={setLocationSearchQuery}
+                                            onFocus={() => {
+                                                setIsLocationFocused(true);
+                                                // Scroll to make room for suggestions
+                                                setTimeout(() => {
+                                                    scrollViewRef.current?.scrollToEnd({ animated: true });
+                                                }, 300);
+                                            }}
+                                            onBlur={() => setIsLocationFocused(false)}
+                                        />
+                                        {isSearchingLocation && (
+                                            <ActivityIndicator size="small" color="#000000" />
+                                        )}
+                                    </View>
+                                )}
+                            </View>
+
+                            <View style={styles.inputGroup}>
+                                <Text style={styles.inputLabel}>When were you there?</Text>
                                 <TouchableOpacity
-                                    style={styles.locationSelected}
-                                    onPress={() => updatePinDraft(currentDraft.tempId, 'location', null)}
+                                    style={styles.datePickerRow}
+                                    onPress={openCalendarForPin}
                                 >
-                                    <Feather name="check-circle" size={18} color="#10B981" />
-                                    <Text style={styles.locationSelectedText} numberOfLines={1}>
-                                        {currentDraft.location.name}
+                                    <Feather name="calendar" size={18} color="#6B7280" />
+                                    <Text style={styles.datePickerText}>
+                                        {getDateDisplayText(currentDraft.visitDate, currentDraft.visitEndDate)}
                                     </Text>
-                                    <Feather name="x" size={16} color="#6B7280" />
-                                </TouchableOpacity>
-                            ) : (
-                                <View style={styles.locationSearchRow}>
-                                    <Feather name="map-pin" size={18} color="#6B7280" />
-                                    <TextInput
-                                        style={styles.locationSearchInput}
-                                        placeholder="Search for a location..."
-                                        placeholderTextColor="#9CA3AF"
-                                        value={locationSearchQuery}
-                                        onChangeText={setLocationSearchQuery}
-                                        onFocus={() => {
-                                            setIsLocationFocused(true);
-                                            // Scroll to make room for suggestions
-                                            setTimeout(() => {
-                                                scrollViewRef.current?.scrollToEnd({ animated: true });
-                                            }, 300);
-                                        }}
-                                        onBlur={() => setIsLocationFocused(false)}
-                                    />
-                                    {isSearchingLocation && (
-                                        <ActivityIndicator size="small" color="#6366F1" />
+                                    {currentDraft.visitDate && (
+                                        <TouchableOpacity
+                                            onPress={(e) => {
+                                                e.stopPropagation();
+                                                updatePinDraft(currentDraft.tempId, 'visitDate', null);
+                                                updatePinDraft(currentDraft.tempId, 'visitEndDate', null);
+                                            }}
+                                            style={styles.clearDateBtn}
+                                        >
+                                            <Feather name="x" size={16} color="#6B7280" />
+                                        </TouchableOpacity>
                                     )}
-                                </View>
-                            )}
+                                </TouchableOpacity>
+                            </View>
                         </View>
                     </View>
-                </View>
 
-                {/* Location suggestions - show outside card for better visibility */}
-                {locationSuggestions.length > 0 && !currentDraft.location && (
-                    <View style={styles.suggestionsContainer}>
-                        {locationSuggestions.map((item) => (
+                    {/* Location suggestions - show outside card for better visibility */}
+                    {locationSuggestions.length > 0 && !currentDraft.location && (
+                        <View style={styles.suggestionsContainer}>
+                            {locationSuggestions.map((item) => (
+                                <TouchableOpacity
+                                    key={item.id}
+                                    style={styles.suggestionItem}
+                                    onPress={() => handleSelectLocation(item)}
+                                >
+                                    <Feather name="map-pin" size={14} color="#000000" style={{ marginRight: 8 }} />
+                                    <View style={{ flex: 1 }}>
+                                        <Text style={styles.suggestionText} numberOfLines={1}>
+                                            {item.text}
+                                        </Text>
+                                        <Text style={[styles.suggestionText, { fontSize: 12, color: 'gray', marginTop: 2 }]} numberOfLines={1}>
+                                            {item.place_name}
+                                        </Text>
+                                    </View>
+                                </TouchableOpacity>
+                            ))}
+                        </View>
+                    )}
+
+                    {/* Navigation dots */}
+                    <View style={styles.dotsRow}>
+                        {pinDrafts.map((_, idx) => (
                             <TouchableOpacity
-                                key={item.id}
-                                style={styles.suggestionItem}
-                                onPress={() => handleSelectLocation(item)}
-                            >
-                                <Feather name="map-pin" size={14} color="#6366F1" />
-                                <Text style={styles.suggestionText} numberOfLines={1}>
-                                    {item.place_name}
-                                </Text>
-                            </TouchableOpacity>
+                                key={idx}
+                                style={[styles.dot, idx === currentDetailIndex && styles.dotActive]}
+                                onPress={() => {
+                                    Keyboard.dismiss();
+                                    setCurrentDetailIndex(idx);
+                                    setLocationSearchQuery('');
+                                    setLocationSuggestions([]);
+                                }}
+                            />
                         ))}
                     </View>
-                )}
 
-                {/* Navigation dots */}
-                <View style={styles.dotsRow}>
-                    {pinDrafts.map((_, idx) => (
+                    {/* Navigation arrows - centered */}
+                    <View style={styles.navArrowsCenter}>
                         <TouchableOpacity
-                            key={idx}
-                            style={[styles.dot, idx === currentDetailIndex && styles.dotActive]}
-                            onPress={() => {
-                                Keyboard.dismiss();
-                                setCurrentDetailIndex(idx);
-                                setLocationSearchQuery('');
-                                setLocationSuggestions([]);
-                            }}
-                        />
-                    ))}
-                </View>
+                            style={[styles.navArrowColored, currentDetailIndex === 0 && styles.navArrowDisabled]}
+                            onPress={prevPin}
+                            disabled={currentDetailIndex === 0}
+                        >
+                            <Feather name="chevron-left" size={24} color="white" />
+                        </TouchableOpacity>
 
-                {/* Navigation arrows - centered */}
-                <View style={styles.navArrowsCenter}>
-                    <TouchableOpacity
-                        style={[styles.navArrowColored, currentDetailIndex === 0 && styles.navArrowDisabled]}
-                        onPress={prevPin}
-                        disabled={currentDetailIndex === 0}
-                    >
-                        <Feather name="chevron-left" size={24} color="white" />
-                    </TouchableOpacity>
+                        <Text style={styles.navCounter}>
+                            {currentDetailIndex + 1} of {pinDrafts.length}
+                        </Text>
 
-                    <Text style={styles.navCounter}>
-                        {currentDetailIndex + 1} of {pinDrafts.length}
-                    </Text>
+                        <TouchableOpacity
+                            style={[styles.navArrowColored, currentDetailIndex === pinDrafts.length - 1 && styles.navArrowDisabled]}
+                            onPress={nextPin}
+                            disabled={currentDetailIndex === pinDrafts.length - 1}
+                        >
+                            <Feather name="chevron-right" size={24} color="white" />
+                        </TouchableOpacity>
+                    </View>
+                </ScrollView>
 
-                    <TouchableOpacity
-                        style={[styles.navArrowColored, currentDetailIndex === pinDrafts.length - 1 && styles.navArrowDisabled]}
-                        onPress={nextPin}
-                        disabled={currentDetailIndex === pinDrafts.length - 1}
-                    >
-                        <Feather name="chevron-right" size={24} color="white" />
-                    </TouchableOpacity>
-                </View>
-
-                {/* Bottom actions - Cancel and Next (matching Select Photos page) */}
+                {/* Bottom actions - fixed at bottom */}
                 <View style={styles.bottomActions}>
                     <TouchableOpacity style={styles.cancelBtn} onPress={() => setStep('photos')}>
                         <Text style={styles.cancelBtnText}>Back</Text>
@@ -553,7 +725,7 @@ export const StoryCreationFlow: React.FC<StoryCreationFlowProps> = ({
                         <Feather name="arrow-right" size={18} color="white" />
                     </TouchableOpacity>
                 </View>
-            </ScrollView>
+            </View>
         );
     };
 
@@ -606,7 +778,7 @@ export const StoryCreationFlow: React.FC<StoryCreationFlowProps> = ({
                     ) : (
                         <>
                             <Feather name="check" size={18} color="white" />
-                            <Text style={styles.postBtnText}>Post Story</Text>
+                            <Text style={styles.postBtnText}>Post Journey</Text>
                         </>
                     )}
                 </TouchableOpacity>
@@ -628,20 +800,139 @@ export const StoryCreationFlow: React.FC<StoryCreationFlowProps> = ({
                 behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
                 keyboardVerticalOffset={0}
             >
-                {/* Header */}
-                <View style={styles.header}>
-                    <TouchableOpacity onPress={handleBackNavigation} style={styles.closeBtn}>
-                        <Feather name={step === 'photos' ? 'x' : 'arrow-left'} size={24} color="#374151" />
-                    </TouchableOpacity>
-                    <Text style={styles.headerTitle}>Create Pin</Text>
-                    <View style={styles.headerSpacer} />
-                </View>
-
-                {/* Step content */}
+                {/* Step content - no header */}
                 {step === 'photos' && renderPhotoStep()}
                 {step === 'details' && renderDetailsStep()}
                 {step === 'reorder' && renderReorderStep()}
             </KeyboardAvoidingView>
+
+            {/* Calendar Modal */}
+            <Modal
+                visible={showCalendar}
+                transparent={true}
+                animationType="fade"
+                onRequestClose={() => setShowCalendar(false)}
+            >
+                <View style={styles.calendarModalOverlay}>
+                    <View style={styles.calendarModalBlur} />
+                    <View style={styles.calendarContainer}>
+                        <View style={styles.calendarHeader}>
+                            <Text style={styles.calendarTitle}>Select Dates</Text>
+                            <TouchableOpacity onPress={() => setShowCalendar(false)}>
+                                <Feather name="x" size={24} color="#1a1a1a" />
+                            </TouchableOpacity>
+                        </View>
+
+                        <Calendar
+                            key={calendarCurrentDate}
+                            current={calendarCurrentDate}
+                            onDayPress={onDayPress}
+                            markingType={tempStartDate && tempEndDate ? 'period' : 'custom'}
+                            markedDates={getMarkedDates()}
+                            renderHeader={(date) => (
+                                <TouchableOpacity
+                                    onPress={() => setShowYearPicker(true)}
+                                    style={styles.customHeader}
+                                >
+                                    <Text style={styles.customHeaderText}>
+                                        {dayjs(date).format('MMMM YYYY')}
+                                    </Text>
+                                    <Feather name="chevron-down" size={18} color="#000000" />
+                                </TouchableOpacity>
+                            )}
+                            onMonthChange={(month) => setCalendarCurrentDate(month.dateString)}
+                            theme={{
+                                arrowColor: '#000000',
+                                todayTextColor: '#000000',
+                                monthTextColor: '#000000',
+                                dayTextColor: '#000000',
+                                textSectionTitleColor: '#000000',
+                                textDayFontWeight: '500',
+                                textMonthFontWeight: 'bold',
+                                textDayHeaderFontWeight: 'bold',
+                            }}
+                        />
+
+                        <TouchableOpacity style={styles.calendarConfirmBtn} onPress={confirmDateSelection}>
+                            <Text style={styles.calendarConfirmText}>Confirm</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </Modal>
+
+            {/* Year/Month Picker Modal */}
+            <Modal
+                visible={showYearPicker}
+                transparent={true}
+                animationType="fade"
+                onRequestClose={() => setShowYearPicker(false)}
+            >
+                <View style={styles.calendarModalOverlay}>
+                    <View style={styles.calendarModalBlur} />
+                    <View style={styles.yearPickerContainer}>
+                        <View style={styles.calendarHeader}>
+                            <Text style={styles.calendarTitle}>Select Month & Year</Text>
+                            <TouchableOpacity onPress={() => setShowYearPicker(false)}>
+                                <Feather name="x" size={24} color="#1a1a1a" />
+                            </TouchableOpacity>
+                        </View>
+
+                        <View style={styles.yearPickerContent}>
+                            {/* Year Picker */}
+                            <View style={styles.yearColumn}>
+                                <Text style={styles.pickerLabel}>Year</Text>
+                                <FlatList
+                                    data={YEARS}
+                                    keyExtractor={(item) => item.toString()}
+                                    showsVerticalScrollIndicator={false}
+                                    initialScrollIndex={Math.max(0, YEARS.indexOf(calendarCurrentYear) - 2)}
+                                    getItemLayout={(_, index) => ({ length: 44, offset: 44 * index, index })}
+                                    renderItem={({ item }) => (
+                                        <TouchableOpacity
+                                            style={[
+                                                styles.pickerItem,
+                                                item === calendarCurrentYear && styles.pickerItemSelected
+                                            ]}
+                                            onPress={() => handleYearMonthSelect(item, calendarCurrentMonthIndex)}
+                                        >
+                                            <Text style={[
+                                                styles.pickerItemText,
+                                                item === calendarCurrentYear && styles.pickerItemTextSelected
+                                            ]}>
+                                                {item}
+                                            </Text>
+                                        </TouchableOpacity>
+                                    )}
+                                />
+                            </View>
+
+                            {/* Month Picker */}
+                            <View style={styles.monthColumn}>
+                                <Text style={styles.pickerLabel}>Month</Text>
+                                <ScrollView showsVerticalScrollIndicator={false}>
+                                    {MONTHS.map((month, index) => (
+                                        <TouchableOpacity
+                                            key={month}
+                                            style={[
+                                                styles.pickerItem,
+                                                index === calendarCurrentMonthIndex && styles.pickerItemSelected
+                                            ]}
+                                            onPress={() => handleYearMonthSelect(calendarCurrentYear, index)}
+                                        >
+                                            <Text style={[
+                                                styles.pickerItemText,
+                                                index === calendarCurrentMonthIndex && styles.pickerItemTextSelected
+                                            ]}>
+                                                {month}
+                                            </Text>
+                                        </TouchableOpacity>
+                                    ))}
+                                </ScrollView>
+                            </View>
+                        </View>
+                    </View>
+                </View>
+            </Modal>
         </Modal>
     );
 };
@@ -668,16 +959,14 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'space-between',
         paddingHorizontal: 16,
-        paddingTop: 60,
-        paddingBottom: 16,
+        paddingTop: 50,
+        paddingBottom: 8,
         backgroundColor: 'white',
-        borderBottomWidth: 1,
-        borderBottomColor: '#E5E7EB',
     },
     closeBtn: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
+        width: 36,
+        height: 36,
+        borderRadius: 18,
         backgroundColor: '#F3F4F6',
         justifyContent: 'center',
         alignItems: 'center',
@@ -690,16 +979,20 @@ const styles = StyleSheet.create({
     headerSpacer: {
         width: 40,
     },
+    stepWrapper: {
+        flex: 1,
+    },
     stepContainer: {
         flex: 1,
         padding: 20,
+        paddingBottom: 100,
     },
     stepContainerScroll: {
         flex: 1,
     },
     stepContainerScrollContent: {
-        padding: 20,
-        paddingBottom: 40,
+        padding: 16,
+        paddingBottom: 100,
     },
     suggestionsContainer: {
         backgroundColor: 'white',
@@ -759,7 +1052,7 @@ const styles = StyleSheet.create({
     },
     photoThumbActive: {
         opacity: 0.9,
-        shadowColor: '#6366F1',
+        shadowColor: '#000000',
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.4,
         shadowRadius: 8,
@@ -814,31 +1107,42 @@ const styles = StyleSheet.create({
         marginTop: 8,
     },
     bottomActions: {
+        position: 'absolute',
+        left: 0,
+        right: 0,
+        bottom: 0,
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginTop: 'auto',
+        paddingHorizontal: 20,
         paddingTop: 16,
+        paddingBottom: 34,
+        backgroundColor: '#F9FAFB',
+        borderTopWidth: 1,
+        borderTopColor: '#E5E7EB',
     },
     cancelBtn: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingVertical: 14,
-        paddingHorizontal: 20,
+        justifyContent: 'center',
+        height: 50,
+        paddingHorizontal: 24,
+        borderRadius: 25,
+        backgroundColor: '#F3F4F6',
         gap: 6,
     },
     cancelBtnText: {
         fontSize: 16,
         fontWeight: '600',
-        color: '#374151',
+        color: '#4B5563',
     },
     nextBtn: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#6366F1',
-        paddingVertical: 14,
+        backgroundColor: '#000000',
+        height: 50,
         paddingHorizontal: 24,
-        borderRadius: 14,
+        borderRadius: 25,
         gap: 8,
     },
     nextBtnText: {
@@ -854,12 +1158,12 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: 16,
+        marginBottom: 12,
     },
     progressText: {
         fontSize: 14,
         fontWeight: '600',
-        color: '#6366F1',
+        color: '#000000',
     },
     detailCard: {
         backgroundColor: 'white',
@@ -873,13 +1177,13 @@ const styles = StyleSheet.create({
     },
     detailCardImage: {
         width: '100%',
-        height: 200,
+        height: 140,
     },
     detailFields: {
-        padding: 16,
+        padding: 12,
     },
     inputGroup: {
-        marginBottom: 16,
+        marginBottom: 12,
     },
     inputLabel: {
         fontSize: 13,
@@ -967,27 +1271,14 @@ const styles = StyleSheet.create({
         backgroundColor: '#D1D5DB',
     },
     dotActive: {
-        backgroundColor: '#6366F1',
+        backgroundColor: '#000000',
         width: 24,
-    },
-    // Navigation buttons - right under dots
-    navArrowsCenter: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: 24,
-        marginVertical: 16,
-    },
-    navCounter: {
-        fontSize: 16,
-        fontWeight: '600',
-        color: '#374151',
     },
     navArrowColored: {
         width: 44,
         height: 44,
         borderRadius: 22,
-        backgroundColor: '#6366F1',
+        backgroundColor: '#000000',
         justifyContent: 'center',
         alignItems: 'center',
     },
@@ -997,7 +1288,7 @@ const styles = StyleSheet.create({
     reviewOrderBtn: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#6366F1',
+        backgroundColor: '#000000',
         paddingVertical: 14,
         paddingHorizontal: 24,
         borderRadius: 14,
@@ -1044,7 +1335,7 @@ const styles = StyleSheet.create({
         width: 26,
         height: 26,
         borderRadius: 13,
-        backgroundColor: '#6366F1',
+        backgroundColor: '#000000',
         justifyContent: 'center',
         alignItems: 'center',
     },
@@ -1070,15 +1361,133 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         backgroundColor: '#10B981',
-        paddingVertical: 14,
+        height: 50,
         paddingHorizontal: 24,
-        borderRadius: 14,
+        borderRadius: 25,
         gap: 8,
     },
     postBtnText: {
         fontSize: 16,
         fontWeight: '700',
         color: 'white',
+    },
+    datePickerRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#F9FAFB',
+        borderRadius: 12,
+        padding: 14,
+        borderWidth: 1,
+        borderColor: '#E5E7EB',
+        gap: 10,
+    },
+    datePickerText: {
+        flex: 1,
+        fontSize: 16,
+        color: '#111827',
+    },
+    clearDateBtn: {
+        padding: 4,
+    },
+    // Calendar Modal Styles
+    calendarModalOverlay: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    calendarModalBlur: {
+        ...StyleSheet.absoluteFillObject,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+    },
+    calendarContainer: {
+        width: '90%',
+        backgroundColor: 'white',
+        borderRadius: 20,
+        padding: 16,
+    },
+    calendarHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 16,
+    },
+    calendarTitle: {
+        fontSize: 20,
+        fontWeight: '700',
+        color: '#1a1a1a',
+    },
+    customHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: 8,
+        paddingHorizontal: 16,
+        backgroundColor: '#F3F4F6',
+        borderRadius: 12,
+    },
+    customHeaderText: {
+        fontSize: 18,
+        fontWeight: '700',
+        color: '#000000',
+        marginRight: 8,
+    },
+    calendarConfirmBtn: {
+        backgroundColor: '#000000',
+        padding: 14,
+        borderRadius: 12,
+        alignItems: 'center',
+        marginTop: 16,
+    },
+    calendarConfirmText: {
+        color: 'white',
+        fontWeight: '700',
+        fontSize: 16,
+    },
+    // Year/Month Picker Styles
+    yearPickerContainer: {
+        width: '90%',
+        backgroundColor: 'white',
+        borderRadius: 20,
+        padding: 16,
+        maxHeight: '70%',
+    },
+    yearPickerContent: {
+        flexDirection: 'row',
+        height: 300,
+    },
+    yearColumn: {
+        flex: 1,
+        marginRight: 8,
+    },
+    monthColumn: {
+        flex: 1,
+        marginLeft: 8,
+    },
+    pickerLabel: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: 'rgba(0,0,0,0.5)',
+        textTransform: 'uppercase',
+        marginBottom: 8,
+        textAlign: 'center',
+    },
+    pickerItem: {
+        paddingVertical: 12,
+        paddingHorizontal: 16,
+        borderRadius: 8,
+        marginVertical: 2,
+    },
+    pickerItemSelected: {
+        backgroundColor: '#000000',
+    },
+    pickerItemText: {
+        fontSize: 16,
+        color: '#1a1a1a',
+        textAlign: 'center',
+    },
+    pickerItemTextSelected: {
+        color: 'white',
+        fontWeight: '700',
     },
 });
 

@@ -12,6 +12,10 @@ import { MAPBOX_TOKEN } from '@/src/constants/Config';
 import { onAuthStateChanged } from '@/src/services/authService';
 import { useMemoryStore } from '@/src/store/useMemoryStore';
 import { AuthScreen } from '@/src/components/AuthScreen';
+import { initializeAppCheck } from '@/src/services/appCheckService';
+
+// Initialize App Check early (before any Firebase calls)
+initializeAppCheck();
 
 import { useFonts, BebasNeue_400Regular } from '@expo-google-fonts/bebas-neue';
 
@@ -51,6 +55,9 @@ export default function RootLayout() {
     // Listen for auth state changes
     const unsubscribe = onAuthStateChanged((userId) => {
       console.log('[Auth] State changed:', userId);
+      if (!userId) {
+        useMemoryStore.getState().resetUser();
+      }
       setSession(userId); // Local state for immediate render decision
       setCurrentUserId(userId); // Sync store
       setIsInitializing(false);

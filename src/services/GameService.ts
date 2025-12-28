@@ -1,18 +1,27 @@
 
 export type Difficulty = 'easy' | 'medium' | 'hard';
 
+export type QuestionType = 'flag' | 'capital' | 'trivia';
+
 export interface Question {
     id: string;
+    type: QuestionType;
+    text: string;
     correctOptionId: string;
-    options: CountryOption[];
-    flagUrl: string;
+    options: Option[]; // Generic options
+    flagUrl?: string;
 }
 
+export interface Option {
+    id: string;
+    text: string;
+}
+
+// Deprecated: Internal use only for country selection
 export interface CountryOption {
     code: string;
     name: string;
     capital?: string;
-    difficulty?: Difficulty; // easy = common, hard = obscure
 }
 
 export interface GameState {
@@ -28,21 +37,20 @@ export interface GameState {
     difficulty: Difficulty;
 }
 
-export interface LeaderboardEntry {
-    odUid: string;
-    username: string;
-    score: number;
-    difficulty: Difficulty;
-    timestamp: number;
-}
-
 import countriesData from '../data/countries.json';
+import { TRIVIA_QUESTIONS, TriviaQuestion } from '../data/triviaQuestions';
 import * as SecureStore from 'expo-secure-store';
 import { leaderboardService } from './LeaderboardService';
+import { streakService } from './StreakService';
+import functions from '@react-native-firebase/functions';
+import logger from '../utils/logger';
 
-// Categorize countries by difficulty
-const EASY_COUNTRIES = ['US', 'GB', 'FR', 'DE', 'IT', 'ES', 'JP', 'CN', 'BR', 'CA', 'AU', 'IN', 'MX', 'RU', 'KR', 'NL', 'SE', 'NO', 'CH', 'AT'];
-const MEDIUM_COUNTRIES = ['AR', 'CL', 'CO', 'PE', 'EG', 'ZA', 'NG', 'KE', 'PH', 'TH', 'VN', 'MY', 'ID', 'PK', 'BD', 'TR', 'GR', 'PL', 'UA', 'CZ', 'PT', 'IE', 'BE', 'DK', 'FI', 'NZ', 'SG', 'AE', 'SA', 'IL'];
+// Categorize countries by difficulty (Disjoint Sets for strict separation)
+// EASY: 20 Common Countries
+const EASY_COUNTRIES_CODES = ['US', 'GB', 'FR', 'DE', 'IT', 'ES', 'JP', 'CN', 'BR', 'CA', 'AU', 'IN', 'MX', 'RU', 'KR', 'NL', 'SE', 'NO', 'CH', 'AT'];
+
+// MEDIUM: ~30 Moderately Known Countries (Excluding Easy)
+const MEDIUM_COUNTRIES_CODES = ['AR', 'CL', 'CO', 'PE', 'EG', 'ZA', 'NG', 'KE', 'PH', 'TH', 'VN', 'MY', 'ID', 'PK', 'BD', 'TR', 'GR', 'PL', 'UA', 'CZ', 'PT', 'IE', 'BE', 'DK', 'FI', 'NZ', 'SG', 'AE', 'SA', 'IL'];
 
 const ALL_COUNTRIES: CountryOption[] = countriesData;
 const HIGH_SCORE_PREFIX = 'flagdash_highscore_';
@@ -75,16 +83,27 @@ class GameService {
         };
     }
 
+    // STRICT DIFFICULTY: Returns only countries for the specific level
     private getCountriesForDifficulty(): CountryOption[] {
         switch (this.currentDifficulty) {
             case 'easy':
-                return ALL_COUNTRIES.filter(c => EASY_COUNTRIES.includes(c.code));
+                return ALL_COUNTRIES.filter(c => EASY_COUNTRIES_CODES.includes(c.code));
             case 'medium':
-                return ALL_COUNTRIES.filter(c => EASY_COUNTRIES.includes(c.code) || MEDIUM_COUNTRIES.includes(c.code));
+                return ALL_COUNTRIES.filter(c => MEDIUM_COUNTRIES_CODES.includes(c.code));
             case 'hard':
             default:
-                return ALL_COUNTRIES;
+                // Hard = All remaining (Excluding Easy and Medium)
+                // OR Hard = Everything else. 
+                // Let's make Hard disjoint too for strict separation?
+                // User asked: "change the difficulty level logic so that they don't overlap"
+                // So Hard should NOT include Easy or Medium.
+                return ALL_COUNTRIES.filter(c => !EASY_COUNTRIES_CODES.includes(c.code) && !MEDIUM_COUNTRIES_CODES.includes(c.code));
         }
+    }
+
+    // STRICT DIFFICULTY: Returns only trivia for the specific level
+    private getTriviaForDifficulty(): TriviaQuestion[] {
+        return TRIVIA_QUESTIONS.filter(q => q.difficulty === this.currentDifficulty);
     }
 
     private async loadHighScore() {
@@ -102,7 +121,7 @@ class GameService {
     private async saveHighScore(score: number) {
         try {
             await SecureStore.setItemAsync(HIGH_SCORE_PREFIX + this.currentDifficulty, score.toString());
-            console.log('[GameService] High score saved:', score, 'difficulty:', this.currentDifficulty);
+            logger.log('[GameService] High score saved:', score, 'difficulty:', this.currentDifficulty);
         } catch (e) {
             console.error('[GameService] Failed to save high score:', e);
         }
@@ -124,11 +143,23 @@ class GameService {
         this.loadHighScore(); // Load high score for new difficulty
     }
 
-    public startGame(difficulty?: Difficulty) {
+    public getState(): GameState {
+        return { ...this.state };
+    }
+    private gameMode: 'flagdash' | 'travelbattle' = 'flagdash';
+
+    private correctAnswersCount: number = 0; // Anti-cheat tracking
+    private gameAnswers: Array<{ questionCode: string; selectedAnswer: string; isCorrect: boolean }> = [];
+
+    public startGame(difficulty?: Difficulty, gameMode: 'flagdash' | 'travelbattle' = 'flagdash') {
         if (difficulty) {
             this.currentDifficulty = difficulty;
         }
+        this.gameMode = gameMode;
+
         const currentHighScore = this.state.highScore;
+        this.correctAnswersCount = 0; // Reset count
+        this.gameAnswers = []; // Reset answers
         this.state = this.getInitialState();
         this.state.highScore = currentHighScore;
         this.state.difficulty = this.currentDifficulty;
@@ -142,39 +173,43 @@ class GameService {
 
     private startTimer() {
         if (this.timerInterval) clearInterval(this.timerInterval);
-
         this.timerInterval = setInterval(() => {
-            const now = Date.now();
-            const elapsed = Math.floor((now - this.startTime) / 1000);
-            const remaining = this.ROUND_TIME - elapsed;
-
-            if (remaining <= 0) {
-                this.state.timeLeft = 0;
-                this.endGame();
-            } else {
-                this.state.timeLeft = remaining;
+            if (this.state.timeLeft > 0) {
+                this.state.timeLeft -= 1;
                 this.emit();
+            } else {
+                this.endGame();
             }
         }, 1000);
     }
 
-    public submitAnswer(countryCode: string): boolean {
+    public submitAnswer(optionId: string): boolean {
         if (!this.state.isPlaying || this.state.gameOver) return false;
 
-        const isCorrect = countryCode === this.state.currentQuestion?.correctOptionId;
+        const isCorrect = optionId === this.state.currentQuestion?.correctOptionId;
         this.state.lastAnswerCorrect = isCorrect;
 
         if (isCorrect) {
             this.state.score += 10 + (this.state.streak * 2);
             this.state.streak += 1;
+            this.correctAnswersCount++; // Track for validation
         } else {
             this.state.streak = 0;
         }
 
+        // Track answer for server validation
+        if (this.state.currentQuestion) {
+            this.gameAnswers.push({
+                questionCode: this.state.currentQuestion.correctOptionId, // Country code
+                selectedAnswer: this.state.currentQuestion.options.find(o => o.id === optionId)?.text || '',
+                isCorrect,
+            });
+        }
+
+
         this.nextQuestion();
         this.emit();
 
-        // Clear lastAnswerCorrect after a short delay (for animation)
         setTimeout(() => {
             this.state.lastAnswerCorrect = null;
             this.emit();
@@ -183,39 +218,57 @@ class GameService {
         return isCorrect;
     }
 
-    private nextQuestion() {
-        const countries = this.getCountriesForDifficulty();
-        const correct = countries[Math.floor(Math.random() * countries.length)];
-
-        const others = countries.filter(c => c.code !== correct.code)
-            .sort(() => 0.5 - Math.random())
-            .slice(0, 3);
-
-        const options = [...others, correct].sort(() => 0.5 - Math.random());
-
-        this.state.currentQuestion = {
-            id: Date.now().toString(),
-            correctOptionId: correct.code,
-            options: options,
-            flagUrl: `https://flagcdn.com/w320/${correct.code.toLowerCase()}.png`
-        };
-    }
-
     public endGame() {
         this.state.isPlaying = false;
         this.state.gameOver = true;
         if (this.timerInterval) clearInterval(this.timerInterval);
 
+        // Anti-Cheat Validation (Risk #6)
+        // Max theoretical score per question is ~40 (assuming high streak).
+        // If score is impossibly high relative to correct answers, reject it.
+        const maxPossibleScore = this.correctAnswersCount * 100; // Generous buffer
+
+        if (this.state.score > maxPossibleScore) {
+            console.error('[GameService] Security Alert: Score calculation mismatch.');
+            // Silently fail to save high score
+            this.emit();
+            return;
+        }
+
         if (this.state.score > this.state.highScore) {
             this.state.highScore = this.state.score;
             this.state.isNewHighScore = true;
             this.saveHighScore(this.state.score);
-
-            // Also save to online leaderboard
-            leaderboardService.saveScore(this.state.score, this.currentDifficulty);
         }
 
+        // Submit to Cloud Function for server-side validation
+        const gameTimeMs = Date.now() - this.startTime;
+        this.submitScoreToServer(this.state.score, gameTimeMs);
+
+        // Record daily streak
+        streakService.recordGamePlayed().catch(console.error);
+
         this.emit();
+    }
+
+    /**
+     * Submit score to server for validation
+     */
+    private async submitScoreToServer(clientScore: number, gameTimeMs: number) {
+        try {
+            const result = await functions().httpsCallable('submitGameScore')({
+                gameType: this.gameMode,
+                difficulty: this.currentDifficulty,
+                answers: this.gameAnswers,
+                clientScore,
+                gameTimeMs,
+            });
+
+            logger.log('[GameService] Server score submission:', result.data);
+        } catch (error) {
+            console.error('[GameService] Failed to submit score to server:', error);
+            // Fallback: Score is still saved locally, just not on leaderboard
+        }
     }
 
     public resumeGame() {
@@ -239,6 +292,64 @@ class GameService {
 
     public getDifficulty(): Difficulty {
         return this.currentDifficulty;
+    }
+    private nextQuestion() {
+        if (this.gameMode === 'flagdash') {
+            const countries = this.getCountriesForDifficulty();
+            const correct = countries[Math.floor(Math.random() * countries.length)];
+            const distractors: CountryOption[] = [];
+
+            // Simple distractor logic (could be improved to be similar countries)
+            while (distractors.length < 3) {
+                const c = countries[Math.floor(Math.random() * countries.length)];
+                if (c.code !== correct.code && !distractors.some(d => d.code === c.code)) {
+                    distractors.push(c);
+                }
+            }
+
+            const optionsRaw = [correct, ...distractors].sort(() => Math.random() - 0.5);
+            const options = optionsRaw.map(c => ({
+                id: c.code,
+                text: c.name
+            }));
+
+            this.state.currentQuestion = {
+                id: Math.random().toString(36).substr(2, 9),
+                type: 'flag',
+                text: "Which country does this flag belong to?",
+                correctOptionId: correct.code,
+                options: options,
+                flagUrl: `https://flagcdn.com/w320/${correct.code.toLowerCase()}.png`
+            };
+        } else {
+            const questions = this.getTriviaForDifficulty();
+            if (questions.length === 0) {
+                // Fallback if no trivia
+                this.gameMode = 'flagdash';
+                this.nextQuestion();
+                return;
+            }
+            const q = questions[Math.floor(Math.random() * questions.length)];
+
+            // Transform options from string[] to {id, text}[]
+            // We use the text itself as the ID for trivia options since strictly string matching is fine here
+            // OR we can generate IDs. Let's use text as ID for simplicity as it matches how we checked it before?
+            // Wait, previous code used `correctAnswerId` but data has `correctAnswer` (string value).
+            // So option ID should be the text itself.
+
+            const options = q.options.map(opt => ({
+                id: opt, // Use the text as the ID
+                text: opt
+            }));
+
+            this.state.currentQuestion = {
+                id: q.id,
+                type: 'trivia',
+                text: q.text, // TriviaQuestion uses 'text', not 'question'
+                correctOptionId: q.correctAnswer, // TriviaQuestion uses 'correctAnswer', not 'correctAnswerId'
+                options: options
+            };
+        }
     }
 }
 

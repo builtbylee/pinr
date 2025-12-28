@@ -5,6 +5,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { Dimensions, Image, KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, FlatList } from 'react-native';
 import { Memory } from '../store/useMemoryStore';
 import { MAPBOX_TOKEN } from '../constants/Config';
+import { searchPlaces, GeocodingResult } from '../services/geocodingService';
 import { Calendar, LocaleConfig } from 'react-native-calendars';
 import dayjs from 'dayjs';
 
@@ -60,7 +61,7 @@ export const CreationModal: React.FC<CreationModalProps> = ({ visible, onClose, 
     const [searchQuery, setSearchQuery] = useState('');
     const [isSearching, setIsSearching] = useState(false);
     const [foundLocationName, setFoundLocationName] = useState('');
-    const [suggestions, setSuggestions] = useState<any[]>([]);
+    const [suggestions, setSuggestions] = useState<GeocodingResult[]>([]);
 
     useEffect(() => {
         if (visible) {
@@ -123,35 +124,15 @@ export const CreationModal: React.FC<CreationModalProps> = ({ visible, onClose, 
     };
 
     const fetchSuggestions = async (query: string) => {
-        console.log('[Autocomplete] Fetching suggestions for:', query);
-        if (query.length < 2) {
+        if (query.length < 3) {
             setSuggestions([]);
             return;
         }
 
         setIsSearching(true);
         try {
-            const token = MAPBOX_TOKEN;
-            console.log('[Autocomplete] Token prefix:', token?.substring(0, 10) + '...');
-
-            if (!token || token === 'PLACEHOLDER_TOKEN' || token === 'pk.placeholder') {
-                console.error('[Autocomplete] Token is missing or placeholder!');
-                alert("Mapbox Token is MISSING. Check .env");
-                setIsSearching(false);
-                return;
-            }
-
-            const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json?access_token=${token}&types=place,locality,poi,address&limit=5`;
-            console.log('[Autocomplete] Fetching URL...');
-            const response = await fetch(url);
-            const data = await response.json();
-            console.log('[Autocomplete] Response:', JSON.stringify(data).substring(0, 200));
-
-            if (data.features) {
-                setSuggestions(data.features);
-            } else if (data.message) {
-                console.error('[Autocomplete] API Error:', data.message);
-            }
+            const results = await searchPlaces(query);
+            setSuggestions(results);
         } catch (error) {
             console.error('[Autocomplete] Error fetching suggestions:', error);
         } finally {
@@ -279,7 +260,7 @@ export const CreationModal: React.FC<CreationModalProps> = ({ visible, onClose, 
 
             let current = start.add(1, 'day');
             while (current.isBefore(end)) {
-                marked[current.format('YYYY-MM-DD')] = { color: '#c0e8e8', textColor: '#1a1a1a' };
+                marked[current.format('YYYY-MM-DD')] = { color: '#E5E7EB', textColor: '#1a1a1a' };
                 current = current.add(1, 'day');
             }
         } else if (startDate) {
@@ -373,7 +354,10 @@ export const CreationModal: React.FC<CreationModalProps> = ({ visible, onClose, 
                                                 onPress={() => handleSelectLocation(item)}
                                             >
                                                 <Feather name="map-pin" size={16} color="#000000" style={{ marginRight: 8 }} />
-                                                <Text style={styles.suggestionText} numberOfLines={1}>{item.place_name}</Text>
+                                                <View style={{ flex: 1 }}>
+                                                    <Text style={styles.suggestionText} numberOfLines={1}>{item.text}</Text>
+                                                    <Text style={[styles.suggestionText, { fontSize: 12, color: 'gray', marginTop: 2 }]} numberOfLines={1}>{item.place_name}</Text>
+                                                </View>
                                             </TouchableOpacity>
                                         ))}
                                     </View>
@@ -493,6 +477,9 @@ export const CreationModal: React.FC<CreationModalProps> = ({ visible, onClose, 
                                 theme={{
                                     arrowColor: '#000000',
                                     todayTextColor: '#000000',
+                                    monthTextColor: '#000000',
+                                    dayTextColor: '#000000',
+                                    textSectionTitleColor: '#000000',
                                     textDayFontWeight: '500',
                                     textMonthFontWeight: 'bold',
                                     textDayHeaderFontWeight: 'bold',
@@ -849,7 +836,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         paddingVertical: 8,
         paddingHorizontal: 16,
-        backgroundColor: '#f0f5fa',
+        backgroundColor: '#F3F4F6',
         borderRadius: 12,
     },
     customHeaderText: {

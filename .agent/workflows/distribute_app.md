@@ -31,9 +31,18 @@ cat app.json | grep -E "(icon|splash|adaptive|version)" | head -10
 
 ---
 
-## 🤖 Android (APK) Build
+## 🤖 Android Distribution
 
-// turbo
+### Option A: Standalone APK (For Friends/Testers)
+*Best for sharing with people who don't have a dev environment.*
+```bash
+NODE_TLS_REJECT_UNAUTHORIZED=0 eas build --profile testing --platform android
+```
+- **Updates:** Javascript changes can be pushed via `eas update --channel preview`.
+- **New Build:** Required for native changes (icon, splash, new libraries).
+
+### Option B: Development Client (For You)
+*Requires Metro Bundler running.*
 ```bash
 NODE_TLS_REJECT_UNAUTHORIZED=0 eas build -p android --profile preview --non-interactive
 ```
@@ -44,6 +53,17 @@ NODE_TLS_REJECT_UNAUTHORIZED=0 eas build -p android --profile preview --non-inte
 
 ### Download
 Once complete, EAS provides a download link. Share the `.apk` file via WhatsApp, Drive, or Email.
+
+### ⚠️ Note for Testers (Security Warning)
+Since this APK is not from the Play Store, testers will see a security warning:
+> *"File might be harmful"* or *"Install unknown apps"*
+
+**This is normal.** To install:
+1.  Tap **Settings** on the warning dialog.
+2.  Enable **"Allow from this source"** (for Chrome/WhatsApp/etc).
+3.  Tap **Install**.
+
+To remove this warning completely, you must publish to the Google Play Store (Production or Internal Testing Track).
 
 ---
 
