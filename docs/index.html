@@ -329,10 +329,10 @@
                 emailInput.value = '';
 
             } catch (error) {
-                console.error("Error:", error);
+                console.error("Waitlist error:", error.code, error.message);
                 submitBtn.disabled = false;
-                submitBtn.innerText = "Join";
-                feedback.innerText = "Error joining. Try again.";
+                submitBtn.innerText = "Try Again";
+                feedback.innerText = "Error: " + (error.message || "Please try again.");
                 feedback.classList.remove('text-green-600');
                 feedback.classList.add('text-red-500');
                 feedback.style.opacity = '1';
