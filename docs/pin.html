@@ -251,7 +251,8 @@
         }
 
         function displayPin(pin, pinId) {
-            const imageUrl = pin.imageUris && pin.imageUris[0] ? pin.imageUris[0] : '';
+            // Check for imageUrl (Firestore field) or fallback to imageUris (legacy/app state)
+            const imageUrl = pin.imageUrl || (pin.imageUris && pin.imageUris[0]) || '';
             const deepLink = `pinr://pin/${pinId}`;
 
             // Update Open Graph tags dynamically (for subsequent shares)
