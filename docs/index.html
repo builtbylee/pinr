@@ -60,21 +60,24 @@
         /* Top Centered Logo */
         .centered-logo {
             position: absolute;
-            top: 5%;
+            top: 2%;
+            /* Very top */
             left: 50%;
             transform: translateX(-50%);
-            height: 80px;
-            /* Adjust size as needed */
+            width: 45%;
+            /* Match approx visual size from screenshot */
+            max-width: 250px;
+            /* Cap for desktop */
+            height: auto;
             z-index: 30;
             mix-blend-mode: multiply;
         }
 
-        /* White Mask to hide the original logo on the left */
+        /* White Mask to hide the original logo in feature-base.png */
         .logo-mask {
             position: absolute;
             top: 0;
             left: 0;
-            width: 50%;
             /* Cover left half */
             height: 35%;
             /* Cover top area where logo usually is */
