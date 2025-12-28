@@ -830,7 +830,7 @@ export const onWaitlistSignup = functions.firestore
         
         <p style="color: #8e8e93; font-size: 14px; line-height: 1.6; margin: 24px 0 0;">
             See you on the map! 🗺️<br>
-            – Lee, <em>BuiltByLee</em>
+            – Lee
         </p>
     </div>
     
