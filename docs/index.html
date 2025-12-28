@@ -38,21 +38,22 @@
         /* Phone Overlay */
         .phone-overlay {
             position: absolute;
-            top: 40%;
-            left: 5%;
-            width: 35%;
-            height: 55%;
-            /* Adjusted normal height */
+            top: 38%;
+            /* Adjusted vertical alignment for larger size */
+            left: 2%;
+            /* Moved further left */
+            width: 42%;
+            /* Increased size */
+            height: 65%;
+            /* Increased height to accommodate larger width */
 
             /* New Clean Asset */
             background-image: url('assets/phone-final.png');
             background-size: contain;
-            /* No more cropping needed */
             background-position: center;
             background-repeat: no-repeat;
 
-            /* Keep multiply if the new image has white bg, otherwise can remove. 
-               Safest to keep for seamless blending if white bg exists. */
+            /* Keep multiply for blending */
             mix-blend-mode: multiply;
         }
     </style>
