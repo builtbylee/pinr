@@ -53,18 +53,6 @@
             z-index: 20;
         }
 
-        /* White Mask - Precision Coverage */
-        .logo-mask {
-            position: absolute !important;
-            top: 0;
-            left: 0;
-            width: 40%;
-            /* Reduced from 70% to avoid globe */
-            height: 30%;
-            /* Reduced from 60% */
-            background-color: #ffffff;
-            z-index: 10;
-        }
 
         /* Top Centered Logo - Enforce Center */
         .centered-logo {
@@ -85,29 +73,28 @@
         .waitlist-container {
             position: relative;
             width: 90%;
-            max-width: 380px;
-            /* Reduced max-width for compact feel */
+            max-width: 360px;
+            /* Even tighter */
             background: rgba(255, 255, 255, 0.95);
-            padding: 20px 20px 10px 20px;
-            /* Reduced bottom padding */
+            padding: 20px 20px 12px 20px;
+            /* Minimal bottom padding */
             border-radius: 20px;
-            /* kept rounded */
             box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
             z-index: 40;
             text-align: center;
-            margin-top: 20px;
-            /* Reduced margin (was 40px) */
-            margin-bottom: 30px;
+            margin-top: 10px;
+            /* Reduced gap from phone */
+            margin-bottom: 20px;
             border: 1px solid rgba(0, 0, 0, 0.05);
         }
 
         .form-title {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             font-weight: 700;
-            font-size: 1.25rem;
-            /* Slightly smaller than 1.5rem, but bold */
-            margin-bottom: 16px;
-            /* Reduced margin */
+            font-size: 1rem;
+            /* Smaller font as requested */
+            margin-bottom: 12px;
+            /* Tight spacing to input */
             color: #1a1a1a;
             line-height: 1.3;
         }
@@ -174,8 +161,7 @@
         <!-- Base Feature Image (Globe + Old Logo) -->
         <img src="assets/feature-base.png?v=2" alt="Pinr Feature Base" class="base-image">
 
-        <!-- Mask to hide old logo -->
-        <div class="logo-mask"></div>
+
 
         <!-- Overlay: Left Phone -->
         <div class="phone-overlay"></div>
