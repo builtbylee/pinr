@@ -38,22 +38,44 @@
         /* Phone Overlay */
         .phone-overlay {
             position: absolute;
-            top: 32%;
-            /* Moved up */
-            left: -2%;
-            /* Moved further left (slightly off-canvas for dynamic feel) */
+            top: 38%;
+            left: 2%;
+            /* Moved right (from -2% to 2%) */
             width: 42%;
             height: 65%;
-            /* Increased height to accommodate larger width */
 
-            /* New Clean Asset */
             background-image: url('assets/phone-final.png');
             background-size: contain;
             background-position: center;
             background-repeat: no-repeat;
 
-            /* Keep multiply for blending */
             mix-blend-mode: multiply;
+            z-index: 20;
+        }
+
+        /* Top Centered Logo */
+        .centered-logo {
+            position: absolute;
+            top: 5%;
+            left: 50%;
+            transform: translateX(-50%);
+            height: 80px;
+            /* Adjust size as needed */
+            z-index: 30;
+            mix-blend-mode: multiply;
+        }
+
+        /* White Mask to hide the original logo on the left */
+        .logo-mask {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 50%;
+            /* Cover left half */
+            height: 35%;
+            /* Cover top area where logo usually is */
+            background-color: #ffffff;
+            z-index: 10;
         }
     </style>
 </head>
@@ -61,8 +83,14 @@
 <body class="flex items-center justify-center min-h-screen">
 
     <div class="composition-container">
-        <!-- Base Feature Image (Globe + Logo) -->
+        <!-- Base Feature Image (Globe + Old Logo) -->
         <img src="assets/feature-base.png" alt="Pinr Feature Base" class="base-image">
+
+        <!-- Mask to hide old logo -->
+        <div class="logo-mask"></div>
+
+        <!-- New Centered Logo -->
+        <img src="assets/landing-logo.jpg" alt="Pinr Logo" class="centered-logo">
 
         <!-- Overlay: Left Phone -->
         <div class="phone-overlay"></div>
