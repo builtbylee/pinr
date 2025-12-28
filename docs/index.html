@@ -155,7 +155,10 @@
             display: flex;
             gap: 12px;
             justify-content: center;
-            margin-top: 20px;
+            margin-top: 12px;
+            /* Reduced from 20px */
+            margin-bottom: 20px;
+            /* Space before form */
             opacity: 0.8;
         }
 
@@ -198,25 +201,11 @@
         <div class="phone-overlay"></div>
     </div>
 
-    <!-- Bottom Section: Form + Store Badges -->
-    <div class="flex flex-col items-center w-full mb-8">
+    <!-- Bottom Section: Store Badges + Form -->
+    <div class="flex flex-col items-center w-full mb-4">
 
-        <!-- Waitlist Form -->
-        <div class="waitlist-container">
-            <div class="form-title">Skip the wait, get early access to Pinr</div>
-
-            <form id="waitlistForm">
-                <!-- Email & Submit -->
-                <div class="input-group">
-                    <input type="email" id="email" required placeholder="Enter your email" class="email-input">
-                    <button type="submit" id="submitBtn" class="submit-btn">Sign me up!</button>
-                </div>
-                <p id="feedback" class="text-xs mt-3 font-medium h-4 opacity-0 transition-opacity text-green-600"></p>
-            </form>
-        </div>
-
-        <!-- Store Badges -->
-        <div class="text-xs text-gray-500 mb-2 font-medium uppercase tracking-wide">Coming soon to</div>
+        <!-- Store Badges (Moved Up) -->
+        <div class="text-xs text-gray-500 font-medium uppercase tracking-wide">Coming soon to</div>
         <div class="store-badges">
             <div class="store-btn">
                 <span class="store-icon"></span>
@@ -232,6 +221,20 @@
                     <span class="font-bold">Google Play</span>
                 </div>
             </div>
+        </div>
+
+        <!-- Waitlist Form (Stacked Below) -->
+        <div class="waitlist-container">
+            <div class="form-title">Skip the wait, get early access to Pinr</div>
+
+            <form id="waitlistForm">
+                <!-- Email & Submit -->
+                <div class="input-group">
+                    <input type="email" id="email" required placeholder="Enter your email" class="email-input">
+                    <button type="submit" id="submitBtn" class="submit-btn">Sign me up!</button>
+                </div>
+                <p id="feedback" class="text-xs mt-3 font-medium h-4 opacity-0 transition-opacity text-green-600"></p>
+            </form>
         </div>
     </div>
 
