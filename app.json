@@ -5,7 +5,7 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/pinr-icon.png",
-    "scheme": "app80days",
+    "scheme": "pinr",
     "userInterfaceStyle": "light",
     "newArchEnabled": false,
     "ios": {
@@ -17,6 +17,11 @@
         "NSPhotoLibraryUsageDescription": "Select photos to add to your travel memories.",
         "NSCameraUsageDescription": "Take photos for your travel memories.",
         "CFBundleURLTypes": [
+          {
+            "CFBundleURLSchemes": [
+              "com.googleusercontent.apps.760973100570-5fqp07ov3b7d2vmikd8budg5t9gvjj7k"
+            ]
+          },
           {
             "CFBundleURLSchemes": [
               "com.googleusercontent.apps.760973100570-5fqp07ov3b7d2vmikd8budg5t9gvjj7k"
@@ -40,7 +45,7 @@
         "android.permission.READ_EXTERNAL_STORAGE",
         "android.permission.WRITE_EXTERNAL_STORAGE",
         "android.permission.READ_MEDIA_IMAGES",
-        "android.permission.RECORD_AUDIO",
+        "android.permission.RECORD_AUDIO"
       ],
       "package": "com.builtbylee.app80days"
     },
@@ -53,7 +58,7 @@
       [
         "onesignal-expo-plugin",
         {
-          "mode": "development"
+          "mode": "production"
         }
       ],
       [
@@ -90,7 +95,11 @@
             "kotlinVersion": "1.9.25"
           }
         }
-      ]
+      ],
+      "expo-font",
+      "expo-secure-store",
+      "expo-web-browser",
+      "@react-native-firebase/crashlytics"
     ],
     "experiments": {
       "typedRoutes": true,
@@ -101,12 +110,30 @@
         "origin": false
       },
       "eas": {
-        "projectId": "c4e5d0dc-0cae-4f01-bacb-a5a3234fcd08"
+        "build": {
+          "experimental": {
+            "ios": {
+              "appExtensions": [
+                {
+                  "targetName": "OneSignalNotificationServiceExtension",
+                  "bundleIdentifier": "com.builtbylee.app80days.OneSignalNotificationServiceExtension",
+                  "entitlements": {
+                    "com.apple.security.application-groups": [
+                      "group.com.builtbylee.app80days.onesignal"
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "projectId": "07b696e4-84dc-4ad5-bdb4-5bbf18595824"
       }
     },
     "runtimeVersion": "1.0.0",
+    "owner": "hackneymanlee2",
     "updates": {
-      "url": "https://u.expo.dev/c4e5d0dc-0cae-4f01-bacb-a5a3234fcd08"
+      "url": "https://u.expo.dev/07b696e4-84dc-4ad5-bdb4-5bbf18595824"
     }
   }
 }

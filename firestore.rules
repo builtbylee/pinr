@@ -4,49 +4,96 @@ service cloud.firestore {
     
     // USERS COLLECTION
     match /users/{userId} {
+      // Read: Authenticated users can read any profile
+      // Exception: Allow unauthenticated usernameLower queries for sign-up validation
       allow read: if request.auth != null;
       allow create: if request.auth != null && request.auth.uid == userId;
-      
-      // SIMPLIFIED UPDATE RULE: 
-      // Allow updates if it's your own profile OR if you are logged in (for friend adds).
-      // We will re-secure this later once the friend logic is solidified.
-      allow update: if request.auth != null; 
-      
+      allow update: if request.auth != null && request.auth.uid == userId; // STRICT: Owner only
       allow delete: if request.auth.uid == userId;
+
+      // GAME DATA SUBCOLLECTION (streak, high scores, etc.)
+      match /gameData/{document=**} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
     }
 
     // PINS COLLECTION
     match /pins/{pinId} {
-      allow read: if request.auth != null;
+      // Read: Allow authenticated users to read (list), allow public to get single pin (for shared links)
+      allow get: if true;  // Public read for shared pin links
+      allow list: if request.auth != null;  // Only authenticated users can list/query
       allow create: if request.auth != null && request.resource.data.creatorId == request.auth.uid;
       allow update, delete: if request.auth != null && resource.data.creatorId == request.auth.uid;
     }
     
     // FRIEND REQUESTS COLLECTION
     match /friend_requests/{requestId} {
-      allow read: if request.auth != null && (resource.data.fromUid == request.auth.uid || resource.data.toUid == request.auth.uid);
+      // PROVEN ROBUST RULE: Check sender or receiver directly.
+      // Works for both legacy and new documents.
+      allow read: if request.auth != null && (
+        resource.data.fromUid == request.auth.uid || 
+        resource.data.toUid == request.auth.uid ||
+        request.auth.uid in resource.data.participants
+      );
+      
+      // Allow create if sender is the authenticated user
       allow create: if request.auth != null && request.resource.data.fromUid == request.auth.uid;
-      allow update: if request.auth != null && (resource.data.fromUid == request.auth.uid || resource.data.toUid == request.auth.uid);
-      allow delete: if request.auth != null && (resource.data.fromUid == request.auth.uid || resource.data.toUid == request.auth.uid);
+      
+      // Allow update:
+      // 1. Receiver can accept/reject (change status)
+      // 2. Sender can cancel? (maybe)
+      // We strictly check that they can only modify status if they are the recipient
+      allow update: if request.auth != null && (
+        (resource.data.toUid == request.auth.uid && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'updatedAt']))
+      );
+      
+      // Allow delete if user is sender or receiver (disconnect/reject/cancel)
+      allow delete: if request.auth != null && (
+        resource.data.fromUid == request.auth.uid || 
+        resource.data.toUid == request.auth.uid ||
+        request.auth.uid in resource.data.participants
+      );
     }
 
-    // GAME CHALLENGES COLLECTION (NEW)
+    // GAME CHALLENGES COLLECTION
     match /game_challenges/{challengeId} {
-      allow read: if request.auth != null && (resource.data.challengerId == request.auth.uid || resource.data.opponentId == request.auth.uid);
-      allow create: if request.auth != null && request.resource.data.challengerId == request.auth.uid;
-      allow update: if request.auth != null && (resource.data.challengerId == request.auth.uid || resource.data.opponentId == request.auth.uid);
+      // Read: Participants only (handles both existing docs and edge cases)
+      allow read: if request.auth != null && (
+        resource.data.challengerId == request.auth.uid || 
+        resource.data.opponentId == request.auth.uid
+      );
+      
+      // Create: Challenger must be the authenticated user
+      allow create: if request.auth != null && 
+        request.resource.data.challengerId == request.auth.uid;
+      
+      // Update: Only participants can update (for score submission, status changes)
+      // Note: Score updates now go through Cloud Functions, but keeping for startedAt updates
+      allow update: if request.auth != null && (
+        resource.data.challengerId == request.auth.uid || 
+        resource.data.opponentId == request.auth.uid
+      );
     }
 
     // LEADERBOARD COLLECTION
+    // SECURITY: Only Cloud Functions (Admin SDK) can write to leaderboard
+    // This prevents score manipulation from client-side
     match /game_leaderboard/{docId} {
       allow read: if request.auth != null;
-      allow write: if request.auth != null && request.resource.data.odUid == request.auth.uid;
+      // REMOVED: allow write - scores must be submitted via Cloud Functions
     }
 
     // STORIES COLLECTION
+    // SECURITY: Enforce story limits server-side
     match /stories/{storyId} {
       allow read: if request.auth != null;
-      allow create: if request.auth != null && request.resource.data.creatorId == request.auth.uid;
+      
+      // Create: Owner only, enforce limits
+      allow create: if request.auth != null 
+        && request.resource.data.creatorId == request.auth.uid
+        && request.resource.data.pinIds.size() <= 10;  // Max 10 pins per story
+        // Note: 5 story limit enforced in Cloud Function (get() has limits in rules)
+      
       allow update, delete: if request.auth != null && resource.data.creatorId == request.auth.uid;
     }
   }

@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pinr - View Pin</title>
+
+    <!-- Open Graph Meta Tags for rich previews -->
+    <meta property="og:title" content="Check out this pin on Pinr">
+    <meta property="og:description" content="View this travel memory on Pinr">
+    <meta property="og:type" content="website">
+    <meta property="og:image" content="https://builtbylee.github.io/pinr/assets/og-image.png">
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #16213e 100%);
+            min-height: 100vh;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        .logo {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+        }
+
+        .app-name {
+            font-size: 28px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #FF8C00, #FF6347);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            border-radius: 24px;
+            overflow: hidden;
+            max-width: 400px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .pin-image {
+            width: 100%;
+            height: 300px;
+            object-fit: cover;
+            background: #2a2a2a;
+        }
+
+        .pin-image.loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 48px;
+        }
+
+        .pin-details {
+            padding: 24px;
+        }
+
+        .pin-title {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .pin-location {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 16px;
+            margin-bottom: 16px;
+        }
+
+        .pin-location svg {
+            width: 18px;
+            height: 18px;
+            fill: #FF8C00;
+        }
+
+        .pin-date {
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 14px;
+            margin-bottom: 24px;
+        }
+
+        .buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #34C759, #28a745);
+            color: white;
+            border: none;
+            padding: 16px 24px;
+            border-radius: 16px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            text-align: center;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(52, 199, 89, 0.4);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 14px 24px;
+            border-radius: 16px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            text-decoration: none;
+            text-align: center;
+            transition: background 0.2s;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .loading-state {
+            text-align: center;
+            padding: 60px 20px;
+        }
+
+        .error-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #FF6347;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top-color: #FF8C00;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 16px;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .tagline {
+            margin-top: 32px;
+            text-align: center;
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 14px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header">
+        <img src="https://builtbylee.github.io/pinr/assets/icon.png" alt="Pinr" class="logo"
+            onerror="this.style.display='none'">
+        <span class="app-name">Pinr</span>
+    </div>
+
+    <div class="card">
+        <div id="content">
+            <div class="loading-state">
+                <div class="spinner"></div>
+                <p>Loading pin...</p>
+            </div>
+        </div>
+    </div>
+
+    <p class="tagline">Pin your travels. Share your memories.</p>
+
+    <script>
+        // Firebase config
+        const firebaseConfig = {
+            apiKey: "AIzaSyDkV-TSFMW8ILdqCf9tZdsmjg1k-cEFNMc",
+            authDomain: "primal-singularity-ae46c.firebaseapp.com",
+            projectId: "primal-singularity-ae46c",
+            storageBucket: "primal-singularity-ae46c.firebasestorage.app",
+            messagingSenderId: "588415402515",
+            appId: "1:588415402515:web:1c2e9fb15d8c1d9c0a8de5"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        const APP_STORE_URL = 'https://play.google.com/store/apps/details?id=com.builtbylee.app80days';
+
+        async function loadPin() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const pinId = urlParams.get('id');
+
+            if (!pinId) {
+                showError('No pin ID provided');
+                return;
+            }
+
+            try {
+                const pinDoc = await db.collection('pins').doc(pinId).get();
+
+                if (!pinDoc.exists) {
+                    showError('Pin not found');
+                    return;
+                }
+
+                const pin = pinDoc.data();
+                displayPin(pin, pinId);
+
+            } catch (error) {
+                console.error('Error loading pin:', error);
+                showError('Unable to load pin');
+            }
+        }
+
+        function displayPin(pin, pinId) {
+            const imageUrl = pin.imageUris && pin.imageUris[0] ? pin.imageUris[0] : '';
+            const deepLink = `pinr://pin/${pinId}`;
+
+            // Update Open Graph tags dynamically (for subsequent shares)
+            document.querySelector('meta[property="og:title"]').content = pin.title || 'Pinr Memory';
+            document.querySelector('meta[property="og:description"]').content = pin.locationName || 'View this travel memory';
+            if (imageUrl) {
+                document.querySelector('meta[property="og:image"]').content = imageUrl;
+            }
+
+            const dateStr = pin.date ? new Date(pin.date).toLocaleDateString('en-US', {
+                year: 'numeric', month: 'long', day: 'numeric'
+            }) : '';
+
+            document.getElementById('content').innerHTML = `
+                ${imageUrl
+                    ? `<img src="${imageUrl}" alt="${pin.title}" class="pin-image">`
+                    : `<div class="pin-image loading">📍</div>`
+                }
+                <div class="pin-details">
+                    <h1 class="pin-title">${pin.title || 'Untitled Pin'}</h1>
+                    <div class="pin-location">
+                        <svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+                        ${pin.locationName || 'Unknown Location'}
+                    </div>
+                    ${dateStr ? `<p class="pin-date">${dateStr}</p>` : ''}
+                    <div class="buttons">
+                        <a href="${deepLink}" class="btn-primary">Open in Pinr</a>
+                        <a href="${APP_STORE_URL}" class="btn-secondary">Get Pinr Free</a>
+                    </div>
+                </div>
+            `;
+        }
+
+        function showError(message) {
+            document.getElementById('content').innerHTML = `
+                <div class="error-state">
+                    <p style="font-size: 48px; margin-bottom: 16px;">😕</p>
+                    <p>${message}</p>
+                    <div class="buttons" style="margin-top: 24px; padding: 0 24px 24px;">
+                        <a href="${APP_STORE_URL}" class="btn-primary">Get Pinr</a>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Load on page ready
+        loadPin();
+    </script>
+</body>
+
+</html>

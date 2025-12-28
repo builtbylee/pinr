@@ -12,7 +12,12 @@
           "package_name": "com.anonymous.chronokepler"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "760973100570-m7rblrrm2fkcjk61mjnu9bruvkrs03qp.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyAGTteRsv7MtPctYoCE-hlJY03v_vnDSb4"
@@ -20,7 +25,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "760973100570-m7rblrrm2fkcjk61mjnu9bruvkrs03qp.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "760973100570-5fqp07ov3b7d2vmikd8budg5t9gvjj7k.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.builtbylee.app80days"
+              }
+            }
+          ]
         }
       }
     },
@@ -31,7 +48,36 @@
           "package_name": "com.builtbylee.app80days"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "760973100570-f40as01hhe6i6mur62kekkbq9a8s374e.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.builtbylee.app80days",
+            "certificate_hash": "25c95ca9915da18f857a8e66a34526fba2491350"
+          }
+        },
+        {
+          "client_id": "760973100570-naih4ub416grc17qqkg33jn4e0pslggd.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.builtbylee.app80days",
+            "certificate_hash": "5e8f16062ea3cd2c4a0d547876baa6f38cabf625"
+          }
+        },
+        {
+          "client_id": "760973100570-tqdv81l0pojvmujttco46l28tdk61ep8.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.builtbylee.app80days",
+            "certificate_hash": "45b68bfce6206d1eb735a738092800dbcf22536a"
+          }
+        },
+        {
+          "client_id": "760973100570-m7rblrrm2fkcjk61mjnu9bruvkrs03qp.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyAGTteRsv7MtPctYoCE-hlJY03v_vnDSb4"
@@ -39,7 +85,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "760973100570-m7rblrrm2fkcjk61mjnu9bruvkrs03qp.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "760973100570-5fqp07ov3b7d2vmikd8budg5t9gvjj7k.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.builtbylee.app80days"
+              }
+            }
+          ]
         }
       }
     }
