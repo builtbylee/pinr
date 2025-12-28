@@ -149,15 +149,46 @@
         .submit-btn:active {
             transform: scale(0.98);
         }
+
+        /* Store Buttons */
+        .store-badges {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            margin-top: 20px;
+            opacity: 0.8;
+        }
+
+        .store-btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: #0f172a;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            text-decoration: none;
+            transition: opacity 0.2s;
+        }
+
+        .store-btn:hover {
+            opacity: 0.9;
+        }
+
+        .store-icon {
+            font-size: 1.2rem;
+        }
     </style>
     <!-- Firebase -->
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 </head>
 
-<body class="flex flex-col items-center justify-center min-h-screen py-8">
+<body class="flex flex-col justify-between items-center min-h-screen py-8 overflow-hidden">
 
-    <div class="composition-container">
+    <!-- Top Visuals -->
+    <div class="composition-container mt-4">
         <!-- Base Feature Image (Globe + Old Logo) -->
         <img src="assets/feature-base.png?v=2" alt="Pinr Feature Base" class="base-image">
 
@@ -167,18 +198,41 @@
         <div class="phone-overlay"></div>
     </div>
 
-    <!-- Waitlist Form (Now stacked below) -->
-    <div class="waitlist-container">
-        <div class="form-title">Skip the wait, get early access to Pinr</div>
+    <!-- Bottom Section: Form + Store Badges -->
+    <div class="flex flex-col items-center w-full mb-8">
 
-        <form id="waitlistForm">
-            <!-- Email & Submit -->
-            <div class="input-group">
-                <input type="email" id="email" required placeholder="Enter your email" class="email-input">
-                <button type="submit" id="submitBtn" class="submit-btn">Sign me up!</button>
+        <!-- Waitlist Form -->
+        <div class="waitlist-container">
+            <div class="form-title">Skip the wait, get early access to Pinr</div>
+
+            <form id="waitlistForm">
+                <!-- Email & Submit -->
+                <div class="input-group">
+                    <input type="email" id="email" required placeholder="Enter your email" class="email-input">
+                    <button type="submit" id="submitBtn" class="submit-btn">Sign me up!</button>
+                </div>
+                <p id="feedback" class="text-xs mt-3 font-medium h-4 opacity-0 transition-opacity text-green-600"></p>
+            </form>
+        </div>
+
+        <!-- Store Badges -->
+        <div class="text-xs text-gray-500 mb-2 font-medium uppercase tracking-wide">Coming soon to</div>
+        <div class="store-badges">
+            <div class="store-btn">
+                <span class="store-icon"></span>
+                <div class="flex flex-col items-start leading-none">
+                    <span class="text-[0.6rem]">Download on the</span>
+                    <span class="font-bold">App Store</span>
+                </div>
             </div>
-            <p id="feedback" class="text-xs mt-3 font-medium h-4 opacity-0 transition-opacity text-green-600"></p>
-        </form>
+            <div class="store-btn">
+                <span class="store-icon">▶</span>
+                <div class="flex flex-col items-start leading-none">
+                    <span class="text-[0.6rem]">GET IT ON</span>
+                    <span class="font-bold">Google Play</span>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script>
