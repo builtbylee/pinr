@@ -26,25 +26,24 @@
             display: block;
         }
 
-        /* Crop container for the left phone */
+        /* Phone Overlay */
         .phone-overlay {
             position: absolute;
-            top: 10%;
+            /* Positioning: Move down and right to sit in the empty space */
+            top: 25%;
             left: 5%;
-            width: 35%;
-            /* Adjust based on phone size */
-            height: 80%;
-            overflow: hidden;
-        }
+            width: 30%;
+            height: 55%;
 
-        .phone-image {
-            width: 250%;
-            /* Zoom in to isolate left phone since image has 2 */
-            max-width: none;
-            position: absolute;
-            top: 0;
-            left: 0;
-            /* Adjust to show left phone */
+            /* CSS Crop: Use background image to show only the left phone */
+            background-image: url('assets/phones-mockup.png');
+            background-size: 200%;
+            /* Image has 2 phones, so 200% width makes one phone fill the width */
+            background-position: left center;
+            background-repeat: no-repeat;
+
+            /* Blend Mode: Multiply makes the white background transparent */
+            mix-blend-mode: multiply;
         }
     </style>
 </head>
@@ -55,10 +54,8 @@
         <!-- Base Feature Image (Globe + Logo) -->
         <img src="assets/feature-base.png" alt="Pinr Feature Base" class="base-image">
 
-        <!-- Overlay: Left Phone from Mockup -->
-        <div class="phone-overlay">
-            <img src="assets/phones-mockup.png" alt="Pinr Phone Mockup" class="phone-image">
-        </div>
+        <!-- Overlay: Left Phone -->
+        <div class="phone-overlay"></div>
     </div>
 
 </body>
