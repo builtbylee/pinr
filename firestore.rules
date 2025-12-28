@@ -96,5 +96,12 @@ service cloud.firestore {
       
       allow update, delete: if request.auth != null && resource.data.creatorId == request.auth.uid;
     }
+
+    // WAITLIST COLLECTION
+    match /waitlist/{email} {
+      // Allow anyone to sign up (create)
+      allow create: if true;
+      // No reads/updates/deletes allowed for public
+    }
   }
 }
