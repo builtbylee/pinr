@@ -36,21 +36,21 @@
         }
 
         /* Phone Overlay */
-        /* Phone Overlay */
         .phone-overlay {
             position: absolute;
-            /* Move down significantly to avoid overlapping text */
-            top: 40%;
+            /* Move down and apply strict cropping */
+            top: 42%;
             left: 5%;
             width: 35%;
-            height: 50%;
-            /* Tighter height to crop top text */
+            height: 45%;
+            /* Significantly reduced to cut off top text */
 
             /* CSS Crop: Anchor to bottom-left to show phone and hide top text */
             background-image: url('assets/phones-mockup.png');
-            background-size: 200%;
+            background-size: 220%;
+            /* Zoom in to push text out */
             background-position: left bottom;
-            /* Critical: cuts off top text */
+            /* Anchor to bottom */
             background-repeat: no-repeat;
 
             /* Blend Mode: Multiply makes the white background transparent */
