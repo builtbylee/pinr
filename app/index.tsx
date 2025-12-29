@@ -145,10 +145,7 @@ export default function App() {
 
         OneSignal.Notifications.addEventListener('click', handleClick);
 
-        const config = require('../app.json');
-        if (config.issues) {
-            console.warn('[App] OneSignal Configuration Issues:', config.issues);
-        }
+
 
         return () => {
             OneSignal.Notifications.removeEventListener('click', handleClick);
@@ -165,7 +162,7 @@ export default function App() {
     const [storyModeData, setStoryModeData] = useState<{ userId: string, story?: Story } | null>(null);
     const storyModeUserId = storyModeData?.userId || null;
 
-    const [pulsingPinId, setPulsingPinId] = useState<string | null>(null); // ID of pin currently pulsing in story mode
+
     const [latestNewPinId, setLatestNewPinId] = useState<string | null>(null); // Track most recent new pin for FAB Logic
     const [friendRequestCount, setFriendRequestCount] = useState(0); // For FAB badge
     const [gameInviteCount, setGameInviteCount] = useState(0); // For Games badge
@@ -634,7 +631,7 @@ export default function App() {
             }
             if (storyModeData) {
                 setStoryModeData(null);
-                setPulsingPinId(null);
+                setHighlightedPinId(null);
                 // Reset camera on exit?
                 if (cameraRef.current) {
                     cameraRef.current.setCamera({
