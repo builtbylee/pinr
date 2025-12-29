@@ -5,6 +5,7 @@ import { Dimensions, ScrollView, StyleSheet, Text, TouchableOpacity, View, Alert
 import Animated, { useAnimatedStyle, useSharedValue, withSpring, withTiming } from 'react-native-reanimated';
 import { getCurrentEmail, sendPasswordReset, getCurrentUser, reauthenticateUser, updatePassword } from '../services/authService';
 import { LinkEmailModal } from './LinkEmailModal';
+import { TermsModal } from './TermsModal';
 import { ManageVisibilityModal } from './ManageVisibilityModal';
 import { addFriend, removeFriend, getUserProfile, saveUserPinColor, updateNotificationSettings, getFriendRequests, acceptFriendRequest, rejectFriendRequest, FriendRequest, updatePinVisibility, getFriends, clearProfileCache, updatePrivacySettings } from '../services/userService';
 import { notificationService } from '../services/NotificationService';
@@ -57,6 +58,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
     // LinkEmail & Deletion State (moved up for BackHandler access)
     const [linkEmailVisible, setLinkEmailVisible] = useState(false);
+    const [showTerms, setShowTerms] = useState(false);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [deletePassword, setDeletePassword] = useState('');
     const [isDeleting, setIsDeleting] = useState(false);
@@ -88,6 +90,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         const onBackPress = () => {
             if (linkEmailVisible) {
                 setLinkEmailVisible(false);
+                return true;
+            }
+            if (showTerms) {
+                setShowTerms(false);
                 return true;
             }
             if (showDeleteConfirm) {
@@ -759,6 +765,18 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     <View style={styles.section}>
                         <Text style={styles.sectionTitle}>Help & Legal</Text>
 
+                        {/* Terms of Service */}
+                        <TouchableOpacity style={styles.settingRow} onPress={() => setShowTerms(true)}>
+                            <View style={styles.settingInfo}>
+                                <Feather name="book-open" size={22} color="#1a1a1a" />
+                                <View style={styles.settingText}>
+                                    <Text style={styles.settingLabel}>Terms & Code of Conduct</Text>
+                                    <Text style={styles.settingValue}>Rules and guidelines</Text>
+                                </View>
+                            </View>
+                            <Feather name="chevron-right" size={22} color="rgba(0,0,0,0.3)" />
+                        </TouchableOpacity>
+
                         {/* Privacy Policy */}
                         <TouchableOpacity style={styles.settingRow} onPress={() => {
                             Linking.openURL('https://builtbylee.github.io/pinr/');
@@ -871,6 +889,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 visible={linkEmailVisible}
                 onClose={() => setLinkEmailVisible(false)}
                 onSuccess={() => loadProfileData()}
+            />
+
+            <TermsModal
+                visible={showTerms}
+                onClose={() => setShowTerms(false)}
             />
 
             <ManageVisibilityModal
