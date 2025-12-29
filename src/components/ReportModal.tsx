@@ -16,6 +16,7 @@ import {
 import { Feather } from '@expo/vector-icons';
 import firestore from '@react-native-firebase/firestore';
 import auth from '@react-native-firebase/auth';
+import { useMemoryStore } from '../store/useMemoryStore';
 
 export type ReportType = 'pin' | 'user';
 export type ReportReason = 'inappropriate' | 'spam' | 'harassment' | 'other';
@@ -71,6 +72,8 @@ export const ReportModal: React.FC<ReportModalProps> = ({
 
             if (reportType === 'pin') {
                 reportData.reportedPinId = targetId;
+                // Optimistically hide the pin locally
+                useMemoryStore.getState().toggleHiddenPin(targetId);
             } else {
                 reportData.reportedUserId = targetId;
             }
