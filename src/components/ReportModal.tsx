@@ -9,6 +9,9 @@ import {
     TextInput,
     ActivityIndicator,
     Alert,
+    ScrollView,
+    KeyboardAvoidingView,
+    Platform,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import firestore from '@react-native-firebase/firestore';
@@ -121,48 +124,54 @@ export const ReportModal: React.FC<ReportModalProps> = ({
                                 )}
                             </View>
 
-                            <Text style={styles.sectionLabel}>Why are you reporting this?</Text>
+                            <ScrollView
+                                style={styles.scrollContent}
+                                showsVerticalScrollIndicator={false}
+                                bounces={false}
+                            >
+                                <Text style={styles.sectionLabel}>Why are you reporting this?</Text>
 
-                            <View style={styles.reasonsContainer}>
-                                {REPORT_REASONS.map((reason) => (
-                                    <TouchableOpacity
-                                        key={reason.value}
-                                        style={[
-                                            styles.reasonItem,
-                                            selectedReason === reason.value && styles.reasonItemSelected,
-                                        ]}
-                                        onPress={() => setSelectedReason(reason.value)}
-                                    >
-                                        <Feather
-                                            name={reason.icon as any}
-                                            size={20}
-                                            color={selectedReason === reason.value ? '#FF3B30' : '#6B7280'}
-                                        />
-                                        <Text
+                                <View style={styles.reasonsContainer}>
+                                    {REPORT_REASONS.map((reason) => (
+                                        <TouchableOpacity
+                                            key={reason.value}
                                             style={[
-                                                styles.reasonText,
-                                                selectedReason === reason.value && styles.reasonTextSelected,
+                                                styles.reasonItem,
+                                                selectedReason === reason.value && styles.reasonItemSelected,
                                             ]}
+                                            onPress={() => setSelectedReason(reason.value)}
                                         >
-                                            {reason.label}
-                                        </Text>
-                                        {selectedReason === reason.value && (
-                                            <Feather name="check" size={20} color="#FF3B30" />
-                                        )}
-                                    </TouchableOpacity>
-                                ))}
-                            </View>
+                                            <Feather
+                                                name={reason.icon as any}
+                                                size={20}
+                                                color={selectedReason === reason.value ? '#FF3B30' : '#6B7280'}
+                                            />
+                                            <Text
+                                                style={[
+                                                    styles.reasonText,
+                                                    selectedReason === reason.value && styles.reasonTextSelected,
+                                                ]}
+                                            >
+                                                {reason.label}
+                                            </Text>
+                                            {selectedReason === reason.value && (
+                                                <Feather name="check" size={20} color="#FF3B30" />
+                                            )}
+                                        </TouchableOpacity>
+                                    ))}
+                                </View>
 
-                            <Text style={styles.sectionLabel}>Additional details (optional)</Text>
-                            <TextInput
-                                style={styles.textInput}
-                                placeholder="Provide more context..."
-                                placeholderTextColor="#9CA3AF"
-                                value={description}
-                                onChangeText={setDescription}
-                                multiline
-                                maxLength={500}
-                            />
+                                <Text style={styles.sectionLabel}>Additional details (optional)</Text>
+                                <TextInput
+                                    style={styles.textInput}
+                                    placeholder="Provide more context..."
+                                    placeholderTextColor="#9CA3AF"
+                                    value={description}
+                                    onChangeText={setDescription}
+                                    multiline
+                                    maxLength={500}
+                                />
+                            </ScrollView>
 
                             <View style={styles.buttons}>
                                 <TouchableOpacity
@@ -207,10 +216,14 @@ const styles = StyleSheet.create({
         backgroundColor: 'white',
         borderRadius: 20,
         padding: 24,
-        maxHeight: '80%',
+        maxHeight: '85%',
+        overflow: 'hidden',
+    },
+    scrollContent: {
+        flexGrow: 0,
     },
     header: {
-        marginBottom: 20,
+        marginBottom: 16,
     },
     title: {
         fontSize: 20,

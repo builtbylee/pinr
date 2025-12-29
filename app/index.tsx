@@ -1671,7 +1671,10 @@ export default function App() {
                                 }
                             }}
                             onReport={() => {
-                                setReportModalPinId(contextMenuPinId);
+                                console.log('[Report] Button pressed, contextMenuPinId:', contextMenuPinId);
+                                if (contextMenuPinId) {
+                                    setReportModalPinId(contextMenuPinId);
+                                }
                                 setContextMenuPinId(null);
                             }}
                         />
