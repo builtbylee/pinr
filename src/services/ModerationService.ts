@@ -1,5 +1,4 @@
-import { httpsCallable } from 'firebase/functions';
-import { functions } from '../config/firebase';
+import functions from '@react-native-firebase/functions';
 
 export interface ModerationResult {
     approved: boolean;
@@ -14,7 +13,7 @@ export interface ModerationResult {
  */
 export async function moderateImage(imageUrl: string): Promise<ModerationResult> {
     try {
-        const moderate = httpsCallable(functions, 'moderateImage');
+        const moderate = functions().httpsCallable('moderateImage');
         const result = await moderate({ imageUrl });
         return result.data as ModerationResult;
     } catch (error: any) {

@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Alert } from 'react-native';
-import { httpsCallable } from 'firebase/functions';
-import { signOut } from 'firebase/auth';
-import { functions, auth } from '../config/firebase';
+import auth from '@react-native-firebase/auth';
+import functions from '@react-native-firebase/functions';
 
 /**
  * Hook to check if the current user is banned
@@ -14,13 +13,14 @@ export function useBanCheck() {
 
     useEffect(() => {
         const checkBanStatus = async () => {
-            if (!auth.currentUser) {
+            const currentUser = auth().currentUser;
+            if (!currentUser) {
                 setIsChecking(false);
                 return;
             }
 
             try {
-                const checkBan = httpsCallable(functions, 'checkBanStatus');
+                const checkBan = functions().httpsCallable('checkBanStatus');
                 const result = await checkBan({});
                 const data = result.data as { banned: boolean; message?: string };
 
@@ -34,7 +34,7 @@ export function useBanCheck() {
                                 text: 'OK',
                                 onPress: async () => {
                                     // Sign out the banned user
-                                    await signOut(auth);
+                                    await auth().signOut();
                                 },
                             },
                         ],
