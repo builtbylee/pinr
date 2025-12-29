@@ -883,7 +883,7 @@ export const onWaitlistSignup = functions.firestore
 
 // Admin UID(s) - add your Firebase UID here
 const ADMIN_UIDS = ['FVgteJzI1VTVSSQIfNXk5I85Zpj1']; // lee.sam78@gmail.com
-const ADMIN_EMAIL = 'lee@getpinr.com'; // Email for report notifications
+const ADMIN_EMAIL = 'lee.sam78@gmail.com'; // Email for report notifications
 
 /**
  * Ban a user (admin only)
