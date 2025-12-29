@@ -43,7 +43,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.moderateImage = exports.adminDeletePin = exports.checkBanStatus = exports.unbanUser = exports.banUser = exports.onWaitlistSignup = exports.createStory = exports.submitChallengeScore = exports.submitGameScore = exports.acceptFriendRequest = exports.removeFriend = exports.addFriend = void 0;
+exports.rejectReportedPin = exports.approveReportedPin = exports.onReportCreated = exports.moderateImage = exports.adminDeletePin = exports.checkBanStatus = exports.unbanUser = exports.banUser = exports.onWaitlistSignup = exports.createStory = exports.submitChallengeScore = exports.submitGameScore = exports.acceptFriendRequest = exports.removeFriend = exports.addFriend = void 0;
 const functions = __importStar(require("firebase-functions"));
 const admin = __importStar(require("firebase-admin"));
 admin.initializeApp();
@@ -662,7 +662,8 @@ exports.onWaitlistSignup = functions.firestore
 // CONTENT MODERATION FUNCTIONS
 // ============================================
 // Admin UID(s) - add your Firebase UID here
-const ADMIN_UIDS = ['YOUR_ADMIN_UID_HERE']; // TODO: Replace with your actual admin UID
+const ADMIN_UIDS = ['FVgteJzI1VTVSSQIfNXk5I85Zpj1']; // lee.sam78@gmail.com
+const ADMIN_EMAIL = 'lee@getpinr.com'; // Email for report notifications
 /**
  * Ban a user (admin only)
  * Sets banned: true on user profile and optionally deletes their content
@@ -822,6 +823,181 @@ exports.moderateImage = functions.https.onCall(async (data, context) => {
         // On error, allow the image (fail open) but log for review
         // In production, you may want to fail closed instead
         return { approved: true, reason: null, error: 'Moderation check failed' };
+    }
+});
+/**
+ * Triggered when a new report is created
+ * - Sends email notification to admin
+ * - Auto-hides reported pin (sets underReview: true)
+ */
+exports.onReportCreated = functions.firestore
+    .document('reports/{reportId}')
+    .onCreate(async (snapshot, context) => {
+    var _a;
+    const reportData = snapshot.data();
+    const reportId = context.params.reportId;
+    console.log(`[onReportCreated] New report ${reportId}:`, reportData.reason);
+    try {
+        // Get reporter info
+        const reporterDoc = await db.collection(USERS_COLLECTION).doc(reportData.reporterId).get();
+        const reporterData = reporterDoc.data();
+        const reporterName = (reporterData === null || reporterData === void 0 ? void 0 : reporterData.displayName) || (reporterData === null || reporterData === void 0 ? void 0 : reporterData.username) || 'Unknown User';
+        // Build report details
+        let reportSubject = '';
+        let reportDetails = '';
+        let targetLink = '';
+        if (reportData.reportedPinId) {
+            // Pin report - auto-hide the pin
+            const pinDoc = await db.collection('pins').doc(reportData.reportedPinId).get();
+            const pinData = pinDoc.data();
+            // Mark pin as under review
+            await db.collection('pins').doc(reportData.reportedPinId).update({
+                underReview: true,
+                reviewTriggeredAt: admin.firestore.FieldValue.serverTimestamp(),
+            });
+            reportSubject = `🚨 Pin Reported: ${(pinData === null || pinData === void 0 ? void 0 : pinData.title) || 'Untitled'}`;
+            reportDetails = `
+                    <p><strong>Pin Title:</strong> ${(pinData === null || pinData === void 0 ? void 0 : pinData.title) || 'Untitled'}</p>
+                    <p><strong>Pin Location:</strong> ${(pinData === null || pinData === void 0 ? void 0 : pinData.locationName) || 'Unknown'}</p>
+                    <p><strong>Pin Creator:</strong> ${(pinData === null || pinData === void 0 ? void 0 : pinData.creatorName) || 'Unknown'}</p>
+                `;
+            targetLink = `https://console.firebase.google.com/project/days-c4ad4/firestore/data/~2Fpins~2F${reportData.reportedPinId}`;
+            console.log(`[onReportCreated] Pin ${reportData.reportedPinId} marked as under review`);
+        }
+        else if (reportData.reportedUserId) {
+            // User report
+            const userDoc = await db.collection(USERS_COLLECTION).doc(reportData.reportedUserId).get();
+            const userData = userDoc.data();
+            reportSubject = `🚨 User Reported: ${(userData === null || userData === void 0 ? void 0 : userData.displayName) || (userData === null || userData === void 0 ? void 0 : userData.username) || 'Unknown'}`;
+            reportDetails = `
+                    <p><strong>Reported User:</strong> ${(userData === null || userData === void 0 ? void 0 : userData.displayName) || (userData === null || userData === void 0 ? void 0 : userData.username) || 'Unknown'}</p>
+                    <p><strong>User ID:</strong> ${reportData.reportedUserId}</p>
+                `;
+            targetLink = `https://console.firebase.google.com/project/days-c4ad4/firestore/data/~2Fusers~2F${reportData.reportedUserId}`;
+        }
+        // Send email to admin
+        const resendApiKey = (_a = functions.config().resend) === null || _a === void 0 ? void 0 : _a.api_key;
+        if (!resendApiKey) {
+            console.error('[onReportCreated] RESEND_API_KEY not configured');
+            return;
+        }
+        const emailHtml = `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+</head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+    <div style="background: #FEF2F2; border: 1px solid #FCA5A5; border-radius: 12px; padding: 20px; margin-bottom: 20px;">
+        <h2 style="margin: 0 0 16px; color: #DC2626;">${reportSubject}</h2>
+        
+        <p><strong>Reason:</strong> ${reportData.reason}</p>
+        ${reportData.description ? `<p><strong>Details:</strong> ${reportData.description}</p>` : ''}
+        <p><strong>Reported by:</strong> ${reporterName}</p>
+        <p><strong>Report ID:</strong> ${reportId}</p>
+        
+        ${reportDetails}
+    </div>
+    
+    <div style="margin-top: 20px;">
+        <a href="${targetLink}" style="display: inline-block; background: #DC2626; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600;">View in Firebase Console</a>
+    </div>
+    
+    <p style="margin-top: 20px; color: #6B7280; font-size: 14px;">
+        ${reportData.reportedPinId ? '⚠️ This pin has been automatically hidden from public view until reviewed.' : ''}
+    </p>
+</body>
+</html>
+            `;
+        const response = await fetch('https://api.resend.com/emails', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${resendApiKey}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                from: 'Pinr Moderation <lee@getpinr.com>',
+                to: [ADMIN_EMAIL],
+                subject: reportSubject,
+                html: emailHtml,
+            }),
+        });
+        if (!response.ok) {
+            const errorBody = await response.text();
+            console.error(`[onReportCreated] Email error: ${response.status} - ${errorBody}`);
+            return;
+        }
+        console.log(`[onReportCreated] Admin notification sent for report ${reportId}`);
+    }
+    catch (error) {
+        console.error('[onReportCreated] Error:', error.message);
+    }
+});
+/**
+ * Approve a reported pin (admin only)
+ * Removes underReview flag and marks report as resolved
+ */
+exports.approveReportedPin = functions.https.onCall(async (data, context) => {
+    if (!context.auth || !ADMIN_UIDS.includes(context.auth.uid)) {
+        throw new functions.https.HttpsError('permission-denied', 'Only admins can approve pins.');
+    }
+    const { pinId, reportId } = data;
+    if (!pinId) {
+        throw new functions.https.HttpsError('invalid-argument', 'pinId is required.');
+    }
+    try {
+        // Remove underReview flag from pin
+        await db.collection('pins').doc(pinId).update({
+            underReview: false,
+            reviewedAt: admin.firestore.FieldValue.serverTimestamp(),
+            reviewedBy: context.auth.uid,
+        });
+        // Update report status if provided
+        if (reportId) {
+            await db.collection('reports').doc(reportId).update({
+                status: 'resolved',
+                resolution: 'approved',
+                resolvedAt: admin.firestore.FieldValue.serverTimestamp(),
+                resolvedBy: context.auth.uid,
+            });
+        }
+        console.log(`[approveReportedPin] Pin ${pinId} approved by ${context.auth.uid}`);
+        return { success: true };
+    }
+    catch (error) {
+        console.error('[approveReportedPin] Error:', error.message);
+        throw new functions.https.HttpsError('internal', 'Failed to approve pin.');
+    }
+});
+/**
+ * Reject a reported pin (admin only) - deletes the pin
+ */
+exports.rejectReportedPin = functions.https.onCall(async (data, context) => {
+    if (!context.auth || !ADMIN_UIDS.includes(context.auth.uid)) {
+        throw new functions.https.HttpsError('permission-denied', 'Only admins can reject pins.');
+    }
+    const { pinId, reportId } = data;
+    if (!pinId) {
+        throw new functions.https.HttpsError('invalid-argument', 'pinId is required.');
+    }
+    try {
+        // Delete the pin
+        await db.collection('pins').doc(pinId).delete();
+        // Update report status if provided
+        if (reportId) {
+            await db.collection('reports').doc(reportId).update({
+                status: 'resolved',
+                resolution: 'rejected',
+                resolvedAt: admin.firestore.FieldValue.serverTimestamp(),
+                resolvedBy: context.auth.uid,
+            });
+        }
+        console.log(`[rejectReportedPin] Pin ${pinId} deleted by ${context.auth.uid}`);
+        return { success: true };
+    }
+    catch (error) {
+        console.error('[rejectReportedPin] Error:', error.message);
+        throw new functions.https.HttpsError('internal', 'Failed to reject pin.');
     }
 });
 //# sourceMappingURL=index.js.map

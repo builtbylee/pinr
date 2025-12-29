@@ -2,7 +2,7 @@ import Mapbox from '@rnmapbox/maps';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState, useCallback } from 'react';
-import { View, StyleSheet, LogBox } from 'react-native';
+import { View, StyleSheet, LogBox, ActivityIndicator, Text } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated';
 import { Image } from 'expo-image';
@@ -13,6 +13,7 @@ import { onAuthStateChanged } from '@/src/services/authService';
 import { useMemoryStore } from '@/src/store/useMemoryStore';
 import { AuthScreen } from '@/src/components/AuthScreen';
 import { initializeAppCheck } from '@/src/services/appCheckService';
+import { useBanCheck } from '@/src/hooks/useBanCheck';
 
 // Initialize App Check early (before any Firebase calls)
 initializeAppCheck();
@@ -51,6 +52,9 @@ export default function RootLayout() {
 
   const setCurrentUserId = useMemoryStore((state) => state.setCurrentUserId);
 
+  // Check if user is banned
+  const { isBanned, isChecking: isBanCheckLoading } = useBanCheck();
+
   useEffect(() => {
     // Listen for auth state changes
     const unsubscribe = onAuthStateChanged((userId) => {
@@ -80,7 +84,12 @@ export default function RootLayout() {
   // Note: We delegate SplashScreen.hideAsync() to the child components (index.tsx / AuthScreen)
   // to ensure the splash stays visible until the actual screen is ready to render.
 
-  if (isInitializing || !fontsLoaded) {
+  if (isInitializing || !fontsLoaded || isBanCheckLoading) {
+    return null;
+  }
+
+  // If user is banned, they'll be shown an alert and signed out via useBanCheck hook
+  if (isBanned) {
     return null;
   }
 
