@@ -71,6 +71,10 @@ interface MemoryStore {
     };
     showToast: (message: string, type?: 'success' | 'error' | 'info') => void;
     hideToast: () => void;
+
+    // Highlighted Pin (from notification)
+    highlightedPinId: string | null;
+    setHighlightedPinId: (id: string | null) => void;
 }
 
 export const useMemoryStore = create<MemoryStore>()(
@@ -90,6 +94,12 @@ export const useMemoryStore = create<MemoryStore>()(
             activeGameId: null,
             hiddenFriendIds: [],
             hiddenPinIds: [],
+            highlightedPinId: null,
+
+            // Actions
+            setHighlightedPinId: (id) => set({ highlightedPinId: id }),
+
+            // Toast Notification
             toast: {
                 visible: false,
                 message: '',

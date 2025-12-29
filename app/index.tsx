@@ -69,7 +69,7 @@ const DAY_STYLE = {
 };
 
 export default function App() {
-    const { memories, setMemories, selectedMemoryId, selectMemory, addMemory, addPhotoToMemory, username, setUsername, avatarUri, setAvatarUri, pinColor, setPinColor, currentUserId, friends, setFriends, hiddenFriendIds, setHiddenFriendIds, hiddenPinIds, toggleHiddenPin: toggleHiddenPinLocal, toggleHiddenFriend: toggleHiddenFriendLocal, setHiddenPinIds } = useMemoryStore();
+    const { memories, setMemories, selectedMemoryId, selectMemory, addMemory, addPhotoToMemory, username, setUsername, avatarUri, setAvatarUri, pinColor, setPinColor, currentUserId, friends, setFriends, hiddenFriendIds, setHiddenFriendIds, hiddenPinIds, toggleHiddenPin: toggleHiddenPinLocal, toggleHiddenFriend: toggleHiddenFriendLocal, setHiddenPinIds, highlightedPinId, setHighlightedPinId } = useMemoryStore();
     const router = useRouter();
     console.log('[App] Rendering Index');
     const [isCreationModalVisible, setIsCreationModalVisible] = useState(false);
@@ -87,7 +87,7 @@ export default function App() {
     const [isExploreInfoVisible, setIsExploreInfoVisible] = useState(false);
     const [showStreakCelebration, setShowStreakCelebration] = useState(false);
     const [celebrationStreak, setCelebrationStreak] = useState(0);
-    const [highlightedPinId, setHighlightedPinId] = useState<string | null>(null);
+    // The highlightedPinId state is now managed by useMemoryStore, removed local state.
 
     // Global Story Editor State (For "Create Story from Pin" flow)
     const [isGlobalStoryEditorVisible, setIsGlobalStoryEditorVisible] = useState(false);
@@ -95,6 +95,65 @@ export default function App() {
 
     // Story Creation Flow (photo-first story wizard)
     const [isStoryCreationVisible, setIsStoryCreationVisible] = useState(false);
+
+    // Load fonts
+    const [fontsLoaded] = useFonts({
+        BebasNeue_400Regular,
+    });
+
+    // OneSignal & Deep Link Setup
+    useEffect(() => {
+        const checkOneSignal = async () => {
+            const permissionStatus = await OneSignal.Notifications.getPermissionStatus();
+            console.log('[App] OneSignal Config Check:', {
+                hasPermission: OneSignal.Notifications.hasPermission(),
+                permissionStatus,
+                pushSubscriptionId: OneSignal.User.pushSubscription.getPushSubscriptionId(),
+                optedIn: OneSignal.User.pushSubscription.getOptedIn(),
+            });
+        }
+        checkOneSignal();
+
+        // OneSignal Notification Click Listener
+        const handleClick = (event: any) => {
+            console.log('[OneSignal] Notification clicked:', event);
+            const data = event.notification.additionalData;
+
+            if (data && data.pinId) {
+                console.log('[OneSignal] Navigating to pin:', data.pinId);
+                const pin = memories.find(m => m.id === data.pinId);
+
+                if (pin) {
+                    // Navigate and Highlight
+                    setHighlightedPinId(pin.id);
+
+                    cameraRef.current?.setCamera({
+                        centerCoordinate: pin.location,
+                        zoomLevel: 16,
+                        animationDuration: 2000,
+                    });
+
+                    // Clear highlight after 5s
+                    setTimeout(() => {
+                        setHighlightedPinId(null);
+                    }, 5000);
+                } else {
+                    console.log('[OneSignal] Pin not found locally:', data.pinId);
+                }
+            }
+        };
+
+        OneSignal.Notifications.addEventListener('click', handleClick);
+
+        const config = require('../app.json');
+        if (config.issues) {
+            console.warn('[App] OneSignal Configuration Issues:', config.issues);
+        }
+
+        return () => {
+            OneSignal.Notifications.removeEventListener('click', handleClick);
+        };
+    }, [memories, setHighlightedPinId]); // Re-bind when memories change to ensure we can find new pins
 
     const cameraRef = useRef<Mapbox.Camera>(null);
     const mapRef = useRef<Mapbox.MapView>(null);
@@ -353,12 +412,16 @@ export default function App() {
         notificationService.login(currentUserId);
 
         // Verify OneSignal configuration on startup (debug)
-        notificationService.verifyConfiguration().then(config => {
+        notificationService.verifyConfiguration().then(async config => {
             console.log('[App] OneSignal Config Check:', {
                 appId: config.appId,
                 restApiKeyLoaded: config.restApiKeyLoaded,
                 restApiKeyLength: config.restApiKeyLength,
                 restApiKeyPreview: config.restApiKeyPreview,
+                hasPermission: await OneSignal.Notifications.hasPermission(),
+                permissionStatus: await OneSignal.Notifications.getPermissionStatus(),
+                pushSubscriptionId: OneSignal.User.pushSubscription.getPushSubscriptionId(),
+                optedIn: OneSignal.User.pushSubscription.getOptedIn(),
             });
             if (config.issues.length > 0) {
                 console.warn('[App] OneSignal Configuration Issues:', config.issues);
@@ -1259,7 +1322,7 @@ export default function App() {
                                                 : (authorColors[memory.creatorId] || memory.pinColor))?.toLowerCase() || 'orange'
                                             ] || '#FF8C00'
                                         }
-                                        isPulsing={memory.id === pulsingPinId}
+                                        isPulsing={memory.id === highlightedPinId}
                                         isStory={(() => {
                                             if (storyPinIds.has(memory.id)) {
                                                 const story = pinToStoryMap[memory.id];
@@ -1340,9 +1403,9 @@ export default function App() {
                                             animationDuration: 2000,
                                         });
                                         // 2. Pulse Pin
-                                        setPulsingPinId(pin.id);
+                                        setHighlightedPinId(pin.id);
                                         // Stop pulsing after 5s
-                                        setTimeout(() => setPulsingPinId(null), 5000);
+                                        setTimeout(() => setHighlightedPinId(null), 5000);
 
                                         // 3. Clear Badges
                                         setNewPinCount(0);
@@ -1401,7 +1464,7 @@ export default function App() {
                         cameraRef={cameraRef}
                         onExit={() => {
                             setStoryModeData(null);
-                            setPulsingPinId(null); // Clear pulsing state on exit
+                            setHighlightedPinId(null); // Clear pulsing state on exit
                             // Reset camera?
                             if (cameraRef.current) {
                                 cameraRef.current.setCamera({
@@ -1411,7 +1474,7 @@ export default function App() {
                                 });
                             }
                         }}
-                        onPulsingPinChange={setPulsingPinId}
+                        onPulsingPinChange={setHighlightedPinId}
                         userColor={
                             storyModeUserId === currentUserId
                                 ? (colorMap[(pinColor || 'orange').toLowerCase()] || '#FF8C00')

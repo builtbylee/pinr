@@ -17,6 +17,8 @@ import { Feather } from '@expo/vector-icons';
 import firestore from '@react-native-firebase/firestore';
 import auth from '@react-native-firebase/auth';
 
+import { useMemoryStore } from '../store/useMemoryStore';
+
 export type ReportType = 'pin' | 'user';
 export type ReportReason = 'inappropriate' | 'spam' | 'harassment' | 'other';
 
@@ -51,16 +53,23 @@ export const ReportModal: React.FC<ReportModalProps> = ({
             Alert.alert('Select Reason', 'Please select a reason for your report.');
             return;
         }
+        setIsSubmitting(true);
 
         const currentUser = auth().currentUser;
         if (!currentUser) {
             Alert.alert('Error', 'You must be logged in to report content.');
+            setIsSubmitting(false);
             return;
         }
 
-        setIsSubmitting(true);
-
         try {
+            console.log('[Report] Submitting report for:', {
+                targetId,
+                reportType,
+                reason: selectedReason,
+                reporter: currentUser.uid
+            });
+
             const reportData: any = {
                 reporterId: currentUser.uid,
                 reason: selectedReason,
@@ -70,9 +79,12 @@ export const ReportModal: React.FC<ReportModalProps> = ({
             };
 
             if (reportType === 'pin') {
-                reportData.reportedPinId = targetId;
+                reportData.pinId = targetId;
+                // Optimistically hide the pin locally
+                useMemoryStore.getState().toggleHiddenPin(targetId);
             } else {
-                reportData.reportedUserId = targetId;
+                reportData.userId = targetId;
+                // Ideally hide user too, but let's stick to pin for now
             }
 
             await firestore().collection('reports').add(reportData);
