@@ -45,6 +45,7 @@ import { useMapClusters, Point } from '@/src/hooks/useMapClusters';
 import { ClusterPin } from '@/src/components/ClusterPin';
 import { ClusterListModal } from '@/src/components/ClusterListModal';
 import { PinContextMenu } from '@/src/components/PinContextMenu';
+import { ReportModal } from '@/src/components/ReportModal';
 
 
 // Style JSON wrapper to set lightPreset config
@@ -74,6 +75,7 @@ export default function App() {
     const [isCreationModalVisible, setIsCreationModalVisible] = useState(false);
     const [editingMemory, setEditingMemory] = useState<Memory | null>(null); // Track memory being edited
     const [contextMenuPinId, setContextMenuPinId] = useState<string | null>(null); // Pin ID for context menu
+    const [reportModalPinId, setReportModalPinId] = useState<string | null>(null); // Pin ID for report modal
     const [isFriendsVisible, setIsFriendsVisible] = useState(false);
     const [selectedUserProfileId, setSelectedUserProfileId] = useState<string | null>(null);
     const [isSettingsVisible, setIsSettingsVisible] = useState(false);
@@ -1668,6 +1670,10 @@ export default function App() {
                                     );
                                 }
                             }}
+                            onReport={() => {
+                                setReportModalPinId(contextMenuPinId);
+                                setContextMenuPinId(null);
+                            }}
                         />
                     );
                 })()
@@ -1714,6 +1720,19 @@ export default function App() {
                         selectMemory(memory.id);
                     }
                 }}
+                onLongPressMemory={(memory) => {
+                    setSelectedClusterLeaves(null); // Close cluster modal first
+                    setContextMenuPinId(memory.id); // Open context menu for this pin
+                }}
+            />
+
+            {/* Report Modal */}
+            <ReportModal
+                visible={!!reportModalPinId}
+                onClose={() => setReportModalPinId(null)}
+                reportType="pin"
+                targetId={reportModalPinId || ''}
+                targetName={memories.find(m => m.id === reportModalPinId)?.title}
             />
 
             {/* Explore Streak Celebration Modal */}

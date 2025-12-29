@@ -12,6 +12,7 @@ interface ClusterListModalProps {
     onClose: () => void;
     leaves: any[]; // GeoJSON points
     onSelectMemory: (memory: Memory) => void;
+    onLongPressMemory?: (memory: Memory) => void; // For context menu (report, etc.)
     authorAvatars: Record<string, string>;
     currentUserId?: string | null;
     currentUserAvatar?: string | null;
@@ -22,6 +23,7 @@ export const ClusterListModal: React.FC<ClusterListModalProps> = ({
     onClose,
     leaves,
     onSelectMemory,
+    onLongPressMemory,
     authorAvatars,
     currentUserId,
     currentUserAvatar
@@ -38,6 +40,7 @@ export const ClusterListModal: React.FC<ClusterListModalProps> = ({
         }
 
         const dateStr = formatMemoryDate(memory.date);
+        const isOwner = currentUserId && memory.creatorId === currentUserId;
 
         return (
             <TouchableOpacity
@@ -47,6 +50,12 @@ export const ClusterListModal: React.FC<ClusterListModalProps> = ({
                     onClose();
                     onSelectMemory(memory);
                 }}
+                onLongPress={() => {
+                    if (onLongPressMemory) {
+                        onLongPressMemory(memory);
+                    }
+                }}
+                delayLongPress={300}
             >
                 {/* Avatar */}
                 <View style={styles.avatarContainer}>
