@@ -11,8 +11,8 @@ import {
     Alert,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
-import { db, auth } from '../config/firebase';
+import firestore from '@react-native-firebase/firestore';
+import auth from '@react-native-firebase/auth';
 
 export type ReportType = 'pin' | 'user';
 export type ReportReason = 'inappropriate' | 'spam' | 'harassment' | 'other';
@@ -49,7 +49,8 @@ export const ReportModal: React.FC<ReportModalProps> = ({
             return;
         }
 
-        if (!auth.currentUser) {
+        const currentUser = auth().currentUser;
+        if (!currentUser) {
             Alert.alert('Error', 'You must be logged in to report content.');
             return;
         }
@@ -58,11 +59,11 @@ export const ReportModal: React.FC<ReportModalProps> = ({
 
         try {
             const reportData: any = {
-                reporterId: auth.currentUser.uid,
+                reporterId: currentUser.uid,
                 reason: selectedReason,
                 description: description.trim() || null,
                 status: 'pending',
-                createdAt: serverTimestamp(),
+                createdAt: firestore.FieldValue.serverTimestamp(),
             };
 
             if (reportType === 'pin') {
@@ -71,7 +72,7 @@ export const ReportModal: React.FC<ReportModalProps> = ({
                 reportData.reportedUserId = targetId;
             }
 
-            await addDoc(collection(db, 'reports'), reportData);
+            await firestore().collection('reports').add(reportData);
 
             Alert.alert(
                 'Report Submitted',
