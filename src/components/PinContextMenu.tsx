@@ -17,6 +17,7 @@ interface PinContextMenuProps {
     onDelete?: () => void;
     onHidePin?: () => void;
     onHideUser?: () => void;
+    onReport?: () => void;
 }
 
 export const PinContextMenu: React.FC<PinContextMenuProps> = ({
@@ -32,6 +33,7 @@ export const PinContextMenu: React.FC<PinContextMenuProps> = ({
     onDelete,
     onHidePin,
     onHideUser,
+    onReport,
 }) => {
 
     if (!visible) return null;
@@ -77,10 +79,14 @@ export const PinContextMenu: React.FC<PinContextMenuProps> = ({
                                     </>
                                 ) : (
                                     <>
-                                        {/* Friend Actions */}
                                         <TouchableOpacity style={styles.actionItem} onPress={onHidePin}>
                                             <Feather name="eye-off" size={20} color="#6B7280" />
                                             <Text style={styles.actionText}>Hide This Pin</Text>
+                                        </TouchableOpacity>
+
+                                        <TouchableOpacity style={styles.actionItem} onPress={onReport}>
+                                            <Feather name="flag" size={20} color="#F59E0B" />
+                                            <Text style={styles.actionText}>Report</Text>
                                         </TouchableOpacity>
 
                                         <TouchableOpacity style={[styles.actionItem, styles.destructiveAction]} onPress={onHideUser}>

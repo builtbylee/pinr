@@ -876,3 +876,230 @@ export const onWaitlistSignup = functions.firestore
             console.error('[onWaitlistSignup] Failed to send email:', error.message);
         }
     });
+
+// ============================================
+// CONTENT MODERATION FUNCTIONS
+// ============================================
+
+// Admin UID(s) - add your Firebase UID here
+const ADMIN_UIDS = ['YOUR_ADMIN_UID_HERE']; // TODO: Replace with your actual admin UID
+
+/**
+ * Ban a user (admin only)
+ * Sets banned: true on user profile and optionally deletes their content
+ */
+export const banUser = functions.https.onCall(async (data, context) => {
+    // Check admin authentication
+    if (!context.auth || !ADMIN_UIDS.includes(context.auth.uid)) {
+        throw new functions.https.HttpsError(
+            'permission-denied',
+            'Only admins can ban users.'
+        );
+    }
+
+    const { userId, deleteContent = false } = data;
+
+    if (!userId || typeof userId !== 'string') {
+        throw new functions.https.HttpsError(
+            'invalid-argument',
+            'userId is required.'
+        );
+    }
+
+    try {
+        // Update user document
+        await db.collection(USERS_COLLECTION).doc(userId).update({
+            banned: true,
+            bannedAt: admin.firestore.FieldValue.serverTimestamp(),
+            bannedBy: context.auth.uid,
+        });
+
+        // Optionally delete user's pins
+        if (deleteContent) {
+            const pinsSnapshot = await db.collection('pins')
+                .where('creatorId', '==', userId)
+                .get();
+
+            const batch = db.batch();
+            pinsSnapshot.docs.forEach((doc) => {
+                batch.delete(doc.ref);
+            });
+            await batch.commit();
+
+            console.log(`[banUser] Deleted ${pinsSnapshot.size} pins for user ${userId}`);
+        }
+
+        console.log(`[banUser] User ${userId} banned by ${context.auth.uid}`);
+        return { success: true, message: 'User banned successfully.' };
+
+    } catch (error: any) {
+        console.error('[banUser] Error:', error.message);
+        throw new functions.https.HttpsError('internal', 'Failed to ban user.');
+    }
+});
+
+/**
+ * Unban a user (admin only)
+ */
+export const unbanUser = functions.https.onCall(async (data, context) => {
+    if (!context.auth || !ADMIN_UIDS.includes(context.auth.uid)) {
+        throw new functions.https.HttpsError(
+            'permission-denied',
+            'Only admins can unban users.'
+        );
+    }
+
+    const { userId } = data;
+
+    if (!userId || typeof userId !== 'string') {
+        throw new functions.https.HttpsError(
+            'invalid-argument',
+            'userId is required.'
+        );
+    }
+
+    try {
+        await db.collection(USERS_COLLECTION).doc(userId).update({
+            banned: false,
+            unbannedAt: admin.firestore.FieldValue.serverTimestamp(),
+            unbannedBy: context.auth.uid,
+        });
+
+        console.log(`[unbanUser] User ${userId} unbanned by ${context.auth.uid}`);
+        return { success: true, message: 'User unbanned successfully.' };
+
+    } catch (error: any) {
+        console.error('[unbanUser] Error:', error.message);
+        throw new functions.https.HttpsError('internal', 'Failed to unban user.');
+    }
+});
+
+/**
+ * Check if current user is banned
+ * Called on app startup to prevent banned users from accessing
+ */
+export const checkBanStatus = functions.https.onCall(async (data, context) => {
+    if (!context.auth) {
+        throw new functions.https.HttpsError(
+            'unauthenticated',
+            'Must be authenticated.'
+        );
+    }
+
+    try {
+        const userDoc = await db.collection(USERS_COLLECTION).doc(context.auth.uid).get();
+        const userData = userDoc.data();
+
+        return {
+            banned: userData?.banned === true,
+            message: userData?.banned ? 'Your account has been suspended.' : null,
+        };
+
+    } catch (error: any) {
+        console.error('[checkBanStatus] Error:', error.message);
+        return { banned: false };
+    }
+});
+
+/**
+ * Admin delete a pin (for removing reported content)
+ */
+export const adminDeletePin = functions.https.onCall(async (data, context) => {
+    if (!context.auth || !ADMIN_UIDS.includes(context.auth.uid)) {
+        throw new functions.https.HttpsError(
+            'permission-denied',
+            'Only admins can delete pins.'
+        );
+    }
+
+    const { pinId } = data;
+
+    if (!pinId || typeof pinId !== 'string') {
+        throw new functions.https.HttpsError(
+            'invalid-argument',
+            'pinId is required.'
+        );
+    }
+
+    try {
+        await db.collection('pins').doc(pinId).delete();
+        console.log(`[adminDeletePin] Pin ${pinId} deleted by ${context.auth.uid}`);
+        return { success: true };
+
+    } catch (error: any) {
+        console.error('[adminDeletePin] Error:', error.message);
+        throw new functions.https.HttpsError('internal', 'Failed to delete pin.');
+    }
+});
+
+/**
+ * Moderate an image using Google Cloud Vision API
+ * Call this before saving an image to check for explicit content
+ * 
+ * NOTE: Requires Cloud Vision API to be enabled in your GCP project
+ * https://console.cloud.google.com/apis/library/vision.googleapis.com
+ */
+export const moderateImage = functions.https.onCall(async (data, context) => {
+    if (!context.auth) {
+        throw new functions.https.HttpsError(
+            'unauthenticated',
+            'Must be authenticated.'
+        );
+    }
+
+    const { imageUrl } = data;
+
+    if (!imageUrl || typeof imageUrl !== 'string') {
+        throw new functions.https.HttpsError(
+            'invalid-argument',
+            'imageUrl is required.'
+        );
+    }
+
+    try {
+        // Import Vision client
+        const vision = require('@google-cloud/vision');
+        const client = new vision.ImageAnnotatorClient();
+
+        // Analyze image for safe search annotations
+        const [result] = await client.safeSearchDetection(imageUrl);
+        const safeSearch = result.safeSearchAnnotation;
+
+        if (!safeSearch) {
+            return { approved: true, reason: null };
+        }
+
+        // Check for explicit content
+        // Likelihood levels: UNKNOWN, VERY_UNLIKELY, UNLIKELY, POSSIBLE, LIKELY, VERY_LIKELY
+        const BLOCK_LEVELS = ['LIKELY', 'VERY_LIKELY'];
+
+        const issues: string[] = [];
+
+        if (BLOCK_LEVELS.includes(safeSearch.adult)) {
+            issues.push('adult content');
+        }
+        if (BLOCK_LEVELS.includes(safeSearch.violence)) {
+            issues.push('violent content');
+        }
+        if (BLOCK_LEVELS.includes(safeSearch.racy)) {
+            issues.push('racy content');
+        }
+
+        if (issues.length > 0) {
+            console.log(`[moderateImage] Image blocked: ${issues.join(', ')}`);
+            return {
+                approved: false,
+                reason: `Image contains ${issues.join(', ')}.`,
+            };
+        }
+
+        return { approved: true, reason: null };
+
+    } catch (error: any) {
+        console.error('[moderateImage] Error:', error.message);
+        // On error, allow the image (fail open) but log for review
+        // In production, you may want to fail closed instead
+        return { approved: true, reason: null, error: 'Moderation check failed' };
+    }
+});
+

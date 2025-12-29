@@ -103,5 +103,14 @@ service cloud.firestore {
       allow create: if true;
       // No reads/updates/deletes allowed for public
     }
+
+    // REPORTS COLLECTION (Content Moderation)
+    match /reports/{reportId} {
+      // Only authenticated users can create reports
+      allow create: if request.auth != null;
+      // Users can read their own reports
+      allow read: if request.auth != null && resource.data.reporterId == request.auth.uid;
+      // No updates or deletes from client - admin only via Cloud Functions
+    }
   }
 }
