@@ -573,21 +573,17 @@ exports.onWaitlistSignup = functions.firestore
     }
     const platform = data.platform || 'unknown';
     console.log(`[onWaitlistSignup] New signup: ${email} (${platform})`);
-    // Get the appropriate download link based on platform
-    const ANDROID_LINK = 'https://play.google.com/store/apps/details?id=com.builtbylee.app80days';
-    const IOS_LINK = 'https://apps.apple.com/app/pinr/id1234567890'; // Update when live
+    // Platform detection for personalized messaging
     const LANDING_PAGE = 'https://getpinr.com';
-    let downloadLink = LANDING_PAGE;
-    let platformText = 'mobile devices';
+    let platformText = 'your device';
     if (platform === 'android') {
-        downloadLink = ANDROID_LINK;
         platformText = 'Android';
     }
     else if (platform === 'ios') {
-        downloadLink = IOS_LINK;
         platformText = 'iOS';
     }
-    // Build the email
+    // Build the waitlist confirmation email
+    // NOTE: When app stores are ready, update this to include download links
     const emailHtml = `
 <!DOCTYPE html>
 <html>
@@ -597,26 +593,26 @@ exports.onWaitlistSignup = functions.firestore
 </head>
 <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f5f5f5;">
     <div style="background: white; border-radius: 16px; padding: 32px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
-        <h1 style="margin: 0 0 16px; color: #1a1a1a; font-size: 24px;">You've got early access! 🎉</h1>
+        <h1 style="margin: 0 0 16px; color: #1a1a1a; font-size: 24px;">You're on the list! 🎉</h1>
         
         <p style="color: #4a4a4a; line-height: 1.6; margin: 0 0 24px;">
-            Lee here from Pinr, thanks for signing up to get Pinr. I built it to create a fun way to share travel photos, connect with friends, and explore your next trip.
+            Lee here from Pinr, thanks for signing up! I built Pinr to create a fun way to share travel photos, connect with friends, and explore your next trip.
         </p>
         
         <p style="color: #4a4a4a; line-height: 1.6; margin: 0 0 24px;">
-            Did you spot my signature, <strong>BuiltByLee</strong>? This is my personal seal of quality, your guarantee that Pinr has been built with performance, privacy, and security in mind.
+            Did you spot my signature, <strong>BuiltByLee</strong>, on the sign-up page? This is my personal seal of quality, your guarantee that Pinr has been built with performance, privacy, and security in mind.
         </p>
         
         <p style="color: #4a4a4a; line-height: 1.6; margin: 0 0 24px;">
-            I noticed you're on <strong>${platformText}</strong>. Here's your download link:
+            I noticed you're on <strong>${platformText}</strong>. I'm putting the finishing touches on the app and will email you the moment it's ready to download. You'll be one of the first to try it!
         </p>
         
-        <a href="${downloadLink}" style="display: inline-block; background: #34C759; color: white; text-decoration: none; padding: 14px 28px; border-radius: 12px; font-weight: 600; margin: 0 0 24px;">
-            Download Pinr
-        </a>
+        <p style="color: #4a4a4a; line-height: 1.6; margin: 0 0 24px;">
+            In the meantime, feel free to reply to this email if you have any questions or feature ideas – I read every message.
+        </p>
         
         <p style="color: #8e8e93; font-size: 14px; line-height: 1.6; margin: 24px 0 0;">
-            See you on the map! 🗺️<br>
+            See you on the map soon! 🗺️<br>
             – Lee
         </p>
     </div>
