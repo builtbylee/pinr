@@ -282,6 +282,39 @@ export const TravelBattleGame: React.FC<TravelBattleGameProps> = ({ difficulty, 
                             </View>
                             <Text style={{ color: '#6B7280', fontSize: 14, fontWeight: '600' }}>Menu</Text>
                         </TouchableOpacity>
+
+                        <TouchableOpacity
+                            style={{
+                                flex: 1,
+                                flexDirection: 'row',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                backgroundColor: 'white',
+                                paddingVertical: 12,
+                                borderRadius: 16,
+                                gap: 8,
+                                shadowColor: '#000',
+                                shadowOffset: { width: 0, height: 2 },
+                                shadowOpacity: 0.05,
+                                shadowRadius: 6,
+                                elevation: 2,
+                                borderWidth: 1,
+                                borderColor: 'rgba(0,0,0,0.05)',
+                            }}
+                            onPress={onExit}
+                        >
+                            <View style={{
+                                width: 28,
+                                height: 28,
+                                borderRadius: 14,
+                                backgroundColor: '#F3F4F6',
+                                justifyContent: 'center',
+                                alignItems: 'center',
+                            }}>
+                                <Feather name="x" size={14} color="#6B7280" />
+                            </View>
+                            <Text style={{ color: '#6B7280', fontSize: 14, fontWeight: '600' }}>Exit</Text>
+                        </TouchableOpacity>
                     </View>
                 </View>
             </View>
