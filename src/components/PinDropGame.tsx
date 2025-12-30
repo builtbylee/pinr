@@ -222,7 +222,7 @@ export const PinDropGame: React.FC<PinDropGameProps> = ({
                         <View style={{
                             backgroundColor: 'white',
                             borderRadius: 24,
-                            padding: 32,
+                            padding: 24, // Reduced from 32
                             width: '90%',
                             maxWidth: 340,
                             alignItems: 'center',
@@ -236,14 +236,14 @@ export const PinDropGame: React.FC<PinDropGameProps> = ({
                         }}>
                             {/* Icon Circle */}
                             <View style={{
-                                width: 80,
-                                height: 80,
-                                borderRadius: 40,
-                                backgroundColor: '#EFF6FF', // Light blue bg
+                                width: 64, // Reduced from 80
+                                height: 64, // Reduced from 80
+                                borderRadius: 32,
+                                backgroundColor: '#EFF6FF',
                                 justifyContent: 'center',
                                 alignItems: 'center',
-                                marginBottom: 20,
-                                borderWidth: 4,
+                                marginBottom: 12, // Reduced from 20
+                                borderWidth: 3,
                                 borderColor: 'white',
                                 shadowColor: '#3B82F6',
                                 shadowOffset: { width: 0, height: 4 },
@@ -251,34 +251,34 @@ export const PinDropGame: React.FC<PinDropGameProps> = ({
                                 shadowRadius: 8,
                                 elevation: 4,
                             }}>
-                                <Feather name="map-pin" size={32} color="#3B82F6" />
+                                <Feather name="map-pin" size={28} color="#3B82F6" />
                             </View>
 
                             <Text style={{
-                                fontSize: 28,
+                                fontSize: 24, // Reduced from 28
                                 fontWeight: '800',
                                 color: '#1F2937',
-                                marginBottom: 4,
+                                marginBottom: 2, // Reduced from 4
                                 textAlign: 'center',
                             }}>
                                 Pin Drop
                             </Text>
                             <Text style={{
-                                fontSize: 16,
+                                fontSize: 14, // Reduced from 16
                                 color: '#6B7280',
                                 fontWeight: '500',
-                                marginBottom: 24,
+                                marginBottom: 16, // Reduced from 24
                                 textAlign: 'center',
                             }}>
                                 How to Play
                             </Text>
 
                             <Text style={{
-                                fontSize: 15,
+                                fontSize: 14, // Reduced from 15
                                 color: '#4B5563',
                                 textAlign: 'center',
-                                lineHeight: 22,
-                                marginBottom: 24,
+                                lineHeight: 20,
+                                marginBottom: 16, // Reduced from 24
                             }}>
                                 You'll see a location name. Tap on the globe to drop your pin as close as possible to that location!
                             </Text>
@@ -288,18 +288,18 @@ export const PinDropGame: React.FC<PinDropGameProps> = ({
                                 width: '100%',
                                 backgroundColor: '#F9FAFB',
                                 borderRadius: 16,
-                                padding: 16,
-                                marginBottom: 24,
+                                padding: 12, // Reduced from 16
+                                marginBottom: 16, // Reduced from 24
                                 borderWidth: 1,
                                 borderColor: '#F3F4F6',
                             }}>
                                 <Text style={{
-                                    fontSize: 12,
+                                    fontSize: 11, // Reduced from 12
                                     fontWeight: '700',
                                     color: '#9CA3AF',
                                     textTransform: 'uppercase',
                                     letterSpacing: 1,
-                                    marginBottom: 12,
+                                    marginBottom: 8, // Reduced from 12
                                     textAlign: 'center',
                                 }}>Scoring</Text>
 
@@ -310,10 +310,10 @@ export const PinDropGame: React.FC<PinDropGameProps> = ({
                                     { emoji: '👍', distance: '< 1000 km', points: 250, color: '#FBBF24' },
                                     { emoji: '🤔', distance: '< 2000 km', points: 100, color: '#9CA3AF' },
                                 ].map((tier, i) => (
-                                    <View key={i} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
-                                        <Text style={{ fontSize: 16, width: 28 }}>{tier.emoji}</Text>
-                                        <Text style={{ flex: 1, fontSize: 14, color: '#374151', fontWeight: '500' }}>{tier.distance}</Text>
-                                        <Text style={{ fontSize: 14, fontWeight: '700', color: tier.color }}>{tier.points}</Text>
+                                    <View key={i} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
+                                        <Text style={{ fontSize: 14, width: 24 }}>{tier.emoji}</Text>
+                                        <Text style={{ flex: 1, fontSize: 13, color: '#374151', fontWeight: '500' }}>{tier.distance}</Text>
+                                        <Text style={{ fontSize: 13, fontWeight: '700', color: tier.color }}>{tier.points}</Text>
                                     </View>
                                 ))}
                             </View>
@@ -322,15 +322,15 @@ export const PinDropGame: React.FC<PinDropGameProps> = ({
                                 flexDirection: 'row',
                                 alignItems: 'center',
                                 backgroundColor: '#EFF6FF',
-                                paddingHorizontal: 16,
-                                paddingVertical: 12,
+                                paddingHorizontal: 12, // Reduced from 16
+                                paddingVertical: 10, // Reduced from 12
                                 borderRadius: 12,
-                                marginBottom: 24,
-                                gap: 10,
+                                marginBottom: 16, // Reduced from 24
+                                gap: 8,
                                 width: '100%',
                             }}>
-                                <Feather name="info" size={16} color="#3B82F6" />
-                                <Text style={{ flex: 1, fontSize: 13, color: '#1E40AF', lineHeight: 18 }}>
+                                <Feather name="info" size={14} color="#3B82F6" />
+                                <Text style={{ flex: 1, fontSize: 12, color: '#1E40AF', lineHeight: 16 }}>
                                     <Text style={{ fontWeight: '700' }}>Tip:</Text> Zoom in for extra accuracy and earn more points!
                                 </Text>
                             </View>
@@ -340,7 +340,7 @@ export const PinDropGame: React.FC<PinDropGameProps> = ({
                                 style={{
                                     width: '100%',
                                     backgroundColor: '#3B82F6',
-                                    paddingVertical: 16,
+                                    paddingVertical: 14, // Reduced from 16
                                     borderRadius: 16,
                                     alignItems: 'center',
                                     justifyContent: 'center',
@@ -355,7 +355,7 @@ export const PinDropGame: React.FC<PinDropGameProps> = ({
                                 onPress={startGame}
                             >
                                 <Feather name="play" size={18} color="white" />
-                                <Text style={{ fontSize: 18, fontWeight: '700', color: 'white' }}>Start Game</Text>
+                                <Text style={{ fontSize: 16, fontWeight: '700', color: 'white' }}>Start Game</Text>
                             </TouchableOpacity>
                         </View>
                     </View>
@@ -642,29 +642,21 @@ export const PinDropGame: React.FC<PinDropGameProps> = ({
 
             {/* HUD Overlay */}
             <View style={styles.hud}>
-                {/* Quit Button */}
-                <TouchableOpacity style={styles.quitButton} onPress={handleQuitPress}>
-                    <Feather name="x" size={20} color="white" />
+                {/* Back Button */}
+                <TouchableOpacity style={styles.backButton} onPress={handleQuitPress}>
+                    <Feather name="arrow-left" size={24} color="white" />
                 </TouchableOpacity>
 
-                {/* Round & Score */}
-                <View style={styles.scoreContainer}>
-                    <Text style={styles.roundText}>
-                        {state.currentRound + 1} / {state.totalRounds}
-                    </Text>
-                    <Text style={styles.scoreText}>{state.score}</Text>
+                {/* Center Info */}
+                <View style={styles.hudCenter}>
+                    <Text style={styles.hudTitle}>Round {state.currentRound + 1}/{state.totalRounds}</Text>
+                    {state.score > 0 && <Text style={styles.hudSubtitle}>{state.score} pts</Text>}
                 </View>
 
                 {/* Timer */}
-                <View style={[
-                    styles.timerContainer,
-                    state.timeLeft <= 5 && styles.timerWarning
-                ]}>
-                    <Feather name="clock" size={16} color={state.timeLeft <= 5 ? '#EF4444' : '#374151'} />
-                    <Text style={[
-                        styles.timerText,
-                        state.timeLeft <= 5 && styles.timerTextWarning
-                    ]}>
+                <View style={styles.timerPill}>
+                    <Feather name="clock" size={14} color={state.timeLeft <= 5 ? '#EF4444' : 'rgba(255,255,255,0.7)'} />
+                    <Text style={[styles.timerText, state.timeLeft <= 5 && { color: '#EF4444' }]}>
                         {state.timeLeft}s
                     </Text>
                 </View>
@@ -754,87 +746,77 @@ const styles = StyleSheet.create({
     },
     hud: {
         position: 'absolute',
-        top: 60,
+        top: 50,
         left: 16,
         right: 16,
+        height: 56,
         flexDirection: 'row',
-        justifyContent: 'space-between',
         alignItems: 'center',
+        justifyContent: 'space-between',
+        backgroundColor: 'rgba(23, 23, 23, 0.85)',
+        borderRadius: 28,
+        paddingHorizontal: 8,
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.1)',
+        shadowColor: 'black',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.2,
+        shadowRadius: 8,
+        elevation: 6,
     },
-    quitButton: {
+    backButton: {
         width: 40,
         height: 40,
         borderRadius: 20,
-        backgroundColor: '#EF4444',
         justifyContent: 'center',
         alignItems: 'center',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.2,
-        shadowRadius: 4,
-        elevation: 4,
+        backgroundColor: 'rgba(255,255,255,0.1)',
     },
-    scoreContainer: {
-        backgroundColor: 'rgba(255, 255, 255, 0.95)',
-        paddingHorizontal: 16,
-        paddingVertical: 8,
-        borderRadius: 20,
+    hudCenter: {
         alignItems: 'center',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-        elevation: 3,
     },
-    roundText: {
-        fontSize: 12,
-        color: '#6B7280',
-        fontWeight: '500',
+    hudTitle: {
+        fontSize: 15,
+        fontWeight: '700',
+        color: 'white',
+        letterSpacing: 0.5,
     },
-    scoreText: {
-        fontSize: 24,
-        fontWeight: 'bold',
-        color: '#1F2937',
+    hudSubtitle: {
+        fontSize: 10,
+        fontWeight: '600',
+        color: '#FBBF24', // Amber 400
+        marginTop: 2,
     },
-    timerContainer: {
+    timerPill: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: 'rgba(255, 255, 255, 0.95)',
+        backgroundColor: 'rgba(255,255,255,0.1)',
         paddingHorizontal: 12,
-        paddingVertical: 8,
-        borderRadius: 20,
+        paddingVertical: 6,
+        borderRadius: 16,
         gap: 6,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-        elevation: 3,
-    },
-    timerWarning: {
-        backgroundColor: '#FEE2E2',
     },
     timerText: {
-        fontSize: 18,
-        fontWeight: 'bold',
-        color: '#374151',
-    },
-    timerTextWarning: {
-        color: '#EF4444',
+        fontSize: 14,
+        fontWeight: '700',
+        color: 'white',
+        fontVariant: ['tabular-nums'],
     },
     promptContainer: {
         position: 'absolute',
-        bottom: 40,
-        left: 16,
-        right: 16,
-        backgroundColor: 'rgba(255, 255, 255, 0.95)',
-        padding: 20,
-        borderRadius: 16,
+        bottom: 34,
+        left: 20,
+        right: 20,
+        backgroundColor: 'white',
+        borderRadius: 24,
+        paddingVertical: 20,
+        paddingHorizontal: 24,
         alignItems: 'center',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: -2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 8,
-        elevation: 5,
+        shadowColor: 'black',
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.2,
+        shadowRadius: 16,
+        elevation: 10,
     },
     promptLabel: {
         fontSize: 14,
