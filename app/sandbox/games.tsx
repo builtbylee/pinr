@@ -1691,33 +1691,22 @@ export default function GameSandbox() {
                     shadowRadius: 12,
                     elevation: 6,
                 }}>
-                    {/* Nested Flag Card */}
+                    {/* Flag - full size with border */}
                     {state.currentQuestion.type === 'flag' && state.currentQuestion.flagUrl && (
                         <View style={{
                             width: '100%',
                             height: isSmallScreen ? 140 : 180,
-                            backgroundColor: '#E5E7EB',
-                            borderRadius: 20,
+                            borderRadius: 8,
+                            borderWidth: 1,
+                            borderColor: '#000000',
+                            overflow: 'hidden',
                             marginBottom: 16,
-                            justifyContent: 'center',
-                            alignItems: 'center',
-                            padding: 24,
                         }}>
-                            {/* Flag with border and rounded corners */}
-                            <View style={{
-                                width: isSmallScreen ? 120 : 160,
-                                height: isSmallScreen ? 80 : 110,
-                                borderRadius: 8,
-                                borderWidth: 1,
-                                borderColor: '#000000',
-                                overflow: 'hidden',
-                            }}>
-                                <Image
-                                    source={{ uri: state.currentQuestion.flagUrl }}
-                                    style={{ width: '100%', height: '100%' }}
-                                    contentFit="cover"
-                                />
-                            </View>
+                            <Image
+                                source={{ uri: state.currentQuestion.flagUrl }}
+                                style={{ width: '100%', height: '100%' }}
+                                contentFit="cover"
+                            />
                         </View>
                     )}
 
