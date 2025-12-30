@@ -366,7 +366,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthenticated }) => {
                         setForgotMessage(null);
                     }}
                 >
-                    <Text style={{ color: '#4F46E5', fontSize: 14, fontWeight: '500' }}>
+                    <Text style={{ color: 'rgba(0, 0, 0, 0.5)', fontSize: 14, fontWeight: '500' }}>
                         Forgot Password?
                     </Text>
                 </TouchableOpacity>
