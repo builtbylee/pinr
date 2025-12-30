@@ -1645,9 +1645,6 @@ export default function GameSandbox() {
             <View style={styles.gameContainer}>
                 {/* HUD - Outside Container */}
                 <View style={styles.hud}>
-                    <TouchableOpacity style={styles.quitButton} onPress={handleQuit}>
-                        <Feather name="x" size={24} color="white" />
-                    </TouchableOpacity>
                     <View style={styles.hudItem}>
                         <Feather name="clock" size={20} color="#666" />
                         <Text style={[styles.hudText, state.timeLeft < 10 && styles.urgentText]}>
@@ -1665,6 +1662,19 @@ export default function GameSandbox() {
                         <Feather name="award" size={20} color="#4F46E5" />
                         <Text style={styles.hudText}>{state.score}</Text>
                     </View>
+                    <TouchableOpacity
+                        style={{
+                            width: 36,
+                            height: 36,
+                            borderRadius: 18,
+                            backgroundColor: '#EF4444',
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                        }}
+                        onPress={handleQuit}
+                    >
+                        <Feather name="x" size={18} color="white" />
+                    </TouchableOpacity>
                 </View>
 
                 {/* Main Container Card */}
