@@ -1644,9 +1644,8 @@ export default function GameSandbox() {
         return (
             <View style={styles.gameContainer}>
                 {/* HUD - Outside Container */}
-                <View style={styles.hud}>
+                <View style={[styles.hud, { paddingHorizontal: 16 }]}>
                     <View style={styles.hudItem}>
-                        <Feather name="clock" size={20} color="#666" />
                         <Text style={[styles.hudText, state.timeLeft < 10 && styles.urgentText]}>
                             {state.timeLeft}s
                         </Text>
@@ -1670,6 +1669,7 @@ export default function GameSandbox() {
                             backgroundColor: '#EF4444',
                             justifyContent: 'center',
                             alignItems: 'center',
+                            marginLeft: 8,
                         }}
                         onPress={handleQuit}
                     >
