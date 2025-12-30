@@ -2453,6 +2453,7 @@ const styles = StyleSheet.create({
     hud: {
         flexDirection: 'row',
         justifyContent: 'space-between',
+        marginTop: 12,
         marginBottom: 16,
     },
     hudItem: {
