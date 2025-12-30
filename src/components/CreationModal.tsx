@@ -308,7 +308,7 @@ export const CreationModal: React.FC<CreationModalProps> = ({ visible, onClose, 
                     <View style={styles.header}>
                         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                             <Feather name="map-pin" size={24} color="#1a1a1a" style={{ marginRight: 10 }} />
-                            <Text style={styles.headerTitle}>New Pin</Text>
+                            <Text style={styles.headerTitle}>{initialMemory ? 'Edit Pin' : 'New Pin'}</Text>
                         </View>
                         <TouchableOpacity onPress={onClose} style={styles.closeButton}>
                             <Feather name="x" size={24} color="black" />
@@ -423,18 +423,31 @@ export const CreationModal: React.FC<CreationModalProps> = ({ visible, onClose, 
                         </View>
 
                         <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 12, marginTop: 10 }}>
-                            <TouchableOpacity
-                                style={[styles.saveButton, { flex: 1, backgroundColor: '#000' }]}
-                                onPress={() => handleSave(false)}
-                            >
-                                <Text style={styles.saveButtonText}>Post Pin</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                                style={[styles.saveButton, { flex: 1, backgroundColor: '#4F46E5' }]}
-                                onPress={() => handleSave(true)}
-                            >
-                                <Text style={styles.saveButtonText}>+ Story</Text>
-                            </TouchableOpacity>
+                            {initialMemory ? (
+                                // Edit mode: single Update Pin button
+                                <TouchableOpacity
+                                    style={[styles.saveButton, { flex: 1, backgroundColor: '#000' }]}
+                                    onPress={() => handleSave(false)}
+                                >
+                                    <Text style={styles.saveButtonText}>Update Pin</Text>
+                                </TouchableOpacity>
+                            ) : (
+                                // Create mode: Post Pin and +Story buttons
+                                <>
+                                    <TouchableOpacity
+                                        style={[styles.saveButton, { flex: 1, backgroundColor: '#000' }]}
+                                        onPress={() => handleSave(false)}
+                                    >
+                                        <Text style={styles.saveButtonText}>Post Pin</Text>
+                                    </TouchableOpacity>
+                                    <TouchableOpacity
+                                        style={[styles.saveButton, { flex: 1, backgroundColor: '#4F46E5' }]}
+                                        onPress={() => handleSave(true)}
+                                    >
+                                        <Text style={styles.saveButtonText}>+ Story</Text>
+                                    </TouchableOpacity>
+                                </>
+                            )}
                         </View>
                     </ScrollView>
                 </View>

@@ -1,4 +1,4 @@
-import { Feather } from '@expo/vector-icons';
+import { Feather, Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import React, { useState, useEffect, useRef } from 'react';
 import { StyleSheet, TouchableOpacity, View, Dimensions, Text } from 'react-native';
@@ -186,7 +186,7 @@ export const ProfileMenu: React.FC<ProfileMenuProps> = ({
                         style={[styles.pillIcon, { width: circleSize, height: circleSize }]}
                         onPress={() => handleMenuPress(onPressGames)}
                     >
-                        <Feather name="dribbble" size={iconSize} color="#4B5563" />
+                        <Ionicons name="trophy-outline" size={iconSize} color="#4B5563" />
                         {gameInviteCount > 0 && (
                             <View style={styles.badge}>
                                 <Text style={styles.badgeText}>

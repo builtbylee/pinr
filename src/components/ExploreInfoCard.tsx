@@ -70,8 +70,8 @@ export const ExploreInfoCard: React.FC<ExploreInfoCardProps> = ({ placeName, loc
                 addedAt: Date.now(),
             });
 
-            Alert.alert("Success", "Added to your Bucket List!");
-            onClose();
+            // Update button state to show success (green) - no alert, no auto-close
+            setIsInBucketList(true);
         } catch (error) {
             console.error("Failed to add bucket list item:", error);
             Alert.alert("Error", "Could not add to bucket list.");
@@ -153,7 +153,7 @@ export const ExploreInfoCard: React.FC<ExploreInfoCardProps> = ({ placeName, loc
                                     <>
                                         <Feather name={isInBucketList ? "check" : "plus-circle"} size={18} color="white" />
                                         <Text style={styles.actionButtonText}>
-                                            {isInBucketList ? "On Your Bucket List" : "Add to Bucket List"}
+                                            {isInBucketList ? "Added to Bucket List" : "Add to Bucket List"}
                                         </Text>
                                     </>
                                 )}

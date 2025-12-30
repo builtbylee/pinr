@@ -6,7 +6,7 @@
  */
 
 import React, { useState, useEffect, useRef } from 'react';
-import { StyleSheet, View, Text, TouchableOpacity, Dimensions, Modal, Animated, BackHandler, Image } from 'react-native';
+import { StyleSheet, View, Text, TouchableOpacity, Dimensions, Modal, Animated, BackHandler, Image, ScrollView } from 'react-native';
 import Mapbox, { MapView, Camera, PointAnnotation, MarkerView } from '@rnmapbox/maps';
 import { Feather } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
@@ -219,42 +219,143 @@ export const PinDropGame: React.FC<PinDropGameProps> = ({
                     }}
                 >
                     <View style={styles.explainerOverlay}>
-                        <View style={styles.explainerCard}>
-                            <Text style={styles.explainerTitle}>📍 Pin Drop</Text>
-                            <Text style={styles.explainerSubtitle}>How to Play</Text>
-
-                            <View style={styles.explainerSection}>
-                                <Text style={styles.explainerText}>
-                                    You'll see a location name. Tap on the globe to drop your pin as close as possible to that location!
-                                </Text>
+                        <View style={{
+                            backgroundColor: 'white',
+                            borderRadius: 24,
+                            padding: 32,
+                            width: '90%',
+                            maxWidth: 340,
+                            alignItems: 'center',
+                            shadowColor: '#000',
+                            shadowOffset: { width: 0, height: 8 },
+                            shadowOpacity: 0.12,
+                            shadowRadius: 20,
+                            elevation: 8,
+                            borderWidth: 1,
+                            borderColor: 'rgba(0,0,0,0.04)',
+                        }}>
+                            {/* Icon Circle */}
+                            <View style={{
+                                width: 80,
+                                height: 80,
+                                borderRadius: 40,
+                                backgroundColor: '#EFF6FF', // Light blue bg
+                                justifyContent: 'center',
+                                alignItems: 'center',
+                                marginBottom: 20,
+                                borderWidth: 4,
+                                borderColor: 'white',
+                                shadowColor: '#3B82F6',
+                                shadowOffset: { width: 0, height: 4 },
+                                shadowOpacity: 0.2,
+                                shadowRadius: 8,
+                                elevation: 4,
+                            }}>
+                                <Feather name="map-pin" size={32} color="#3B82F6" />
                             </View>
 
-                            <View style={styles.scoringTable}>
-                                <Text style={styles.scoringTitle}>Scoring</Text>
+                            <Text style={{
+                                fontSize: 28,
+                                fontWeight: '800',
+                                color: '#1F2937',
+                                marginBottom: 4,
+                                textAlign: 'center',
+                            }}>
+                                Pin Drop
+                            </Text>
+                            <Text style={{
+                                fontSize: 16,
+                                color: '#6B7280',
+                                fontWeight: '500',
+                                marginBottom: 24,
+                                textAlign: 'center',
+                            }}>
+                                How to Play
+                            </Text>
+
+                            <Text style={{
+                                fontSize: 15,
+                                color: '#4B5563',
+                                textAlign: 'center',
+                                lineHeight: 22,
+                                marginBottom: 24,
+                            }}>
+                                You'll see a location name. Tap on the globe to drop your pin as close as possible to that location!
+                            </Text>
+
+                            {/* Scoring Table - Compact & Clean */}
+                            <View style={{
+                                width: '100%',
+                                backgroundColor: '#F9FAFB',
+                                borderRadius: 16,
+                                padding: 16,
+                                marginBottom: 24,
+                                borderWidth: 1,
+                                borderColor: '#F3F4F6',
+                            }}>
+                                <Text style={{
+                                    fontSize: 12,
+                                    fontWeight: '700',
+                                    color: '#9CA3AF',
+                                    textTransform: 'uppercase',
+                                    letterSpacing: 1,
+                                    marginBottom: 12,
+                                    textAlign: 'center',
+                                }}>Scoring</Text>
+
                                 {[
-                                    { emoji: '🎯', distance: '< 50 km', points: 1000 },
-                                    { emoji: '🔥', distance: '< 150 km', points: 750 },
-                                    { emoji: '✨', distance: '< 500 km', points: 500 },
-                                    { emoji: '👍', distance: '< 1000 km', points: 250 },
-                                    { emoji: '🤔', distance: '< 2000 km', points: 100 },
+                                    { emoji: '🎯', distance: '< 50 km', points: 1000, color: '#059669' },
+                                    { emoji: '🔥', distance: '< 150 km', points: 750, color: '#10B981' },
+                                    { emoji: '✨', distance: '< 500 km', points: 500, color: '#34D399' },
+                                    { emoji: '👍', distance: '< 1000 km', points: 250, color: '#FBBF24' },
+                                    { emoji: '🤔', distance: '< 2000 km', points: 100, color: '#9CA3AF' },
                                 ].map((tier, i) => (
-                                    <View key={i} style={styles.scoringRow}>
-                                        <Text style={styles.scoringEmoji}>{tier.emoji}</Text>
-                                        <Text style={styles.scoringDistance}>{tier.distance}</Text>
-                                        <Text style={styles.scoringPoints}>{tier.points} pts</Text>
+                                    <View key={i} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+                                        <Text style={{ fontSize: 16, width: 28 }}>{tier.emoji}</Text>
+                                        <Text style={{ flex: 1, fontSize: 14, color: '#374151', fontWeight: '500' }}>{tier.distance}</Text>
+                                        <Text style={{ fontSize: 14, fontWeight: '700', color: tier.color }}>{tier.points}</Text>
                                     </View>
                                 ))}
                             </View>
 
-                            <View style={styles.tipBox}>
+                            <View style={{
+                                flexDirection: 'row',
+                                alignItems: 'center',
+                                backgroundColor: '#EFF6FF',
+                                paddingHorizontal: 16,
+                                paddingVertical: 12,
+                                borderRadius: 12,
+                                marginBottom: 24,
+                                gap: 10,
+                                width: '100%',
+                            }}>
                                 <Feather name="info" size={16} color="#3B82F6" />
-                                <Text style={styles.tipText}>
-                                    💡 Zoom in for extra accuracy and earn more points!
+                                <Text style={{ flex: 1, fontSize: 13, color: '#1E40AF', lineHeight: 18 }}>
+                                    <Text style={{ fontWeight: '700' }}>Tip:</Text> Zoom in for extra accuracy and earn more points!
                                 </Text>
                             </View>
 
-                            <TouchableOpacity style={styles.startButton} onPress={startGame}>
-                                <Text style={styles.startButtonText}>Start Game</Text>
+                            <TouchableOpacity
+                                activeOpacity={0.8}
+                                style={{
+                                    width: '100%',
+                                    backgroundColor: '#3B82F6',
+                                    paddingVertical: 16,
+                                    borderRadius: 16,
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    shadowColor: '#3B82F6',
+                                    shadowOffset: { width: 0, height: 4 },
+                                    shadowOpacity: 0.3,
+                                    shadowRadius: 8,
+                                    elevation: 4,
+                                    flexDirection: 'row',
+                                    gap: 8,
+                                }}
+                                onPress={startGame}
+                            >
+                                <Feather name="play" size={18} color="white" />
+                                <Text style={{ fontSize: 18, fontWeight: '700', color: 'white' }}>Start Game</Text>
                             </TouchableOpacity>
                         </View>
                     </View>
@@ -266,38 +367,187 @@ export const PinDropGame: React.FC<PinDropGameProps> = ({
     return (
         <View style={styles.container}>
             {/* Show game over screen */}
+            {/* Show game over screen - Clean & Flat UI */}
             {state.gameOver && (
-                <View style={styles.gameOverOverlay}>
-                    <View style={styles.gameOverCard}>
-                        <Text style={styles.gameOverEmoji}>🎯</Text>
-                        <Text style={styles.gameOverTitle}>Game Complete!</Text>
-                        <Text style={styles.gameOverScore}>{state.score}</Text>
-                        <Text style={styles.gameOverScoreLabel}>POINTS</Text>
-                        <Text style={styles.gameOverDifficulty}>{difficulty.toUpperCase()}</Text>
+                <View style={{ ...StyleSheet.absoluteFillObject, backgroundColor: '#FAFAFA', zIndex: 100, justifyContent: 'center', alignItems: 'center', padding: 24 }}>
+                    {/* Result Icon - Compact */}
+                    <View style={{
+                        width: isSmallScreen ? 60 : 110,
+                        height: isSmallScreen ? 60 : 110,
+                        borderRadius: isSmallScreen ? 30 : 55,
+                        backgroundColor: '#F59E0B',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        marginBottom: isSmallScreen ? 8 : 28,
+                        shadowColor: '#F59E0B',
+                        shadowOffset: { width: 0, height: 12 },
+                        shadowOpacity: 0.4,
+                        shadowRadius: 20,
+                        elevation: 12,
+                        borderWidth: 2,
+                        borderColor: 'rgba(255,255,255,0.3)',
+                    }}>
+                        <View style={{
+                            width: isSmallScreen ? 40 : 60,
+                            height: isSmallScreen ? 40 : 60,
+                            borderRadius: isSmallScreen ? 20 : 30,
+                            backgroundColor: 'rgba(255,255,255,0.25)',
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                        }}>
+                            <Feather name="award" size={isSmallScreen ? 24 : 36} color="white" />
+                        </View>
+                    </View>
 
+                    {/* Result Title */}
+                    <Text style={{
+                        fontSize: isSmallScreen ? 24 : 36,
+                        fontWeight: '800',
+                        color: '#1F2937',
+                        marginBottom: isSmallScreen ? 2 : 4,
+                        textAlign: 'center',
+                    }}>
+                        Game Complete!
+                    </Text>
+                    <Text style={{
+                        fontSize: isSmallScreen ? 13 : 16,
+                        color: '#D97706',
+                        marginBottom: isSmallScreen ? 16 : 32,
+                    }}>
+                        Great accuracy on those pins!
+                    </Text>
+
+                    {/* Points Card with Difficulty Badge */}
+                    <View style={{
+                        backgroundColor: 'white',
+                        borderRadius: isSmallScreen ? 20 : 24,
+                        padding: isSmallScreen ? 20 : 32,
+                        width: '100%',
+                        maxWidth: 280,
+                        alignItems: 'center',
+                        shadowColor: '#000',
+                        shadowOffset: { width: 0, height: 8 },
+                        shadowOpacity: 0.12,
+                        shadowRadius: 20,
+                        elevation: 8,
+                        marginBottom: isSmallScreen ? 16 : 28,
+                        borderWidth: 1,
+                        borderColor: 'rgba(0,0,0,0.04)',
+                    }}>
+                        <Text style={{ fontSize: isSmallScreen ? 48 : 56, fontWeight: '800', color: '#1F2937', marginBottom: 4 }}>
+                            {state.score}
+                        </Text>
+                        <Text style={{ fontSize: isSmallScreen ? 12 : 14, fontWeight: '600', color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 }}>
+                            Points
+                        </Text>
+
+                        {/* Difficulty Badge */}
+                        <View style={{
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            backgroundColor: difficulty === 'easy' ? '#D1FAE5' : difficulty === 'hard' ? '#FEE2E2' : '#FEF3C7',
+                            paddingHorizontal: 12,
+                            paddingVertical: 6,
+                            borderRadius: 12,
+                            gap: 6,
+                        }}>
+                            <View style={{
+                                width: 18,
+                                height: 18,
+                                borderRadius: 9,
+                                backgroundColor: difficulty === 'easy' ? '#10B981' : difficulty === 'hard' ? '#EF4444' : '#F59E0B',
+                                justifyContent: 'center',
+                                alignItems: 'center',
+                            }}>
+                                <Feather name="zap" size={10} color="white" />
+                            </View>
+                            <Text style={{
+                                fontSize: 11,
+                                fontWeight: '700',
+                                color: difficulty === 'easy' ? '#065F46' : difficulty === 'hard' ? '#991B1B' : '#92400E',
+                                textTransform: 'uppercase',
+                                letterSpacing: 0.5,
+                            }}>
+                                {difficulty}
+                            </Text>
+                        </View>
+                    </View>
+
+                    {/* Action Buttons */}
+                    <View style={{ width: '100%', gap: isSmallScreen ? 8 : 12 }}>
                         <TouchableOpacity
-                            style={styles.playAgainButton}
+                            style={{
+                                flexDirection: 'row',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                backgroundColor: '#10B981',
+                                paddingVertical: isSmallScreen ? 10 : 14,
+                                borderRadius: 20,
+                                gap: 10,
+                                shadowColor: '#10B981',
+                                shadowOffset: { width: 0, height: 6 },
+                                shadowOpacity: 0.35,
+                                shadowRadius: 12,
+                                elevation: 6,
+                                borderWidth: 1,
+                                borderColor: 'rgba(255,255,255,0.2)',
+                            }}
                             onPress={() => {
-                                // Reset and start new game
                                 pinDropService.reset();
                                 setDroppedPin(null);
                                 setRoundResult(null);
                                 setShowExplainer(true);
                             }}
                         >
-                            <Feather name="refresh-cw" size={20} color="white" />
-                            <Text style={styles.playAgainText}>PLAY AGAIN</Text>
+                            <View style={{
+                                width: 32,
+                                height: 32,
+                                borderRadius: 16,
+                                backgroundColor: 'rgba(255,255,255,0.2)',
+                                justifyContent: 'center',
+                                alignItems: 'center',
+                            }}>
+                                <Feather name="refresh-cw" size={16} color="white" />
+                            </View>
+                            <Text style={{ color: 'white', fontSize: 16, fontWeight: '700' }}>PLAY AGAIN</Text>
                         </TouchableOpacity>
 
-                        <TouchableOpacity
-                            style={styles.exitButton}
-                            onPress={() => {
-                                onGameOver(state.score);
-                            }}
-                        >
-                            <Feather name="home" size={20} color="#6B7280" />
-                            <Text style={styles.exitButtonText}>EXIT TO MENU</Text>
-                        </TouchableOpacity>
+                        <View style={{ flexDirection: 'row', gap: 12, marginTop: 4 }}>
+                            <TouchableOpacity
+                                style={{
+                                    flex: 1,
+                                    flexDirection: 'row',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    backgroundColor: 'white',
+                                    paddingVertical: 12,
+                                    borderRadius: 16,
+                                    gap: 8,
+                                    shadowColor: '#000',
+                                    shadowOffset: { width: 0, height: 2 },
+                                    shadowOpacity: 0.05,
+                                    shadowRadius: 6,
+                                    elevation: 2,
+                                    borderWidth: 1,
+                                    borderColor: 'rgba(0,0,0,0.05)',
+                                }}
+                                onPress={() => {
+                                    onGameOver(state.score);
+                                }}
+                            >
+                                <View style={{
+                                    width: 28,
+                                    height: 28,
+                                    borderRadius: 14,
+                                    backgroundColor: '#F3F4F6',
+                                    justifyContent: 'center',
+                                    alignItems: 'center',
+                                }}>
+                                    <Feather name="home" size={14} color="#6B7280" />
+                                </View>
+                                <Text style={{ color: '#6B7280', fontSize: 14, fontWeight: '600' }}>Menu</Text>
+                            </TouchableOpacity>
+                        </View>
                     </View>
                 </View>
             )}
@@ -1019,7 +1269,38 @@ const styles = StyleSheet.create({
         paddingHorizontal: 12,
         paddingVertical: 4,
         borderRadius: 8,
-        marginBottom: 24,
+        marginBottom: 16,
+    },
+    shareRow: {
+        flexDirection: 'row',
+        gap: 10,
+        marginBottom: 12,
+        width: '100%',
+    },
+    shareButton: {
+        flex: 1,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 8,
+        backgroundColor: '#4F46E5',
+        paddingVertical: 14,
+        borderRadius: 14,
+    },
+    challengeButton: {
+        flex: 1,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 8,
+        backgroundColor: '#10B981',
+        paddingVertical: 14,
+        borderRadius: 14,
+    },
+    shareButtonText: {
+        color: 'white',
+        fontSize: 14,
+        fontWeight: '600',
     },
     playAgainButton: {
         flexDirection: 'row',

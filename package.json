@@ -57,6 +57,7 @@
     "expo-system-ui": "~5.0.11",
     "expo-updates": "^0.28.17",
     "expo-web-browser": "~14.2.0",
+    "mapbox-gl": "^3.17.0",
     "onesignal-expo-plugin": "^2.0.3",
     "react": "19.0.0",
     "react-compiler-runtime": "^19.0.0-beta-ebf51a3-20250411",

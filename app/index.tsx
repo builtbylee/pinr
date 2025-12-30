@@ -1455,7 +1455,7 @@ export default function App() {
                 onClose={() => setIsUsernameModalVisible(false)}
                 onSave={async (newUsername) => {
                     if (currentUserId) {
-                        await saveUserProfile(currentUserId, { username: newUsername });
+                        await saveUserProfile(currentUserId, newUsername);
                         setUsername(newUsername);
                     }
                     setIsUsernameModalVisible(false);

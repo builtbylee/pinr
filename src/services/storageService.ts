@@ -1,7 +1,5 @@
 // Firebase Storage Service
 import storage from '@react-native-firebase/storage';
-import * as ImageManipulator from 'expo-image-manipulator';
-
 // Image compression settings
 const MAX_IMAGE_DIMENSION = 1200; // Max width or height
 const IMAGE_QUALITY = 0.9; // 90% quality (nearly lossless)
@@ -16,6 +14,10 @@ const compressImage = async (uri: string): Promise<string> => {
     try {
         console.log('[Storage] Compressing image...');
 
+        // Lazy load ImageManipulator to prevent startup crashes on old APKs
+        // that don't have the native module installed yet.
+        const ImageManipulator = require('expo-image-manipulator');
+
         const result = await ImageManipulator.manipulateAsync(
             uri,
             [{ resize: { width: MAX_IMAGE_DIMENSION } }], // Resize width, height auto-scales
@@ -28,8 +30,8 @@ const compressImage = async (uri: string): Promise<string> => {
         console.log('[Storage] Compression complete:', result.uri);
         return result.uri;
     } catch (error) {
-        console.warn('[Storage] Compression failed, using original:', error);
-        return uri; // Fallback to original if compression fails
+        console.warn('[Storage] Compression failed or module missing, using original:', error);
+        return uri; // Fallback to original if compression fails or module missing
     }
 };
 

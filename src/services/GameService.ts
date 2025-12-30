@@ -10,6 +10,7 @@ export interface Question {
     correctOptionId: string;
     options: Option[]; // Generic options
     flagUrl?: string;
+    imageKey?: string;
 }
 
 export interface Option {
@@ -34,6 +35,7 @@ export interface GameState {
     highScore: number;
     isNewHighScore: boolean;
     lastAnswerCorrect: boolean | null; // null = no answer yet, true = correct, false = wrong
+    lastSelectedOptionId?: string | null; // Optional to track user selection
     difficulty: Difficulty;
 }
 
@@ -79,6 +81,7 @@ class GameService {
             highScore: 0,
             isNewHighScore: false,
             lastAnswerCorrect: null,
+            lastSelectedOptionId: null,
             difficulty: this.currentDifficulty,
         };
     }
@@ -127,8 +130,11 @@ class GameService {
         }
     }
 
-    public subscribe(callback: (state: GameState) => void) {
+    public subscribe(callback: (state: GameState) => void): () => void {
         this.onStateChange = callback;
+        return () => {
+            this.onStateChange = null;
+        };
     }
 
     private emit() {
@@ -150,6 +156,7 @@ class GameService {
 
     private correctAnswersCount: number = 0; // Anti-cheat tracking
     private gameAnswers: Array<{ questionCode: string; selectedAnswer: string; isCorrect: boolean }> = [];
+    private usedQuestionIds: Set<string> = new Set(); // Track questions used in current session
 
     public startGame(difficulty?: Difficulty, gameMode: 'flagdash' | 'travelbattle' = 'flagdash') {
         if (difficulty) {
@@ -160,6 +167,7 @@ class GameService {
         const currentHighScore = this.state.highScore;
         this.correctAnswersCount = 0; // Reset count
         this.gameAnswers = []; // Reset answers
+        this.usedQuestionIds.clear(); // Reset used questions
         this.state = this.getInitialState();
         this.state.highScore = currentHighScore;
         this.state.difficulty = this.currentDifficulty;
@@ -188,6 +196,7 @@ class GameService {
 
         const isCorrect = optionId === this.state.currentQuestion?.correctOptionId;
         this.state.lastAnswerCorrect = isCorrect;
+        this.state.lastSelectedOptionId = optionId;
 
         if (isCorrect) {
             this.state.score += 10 + (this.state.streak * 2);
@@ -200,20 +209,25 @@ class GameService {
         // Track answer for server validation
         if (this.state.currentQuestion) {
             this.gameAnswers.push({
-                questionCode: this.state.currentQuestion.correctOptionId, // Country code
+                questionCode: this.state.currentQuestion.correctOptionId,
                 selectedAnswer: this.state.currentQuestion.options.find(o => o.id === optionId)?.text || '',
                 isCorrect,
             });
         }
 
-
-        this.nextQuestion();
+        // Emit immediately to show feedback (animation plays for ~900ms)
         this.emit();
 
+        // Delay moving to next question so user sees the feedback
         setTimeout(() => {
+            if (!this.state.gameOver) {
+                this.nextQuestion();
+            }
+            // Reset feedback flags
             this.state.lastAnswerCorrect = null;
+            this.state.lastSelectedOptionId = null;
             this.emit();
-        }, 300);
+        }, 200);
 
         return isCorrect;
     }
@@ -295,11 +309,26 @@ class GameService {
     }
     private nextQuestion() {
         if (this.gameMode === 'flagdash') {
-            const countries = this.getCountriesForDifficulty();
-            const correct = countries[Math.floor(Math.random() * countries.length)];
+            let countries = this.getCountriesForDifficulty();
+
+            // Filter out used questions
+            let available = countries.filter(c => !this.usedQuestionIds.has(c.code));
+
+            // Reshuffle / Reset if ran out
+            if (available.length === 0) {
+                this.usedQuestionIds.clear(); // Reset used questions to allow loop
+                // But add back the ones from *this* game? No, just clear and start over. 
+                // Alternatively, we could just fallback to all countries.
+                available = countries;
+            }
+
+            const correct = available[Math.floor(Math.random() * available.length)];
+            this.usedQuestionIds.add(correct.code); // Mark as used
+
             const distractors: CountryOption[] = [];
 
             // Simple distractor logic (could be improved to be similar countries)
+            // Distractors CAN be previously used countries, that's fine.
             while (distractors.length < 3) {
                 const c = countries[Math.floor(Math.random() * countries.length)];
                 if (c.code !== correct.code && !distractors.some(d => d.code === c.code)) {
@@ -322,14 +351,18 @@ class GameService {
                 flagUrl: `https://flagcdn.com/w320/${correct.code.toLowerCase()}.png`
             };
         } else {
-            const questions = this.getTriviaForDifficulty();
-            if (questions.length === 0) {
-                // Fallback if no trivia
-                this.gameMode = 'flagdash';
-                this.nextQuestion();
-                return;
+            let questions = this.getTriviaForDifficulty();
+
+            // Filter out used questions
+            let available = questions.filter(q => !this.usedQuestionIds.has(q.id));
+
+            if (available.length === 0) {
+                this.usedQuestionIds.clear();
+                available = questions;
             }
-            const q = questions[Math.floor(Math.random() * questions.length)];
+
+            const q = available[Math.floor(Math.random() * available.length)];
+            this.usedQuestionIds.add(q.id); // Mark as used
 
             // Transform options from string[] to {id, text}[]
             // We use the text itself as the ID for trivia options since strictly string matching is fine here
@@ -347,7 +380,8 @@ class GameService {
                 type: 'trivia',
                 text: q.text, // TriviaQuestion uses 'text', not 'question'
                 correctOptionId: q.correctAnswer, // TriviaQuestion uses 'correctAnswer', not 'correctAnswerId'
-                options: options
+                options: options,
+                imageKey: q.imageKey
             };
         }
     }

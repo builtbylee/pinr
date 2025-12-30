@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pinr - Game Over Share Flow Mockup</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #f5f5f5;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .mockup-container {
+            display: flex;
+            gap: 40px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .phone-frame {
+            background: #1a1a1a;
+            border-radius: 40px;
+            padding: 12px;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3);
+        }
+
+        .phone-screen {
+            width: 320px;
+            height: 650px;
+            background: white;
+            border-radius: 32px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .mockup-label {
+            text-align: center;
+            margin-top: 16px;
+            font-size: 14px;
+            color: #666;
+            font-weight: 600;
+        }
+
+        /* Game Over Screen Styles */
+        .game-over-screen {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+        }
+
+        .trophy-circle {
+            width: 100px;
+            height: 100px;
+            background: #FEF3C7;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        .trophy-emoji {
+            font-size: 48px;
+        }
+
+        .title {
+            font-size: 24px;
+            font-weight: 700;
+            color: #1a1a1a;
+            margin-bottom: 16px;
+        }
+
+        .score {
+            font-size: 52px;
+            font-weight: 800;
+            color: #4F46E5;
+            margin-bottom: 4px;
+        }
+
+        .difficulty {
+            font-size: 14px;
+            font-weight: 600;
+            color: #9CA3AF;
+            margin-bottom: 28px;
+            letter-spacing: 1px;
+        }
+
+        /* NEW: Share Buttons Row */
+        .share-row {
+            display: flex;
+            gap: 10px;
+            width: 100%;
+            margin-bottom: 12px;
+        }
+
+        .share-btn {
+            flex: 1;
+            padding: 14px 16px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            cursor: pointer;
+            transition: transform 0.2s, opacity 0.2s;
+            border: none;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .share-btn:hover {
+            transform: scale(1.02);
+            opacity: 0.9;
+        }
+
+        .share-btn.indigo {
+            background: #4F46E5;
+            color: white;
+        }
+
+        .share-btn.green {
+            background: #10B981;
+            color: white;
+        }
+
+        .share-btn svg {
+            width: 18px;
+            height: 18px;
+        }
+
+        /* Play Again Button */
+        .play-again-btn {
+            width: 100%;
+            padding: 16px;
+            background: #000;
+            color: white;
+            border: none;
+            border-radius: 14px;
+            font-size: 16px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            cursor: pointer;
+            margin-bottom: 20px;
+            transition: transform 0.2s;
+        }
+
+        .play-again-btn:hover {
+            transform: scale(1.02);
+        }
+
+        .play-again-btn svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        /* Nav Row */
+        .nav-row {
+            display: flex;
+            gap: 40px;
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            color: #6B7280;
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        .nav-item svg {
+            width: 18px;
+            height: 18px;
+        }
+
+        /* Share Sheet Modal */
+        .share-sheet-screen {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .share-sheet-header {
+            padding: 20px;
+            text-align: center;
+            border-bottom: 1px solid #E5E7EB;
+        }
+
+        .share-sheet-header h2 {
+            font-size: 18px;
+            color: #1a1a1a;
+        }
+
+        .share-preview {
+            flex: 1;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .share-card {
+            background: linear-gradient(135deg, #1e1e2f 0%, #0f172a 100%);
+            border-radius: 20px;
+            padding: 24px;
+            width: 100%;
+            text-align: center;
+            color: white;
+        }
+
+        .share-card-logo {
+            font-size: 28px;
+            margin-bottom: 8px;
+        }
+
+        .share-card-game {
+            font-size: 12px;
+            color: #9CA3AF;
+            margin-bottom: 16px;
+            letter-spacing: 2px;
+        }
+
+        .share-card-label {
+            font-size: 14px;
+            color: #9CA3AF;
+            margin-bottom: 4px;
+        }
+
+        .share-card-score {
+            font-size: 40px;
+            font-weight: 800;
+            color: #4F46E5;
+            margin-bottom: 16px;
+        }
+
+        .share-card-cta {
+            font-size: 14px;
+            color: #6B7280;
+            margin-bottom: 4px;
+        }
+
+        .share-card-url {
+            font-size: 12px;
+            color: #4F46E5;
+        }
+
+        .share-options {
+            padding: 20px;
+            background: #F9FAFB;
+            border-top: 1px solid #E5E7EB;
+        }
+
+        .share-option {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px;
+            background: white;
+            border-radius: 12px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .share-option:hover {
+            background: #F3F4F6;
+        }
+
+        .share-option-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+
+        .share-option-icon.instagram {
+            background: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888);
+        }
+
+        .share-option-icon.whatsapp {
+            background: #25D366;
+        }
+
+        .share-option-icon.copy {
+            background: #E5E7EB;
+        }
+
+        .share-option span {
+            font-size: 15px;
+            color: #1a1a1a;
+            font-weight: 500;
+        }
+
+        /* Highlight badge */
+        .new-badge {
+            background: #10B981;
+            color: white;
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: 700;
+            margin-left: 8px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="mockup-container">
+        <!-- Mockup 1: Game Over with Share Buttons -->
+        <div>
+            <div class="phone-frame">
+                <div class="phone-screen">
+                    <div class="game-over-screen">
+                        <div class="trophy-circle">
+                            <span class="trophy-emoji">🏆</span>
+                        </div>
+                        <h1 class="title">NEW HIGH SCORE!</h1>
+                        <div class="score">2,450 <span style="font-size: 24px;">PTS</span></div>
+                        <div class="difficulty">MEDIUM</div>
+
+                        <!-- NEW: Share Buttons -->
+                        <div class="share-row">
+                            <button class="share-btn indigo">
+                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z">
+                                    </path>
+                                </svg>
+                                SHARE
+                            </button>
+                            <button class="share-btn green">
+                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z">
+                                    </path>
+                                </svg>
+                                CHALLENGE
+                            </button>
+                        </div>
+
+                        <button class="play-again-btn">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15">
+                                </path>
+                            </svg>
+                            PLAY AGAIN
+                        </button>
+
+                        <div class="nav-row">
+                            <div class="nav-item">
+                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6">
+                                    </path>
+                                </svg>
+                                Game Menu
+                            </div>
+                            <div class="nav-item">
+                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064">
+                                    </path>
+                                </svg>
+                                Exit
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <p class="mockup-label">Game Over Screen<span class="new-badge">NEW</span></p>
+        </div>
+
+        <!-- Mockup 2: Share Sheet -->
+        <div>
+            <div class="phone-frame">
+                <div class="phone-screen">
+                    <div class="share-sheet-screen">
+                        <div class="share-sheet-header">
+                            <h2>Share Your Score</h2>
+                        </div>
+                        <div class="share-preview">
+                            <div class="share-card">
+                                <div class="share-card-logo">📍</div>
+                                <div class="share-card-game">FLAG DASH</div>
+                                <div class="share-card-label">I scored</div>
+                                <div class="share-card-score">2,450</div>
+                                <div class="share-card-cta">Can you beat me?</div>
+                                <div class="share-card-url">getpinr.com</div>
+                            </div>
+                        </div>
+                        <div class="share-options">
+                            <div class="share-option">
+                                <div class="share-option-icon instagram">📸</div>
+                                <span>Share to Instagram</span>
+                            </div>
+                            <div class="share-option">
+                                <div class="share-option-icon whatsapp">💬</div>
+                                <span>Share to WhatsApp</span>
+                            </div>
+                            <div class="share-option">
+                                <div class="share-option-icon copy">📋</div>
+                                <span>Copy Link</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <p class="mockup-label">Share Sheet<span class="new-badge">NEW</span></p>
+        </div>
+    </div>
+</body>
+
+</html>

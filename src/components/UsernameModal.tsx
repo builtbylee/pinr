@@ -32,8 +32,8 @@ export const UsernameModal: React.FC<UsernameModalProps> = ({
     if (!visible) return null;
 
     const handleSave = async () => {
-        if (username.trim().length < 2) {
-            setError('Username must be at least 2 characters');
+        if (username.trim().length < 3) {
+            setError('Username must be at least 3 characters');
             return;
         }
 
@@ -120,9 +120,9 @@ export const UsernameModal: React.FC<UsernameModalProps> = ({
 
                     {/* Save/Recover button */}
                     <TouchableOpacity
-                        style={[styles.saveButton, (username.trim().length < 2 || isChecking) && styles.saveButtonDisabled]}
+                        style={[styles.saveButton, (username.trim().length < 3 || isChecking) && styles.saveButtonDisabled]}
                         onPress={handleSave}
-                        disabled={username.trim().length < 2 || isChecking}
+                        disabled={username.trim().length < 3 || isChecking}
                     >
                         {isChecking ? (
                             <ActivityIndicator color="white" />

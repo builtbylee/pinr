@@ -198,30 +198,44 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthenticated }) => {
         setError(null);
         try {
             const result = await signInWithGoogle();
+            const { saveUserProfile, isUsernameTaken, getUserProfile } = require('../services/userService');
 
-            // If new user, save profile with display name as username
-            if (result.isNewUser && result.displayName) {
-                const { saveUserProfile, isUsernameTaken } = require('../services/userService');
-                // Use display name as initial username, user can change it later
-                let suggestedUsername = result.displayName.replace(/\s+/g, '').toLowerCase().substring(0, 15);
+            if (result.isNewUser) {
+                // New user - ALWAYS create a profile with a username
+                let baseUsername: string;
 
-                // Check if username is taken and generate unique variant if needed
-                let isTaken = await isUsernameTaken(suggestedUsername, result.uid);
+                if (result.displayName) {
+                    // Use display name as base, sanitized
+                    baseUsername = result.displayName.replace(/\s+/g, '').toLowerCase().substring(0, 12);
+                } else {
+                    // No display name - generate random username
+                    baseUsername = 'user';
+                }
+
+                // Ensure username is unique by appending random digits
+                let finalUsername = baseUsername + Math.floor(Math.random() * 10000);
+                let isTaken = await isUsernameTaken(finalUsername, result.uid);
                 let attempts = 0;
                 while (isTaken && attempts < 5) {
-                    // Append random digits to make unique
-                    suggestedUsername = suggestedUsername.substring(0, 12) + Math.floor(Math.random() * 1000);
-                    isTaken = await isUsernameTaken(suggestedUsername, result.uid);
+                    finalUsername = baseUsername + Math.floor(Math.random() * 100000);
+                    isTaken = await isUsernameTaken(finalUsername, result.uid);
                     attempts++;
                 }
 
-                await saveUserProfile(result.uid, suggestedUsername, result.email || undefined);
-                onAuthenticated(suggestedUsername);
+                await saveUserProfile(result.uid, finalUsername, result.email || undefined);
+                onAuthenticated(finalUsername);
             } else {
-                // Existing user - fetch their username
-                const { getUserProfile } = require('../services/userService');
+                // Existing user - fetch their profile
                 const profile = await getUserProfile(result.uid);
-                onAuthenticated(profile?.username);
+
+                if (profile?.username) {
+                    onAuthenticated(profile.username);
+                } else {
+                    // Edge case: existing user but no profile/username - create one now
+                    const fallbackUsername = 'user' + Math.floor(Math.random() * 100000);
+                    await saveUserProfile(result.uid, fallbackUsername, result.email || undefined);
+                    onAuthenticated(fallbackUsername);
+                }
             }
         } catch (e: any) {
             if (e.message !== 'Sign-in was cancelled') {

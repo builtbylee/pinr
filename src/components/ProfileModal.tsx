@@ -368,7 +368,9 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                                 )}
                                 <View style={styles.storyOverlay}>
                                     <Text style={styles.storyTitle} numberOfLines={2}>{item.locationName}</Text>
-                                    <Text style={styles.storyCount}>{item.status === 'visited' ? '✅ Visited' : '💭 Wishlist'}</Text>
+                                    <Text style={styles.storyCount}>
+                                        {item.status === 'visited' ? '✅ Visited' : item.status === 'booked' ? '✈️ Booked' : '💭 Wishlist'}
+                                    </Text>
                                 </View>
                             </TouchableOpacity>
                         ))}
@@ -498,12 +500,30 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                     onClose(); // Close profile modal too
                     onViewBucketListItem?.(item);
                 }}
+                onMarkBooked={async (item) => {
+                    if (!currentUserId) return;
+
+                    // Toggle: if already booked, set back to wishlist; otherwise mark as booked
+                    const newStatus = item.status === 'booked' ? 'wishlist' : 'booked';
+
+                    try {
+                        await updateBucketListStatus(currentUserId, item.locationName, newStatus);
+
+                        // Optimistic update for immediate UI feedback
+                        setBucketList(prev => prev.map(b =>
+                            b.locationName === item.locationName
+                                ? { ...b, status: newStatus }
+                                : b
+                        ));
+
+                        // Update the selected item so modal shows new state
+                        setSelectedBucketItem({ ...item, status: newStatus });
+                    } catch (error) {
+                        console.error('Failed to update booked status:', error);
+                        Alert.alert('Error', 'Could not update status.');
+                    }
+                }}
                 onRemove={(item) => {
-                    // Ask confirmation, or just do it? User wants UI change, assume standard confirm is ok or better yet, built-in to modal? 
-                    // I put pure callback in modal. I should handle Alert here or simple remove. 
-                    // Let's do Alert here for safety, or just remove. 
-                    // The previous flow had "Remove" -> "Confirm Remove".
-                    // I'll add the Alert here to maintain safety.
                     Alert.alert(
                         "Remove from Bucket List?",
                         `Are you sure you want to remove ${item.locationName}?`,

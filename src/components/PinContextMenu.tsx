@@ -69,12 +69,12 @@ export const PinContextMenu: React.FC<PinContextMenuProps> = ({
                                         {/* Owner Actions */}
                                         <TouchableOpacity style={styles.actionItem} onPress={onEdit}>
                                             <Feather name="edit-2" size={20} color="#007AFF" />
-                                            <Text style={styles.actionText}>Edit Journey</Text>
+                                            <Text style={styles.actionText}>Edit Pin</Text>
                                         </TouchableOpacity>
 
                                         <TouchableOpacity style={[styles.actionItem, styles.destructiveAction]} onPress={onDelete}>
                                             <Feather name="trash-2" size={20} color="#FF3B30" />
-                                            <Text style={[styles.actionText, styles.destructiveText]}>Delete Journey</Text>
+                                            <Text style={[styles.actionText, styles.destructiveText]}>Delete Pin</Text>
                                         </TouchableOpacity>
                                     </>
                                 ) : (

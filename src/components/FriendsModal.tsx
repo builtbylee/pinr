@@ -155,7 +155,18 @@ export const FriendsModal: React.FC<FriendsModalProps> = ({ visible, onClose, on
     };
 
     const handleSendRequest = async (targetUser: { uid: string; username: string }) => {
-        if (!currentUserId || !username) return;
+        if (!currentUserId) return;
+
+        // User must have a username before sending friend requests
+        if (!username) {
+            Alert.alert(
+                'Update Your Profile',
+                'Please update your username in your profile before adding friends. Tap your profile picture to get started!',
+                [{ text: 'Got it' }]
+            );
+            return;
+        }
+
         try {
             const result = await sendFriendRequest(currentUserId, username, targetUser.uid);
             if (result.success) {

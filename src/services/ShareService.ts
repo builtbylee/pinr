@@ -76,4 +76,43 @@ export const shareService = {
             return false;
         }
     },
+
+    /**
+     * Share a game score with challenge link
+     */
+    async shareGameScore(
+        gameType: 'pindrop' | 'flagdash' | 'travelbattle',
+        score: number,
+        difficulty: string
+    ): Promise<boolean> {
+        try {
+            const gameNames: Record<string, string> = {
+                pindrop: 'Pin Drop',
+                flagdash: 'Flag Dash',
+                travelbattle: 'Travel Battle',
+            };
+
+            const gameEmojis: Record<string, string> = {
+                pindrop: '📍',
+                flagdash: '🏁',
+                travelbattle: '🌍',
+            };
+
+            const gameName = gameNames[gameType] || 'Pinr Game';
+            const emoji = gameEmojis[gameType] || '🎮';
+
+            const message = `${emoji} I just scored ${score.toLocaleString()} points in ${gameName} (${difficulty})!\n\nCan you beat my score? 🏆\n\nDownload Pinr: ${APP_STORE_URL}`;
+
+            await Share.share({
+                message: message,
+                title: `${score} points in ${gameName}!`,
+            });
+
+            console.log('[ShareService] Game score shared successfully');
+            return true;
+        } catch (error) {
+            console.error('[ShareService] Share game score failed:', error);
+            return false;
+        }
+    },
 };

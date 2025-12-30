@@ -759,6 +759,18 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                 </View>
                             </View>
                         </View>
+                        <TouchableOpacity style={styles.settingRow} onPress={() => {
+                            Linking.openURL('https://opentdb.com');
+                        }}>
+                            <View style={styles.settingInfo}>
+                                <Feather name="award" size={22} color="#1a1a1a" />
+                                <View style={styles.settingText}>
+                                    <Text style={styles.settingLabel}>Trivia Questions</Text>
+                                    <Text style={styles.settingValue}>Powered by Open Trivia Database</Text>
+                                </View>
+                            </View>
+                            <Feather name="external-link" size={22} color="rgba(0,0,0,0.3)" />
+                        </TouchableOpacity>
                     </View>
 
                     {/* Help & Legal */}

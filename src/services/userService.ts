@@ -11,7 +11,7 @@ export interface BucketListItem {
     locationName: string; // "Takoradi, Ghana"
     location: [number, number]; // [lon, lat]
     imageUrl?: string;
-    status: 'wishlist' | 'visited';
+    status: 'wishlist' | 'booked' | 'visited';
     addedAt: number; // Timestamp
 }
 
@@ -999,6 +999,10 @@ export const addToBucketList = async (uid: string, item: BucketListItem): Promis
             bucketList: firestore.FieldValue.arrayUnion(item),
             updatedAt: firestore.Timestamp.now(),
         });
+
+        // Invalidate cache so profile reads return fresh data
+        invalidateProfileCache(uid);
+
         console.log('[UserService] Added to bucket list:', item.locationName);
     } catch (error) {
         console.error('[UserService] Add to bucket list failed:', error);
@@ -1017,6 +1021,11 @@ export const removeFromBucketList = async (uid: string, item: BucketListItem): P
             bucketList: firestore.FieldValue.arrayRemove(item),
             updatedAt: firestore.Timestamp.now(),
         });
+
+        // Invalidate cache so profile reads return fresh data
+        invalidateProfileCache(uid);
+
+        console.log('[UserService] Removed from bucket list:', item.locationName);
     } catch (error) {
         console.error('[UserService] Remove from bucket list failed:', error);
         throw error;
@@ -1126,7 +1135,7 @@ export const checkExplorationStreak = async (uid: string): Promise<ExploreStreak
  * Update the status of a bucket list item (Wishlist <-> Visited)
  * Matches by locationName
  */
-export const updateBucketListStatus = async (uid: string, locationName: string, newStatus: 'wishlist' | 'visited'): Promise<void> => {
+export const updateBucketListStatus = async (uid: string, locationName: string, newStatus: 'wishlist' | 'booked' | 'visited'): Promise<void> => {
     try {
         const userRef = firestore().collection(USERS_COLLECTION).doc(uid);
         const doc = await userRef.get();
@@ -1144,6 +1153,10 @@ export const updateBucketListStatus = async (uid: string, locationName: string, 
             bucketList: updatedList,
             updatedAt: firestore.Timestamp.now(),
         });
+
+        // Invalidate cache so profile reads return fresh data
+        invalidateProfileCache(uid);
+
         console.log(`[UserService] Updated bucketlist status for ${locationName} to ${newStatus}`);
     } catch (error) {
         console.error('[UserService] Update bucketlist status failed:', error);

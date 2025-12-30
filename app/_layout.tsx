@@ -18,7 +18,16 @@ import { useBanCheck } from '@/src/hooks/useBanCheck';
 // Initialize App Check early (before any Firebase calls)
 initializeAppCheck();
 
-import { useFonts, BebasNeue_400Regular } from '@expo-google-fonts/bebas-neue';
+// Safe font loading import with fallback
+let useFonts: any;
+let BebasNeue_400Regular: any;
+try {
+  const fontModule = require('@expo-google-fonts/bebas-neue');
+  useFonts = fontModule.useFonts;
+  BebasNeue_400Regular = fontModule.BebasNeue_400Regular;
+} catch (e) {
+  console.warn('[Layout] Font module failed to load:', e);
+}
 
 // Suppress known non-critical warnings
 LogBox.ignoreLogs([
@@ -46,9 +55,11 @@ OneSignal.Notifications.requestPermission(true);
 export default function RootLayout() {
   const [isInitializing, setIsInitializing] = useState(true);
   const [session, setSession] = useState<string | null>(null);
-  const [fontsLoaded] = useFonts({
-    BebasNeue_400Regular,
-  });
+
+  // Safe font loading with fallback if useFonts is unavailable
+  const [fontsLoaded] = useFonts
+    ? useFonts({ BebasNeue_400Regular })
+    : [true]; // If fonts can't load, don't block the app
 
   const setCurrentUserId = useMemoryStore((state) => state.setCurrentUserId);
 

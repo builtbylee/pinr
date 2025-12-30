@@ -15,6 +15,7 @@ interface BucketListActionModalProps {
     isOwner: boolean;
     onView: (item: BucketListItem) => void;
     onRemove: (item: BucketListItem) => void;
+    onMarkBooked?: (item: BucketListItem) => void;
 }
 
 export const BucketListActionModal: React.FC<BucketListActionModalProps> = ({
@@ -23,7 +24,8 @@ export const BucketListActionModal: React.FC<BucketListActionModalProps> = ({
     item,
     isOwner,
     onView,
-    onRemove
+    onRemove,
+    onMarkBooked
 }) => {
     if (!item) return null;
 
@@ -62,12 +64,14 @@ export const BucketListActionModal: React.FC<BucketListActionModalProps> = ({
 
                         </View>
 
-                        <Text style={styles.subtitle}>
-                            {item.countryName || "Unknown Country"}
-                        </Text>
+                        {/* Only show country if it exists and is different from location name */}
+                        {item.countryName && item.countryName !== item.locationName && (
+                            <Text style={styles.subtitle}>
+                                {item.countryName}
+                            </Text>
+                        )}
 
                         <View style={styles.divider} />
-
 
 
                         <View style={styles.actionRow}>
@@ -78,6 +82,23 @@ export const BucketListActionModal: React.FC<BucketListActionModalProps> = ({
                                 <Feather name="map-pin" size={18} color="white" style={{ marginRight: 8 }} />
                                 <Text style={styles.primaryButtonText}>Explore Location</Text>
                             </TouchableOpacity>
+
+                            {isOwner && onMarkBooked && (
+                                <TouchableOpacity
+                                    style={[styles.button, item.status === 'booked' ? styles.bookedButton : styles.bookButton]}
+                                    onPress={() => onMarkBooked(item)}
+                                >
+                                    <Feather
+                                        name={item.status === 'booked' ? "check-circle" : "calendar"}
+                                        size={18}
+                                        color={item.status === 'booked' ? "#10B981" : "#4F46E5"}
+                                        style={{ marginRight: 8 }}
+                                    />
+                                    <Text style={item.status === 'booked' ? styles.bookedButtonText : styles.bookButtonText}>
+                                        {item.status === 'booked' ? "Booked ✓" : "Mark as Booked"}
+                                    </Text>
+                                </TouchableOpacity>
+                            )}
 
                             {isOwner && (
                                 <TouchableOpacity
@@ -211,6 +232,26 @@ const styles = StyleSheet.create({
     },
     secondaryButtonText: {
         color: '#FF3B30',
+        fontSize: 16,
+        fontWeight: '600',
+    },
+    bookButton: {
+        backgroundColor: '#EEF2FF',
+        borderWidth: 1,
+        borderColor: '#C7D2FE',
+    },
+    bookButtonText: {
+        color: '#4F46E5',
+        fontSize: 16,
+        fontWeight: '600',
+    },
+    bookedButton: {
+        backgroundColor: '#ECFDF5',
+        borderWidth: 1,
+        borderColor: '#A7F3D0',
+    },
+    bookedButtonText: {
+        color: '#10B981',
         fontSize: 16,
         fontWeight: '600',
     },
