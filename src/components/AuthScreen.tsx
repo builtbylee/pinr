@@ -2,10 +2,11 @@ import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import * as SplashScreen from 'expo-splash-screen';
 import { Image } from 'expo-image';
 import React, { useState, useEffect } from 'react';
-import { Dimensions, StyleSheet, Text, TouchableOpacity, View, Alert, TextInput, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import { Dimensions, StyleSheet, Text, TouchableOpacity, View, Alert, TextInput, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, Modal } from 'react-native';
 import { signInEmailPassword, signUpWithEmail, signInWithGoogle, deleteCurrentUser } from '../services/authService';
 import Svg, { Path } from 'react-native-svg';
 import { saveUserProfile, isUsernameTaken, getEmailByUsername } from '../services/userService';
+import { sendPasswordReset } from '../services/authService';
 import { biometricService } from '../services/biometricService';
 
 
@@ -33,6 +34,13 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthenticated }) => {
     const [biometricAvailable, setBiometricAvailable] = useState(false);
     const [biometricType, setBiometricType] = useState<string>('Biometrics');
     const [hasSavedCredentials, setHasSavedCredentials] = useState(false);
+
+    // Forgot Password State
+    const [showForgotPassword, setShowForgotPassword] = useState(false);
+    const [forgotEmail, setForgotEmail] = useState('');
+    const [forgotLoading, setForgotLoading] = useState(false);
+    const [forgotMessage, setForgotMessage] = useState<string | null>(null);
+    const [forgotError, setForgotError] = useState<string | null>(null);
 
     // Check biometrics and hide splash on mount
     useEffect(() => {
@@ -259,6 +267,31 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthenticated }) => {
         setMode(mode === 'login' ? 'signup' : 'login');
     };
 
+    const handleForgotPassword = async () => {
+        if (!forgotEmail.trim()) {
+            setForgotError('Please enter your email address');
+            return;
+        }
+        if (!forgotEmail.includes('@')) {
+            setForgotError('Please enter a valid email address');
+            return;
+        }
+
+        setForgotLoading(true);
+        setForgotError(null);
+        setForgotMessage(null);
+
+        try {
+            await sendPasswordReset(forgotEmail.trim());
+            setForgotMessage('If an account exists with this email, a password reset link has been sent.');
+            setForgotEmail('');
+        } catch (e: any) {
+            setForgotError(e.message || 'Failed to send reset email');
+        } finally {
+            setForgotLoading(false);
+        }
+    };
+
     const renderForm = (isLogin: boolean) => (
         <View style={styles.contentContainer}>
             {/* Share your Journey text removed */}
@@ -321,6 +354,23 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthenticated }) => {
                     </TouchableOpacity>
                 </View>
             </View>
+
+            {/* Forgot Password Link - Login only */}
+            {isLogin && (
+                <TouchableOpacity
+                    style={{ alignSelf: 'flex-end', marginTop: 8, marginBottom: 8 }}
+                    onPress={() => {
+                        setShowForgotPassword(true);
+                        setForgotEmail(emailOrUsername.includes('@') ? emailOrUsername : '');
+                        setForgotError(null);
+                        setForgotMessage(null);
+                    }}
+                >
+                    <Text style={{ color: '#4F46E5', fontSize: 14, fontWeight: '500' }}>
+                        Forgot Password?
+                    </Text>
+                </TouchableOpacity>
+            )}
 
             {error && <Text style={styles.errorText}>{error}</Text>}
 
@@ -430,6 +480,109 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthenticated }) => {
                     {renderForm(mode === 'login')}
                 </ScrollView>
             </KeyboardAvoidingView>
+
+            {/* Forgot Password Modal */}
+            <Modal
+                visible={showForgotPassword}
+                transparent
+                animationType="fade"
+                onRequestClose={() => setShowForgotPassword(false)}
+            >
+                <View style={{
+                    flex: 1,
+                    backgroundColor: 'rgba(0,0,0,0.5)',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    padding: 24,
+                }}>
+                    <View style={{
+                        backgroundColor: 'white',
+                        borderRadius: 20,
+                        padding: 24,
+                        width: '100%',
+                        maxWidth: 340,
+                    }}>
+                        <Text style={{
+                            fontSize: 20,
+                            fontWeight: '700',
+                            color: '#1F2937',
+                            marginBottom: 8,
+                            textAlign: 'center',
+                        }}>Reset Password</Text>
+                        <Text style={{
+                            fontSize: 14,
+                            color: '#6B7280',
+                            marginBottom: 20,
+                            textAlign: 'center',
+                        }}>Enter your email address and we'll send you a link to reset your password.</Text>
+
+                        <TextInput
+                            style={{
+                                backgroundColor: '#F9FAFB',
+                                borderRadius: 12,
+                                paddingHorizontal: 16,
+                                paddingVertical: 14,
+                                fontSize: 16,
+                                borderWidth: 1,
+                                borderColor: '#E5E7EB',
+                                marginBottom: 16,
+                            }}
+                            placeholder="Email"
+                            placeholderTextColor="rgba(0,0,0,0.4)"
+                            value={forgotEmail}
+                            onChangeText={setForgotEmail}
+                            keyboardType="email-address"
+                            autoCapitalize="none"
+                            autoFocus
+                        />
+
+                        {forgotError && (
+                            <Text style={{ color: '#EF4444', fontSize: 14, marginBottom: 12, textAlign: 'center' }}>
+                                {forgotError}
+                            </Text>
+                        )}
+
+                        {forgotMessage && (
+                            <Text style={{ color: '#10B981', fontSize: 14, marginBottom: 12, textAlign: 'center' }}>
+                                {forgotMessage}
+                            </Text>
+                        )}
+
+                        <TouchableOpacity
+                            style={{
+                                backgroundColor: '#4F46E5',
+                                paddingVertical: 14,
+                                borderRadius: 12,
+                                marginBottom: 12,
+                            }}
+                            onPress={handleForgotPassword}
+                            disabled={forgotLoading}
+                        >
+                            {forgotLoading ? (
+                                <ActivityIndicator color="white" />
+                            ) : (
+                                <Text style={{ color: 'white', fontSize: 16, fontWeight: '600', textAlign: 'center' }}>
+                                    Send Reset Link
+                                </Text>
+                            )}
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                            style={{ paddingVertical: 10 }}
+                            onPress={() => {
+                                setShowForgotPassword(false);
+                                setForgotEmail('');
+                                setForgotError(null);
+                                setForgotMessage(null);
+                            }}
+                        >
+                            <Text style={{ color: '#6B7280', fontSize: 14, textAlign: 'center' }}>
+                                Cancel
+                            </Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </Modal>
         </View>
     );
 };
