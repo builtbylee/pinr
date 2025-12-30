@@ -1643,9 +1643,23 @@ export default function GameSandbox() {
 
         return (
             <View style={styles.gameContainer}>
-                {/* HUD - Outside Container */}
-                <View style={[styles.hud, { paddingHorizontal: 16 }]}>
+                {/* HUD - Matching Travel Battle layout */}
+                <View style={[styles.hud, { paddingHorizontal: 16, alignItems: 'center' }]}>
+                    <TouchableOpacity
+                        style={{
+                            width: 44,
+                            height: 44,
+                            borderRadius: 22,
+                            backgroundColor: '#EF4444',
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                        }}
+                        onPress={handleQuit}
+                    >
+                        <Feather name="x" size={24} color="white" />
+                    </TouchableOpacity>
                     <View style={styles.hudItem}>
+                        <Feather name="clock" size={20} color="#666" />
                         <Text style={[styles.hudText, state.timeLeft < 10 && styles.urgentText]}>
                             {state.timeLeft}s
                         </Text>
@@ -1661,20 +1675,6 @@ export default function GameSandbox() {
                         <Feather name="award" size={20} color="#4F46E5" />
                         <Text style={styles.hudText}>{state.score}</Text>
                     </View>
-                    <TouchableOpacity
-                        style={{
-                            width: 36,
-                            height: 36,
-                            borderRadius: 18,
-                            backgroundColor: '#EF4444',
-                            justifyContent: 'center',
-                            alignItems: 'center',
-                            marginLeft: 8,
-                        }}
-                        onPress={handleQuit}
-                    >
-                        <Feather name="x" size={18} color="white" />
-                    </TouchableOpacity>
                 </View>
 
                 {/* Main Container Card */}
