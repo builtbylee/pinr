@@ -354,12 +354,18 @@
             `;
 
             // 2. Render Action Buttons
-            // If journey, maybe change text to "Open Journey in Pinr"? User didn't explicitly ask for button text change, 
-            // but "Open in Pinr" is safe.
             document.getElementById('action-buttons').innerHTML = `
-                <a href="${deepLink}" class="btn-primary">Open in Pinr</a>
-                <a href="${APP_STORE_URL}" class="btn-secondary">Download Pinr</a>
+                <a href="${deepLink}" class="btn-primary">Sign In</a>
+                <a href="#" id="download-btn" class="btn-secondary">Download Pinr</a>
             `;
+
+            // Add click handler for Download button
+            document.getElementById('download-btn').addEventListener('click', function (e) {
+                e.preventDefault();
+                this.textContent = "Coming Soon";
+                this.style.background = "#555";
+                this.style.cursor = "default";
+            });
         }
 
         function showError(message) {
@@ -370,8 +376,14 @@
                 </div>
             `;
             document.getElementById('action-buttons').innerHTML = `
-                <a href="${APP_STORE_URL}" class="btn-secondary">Download Pinr</a>
+                <a href="#" id="download-btn-error" class="btn-secondary">Download Pinr</a>
             `;
+            document.getElementById('download-btn-error').addEventListener('click', function (e) {
+                e.preventDefault();
+                this.textContent = "Coming Soon";
+                this.style.background = "#555";
+                this.style.cursor = "default";
+            });
         }
 
         // Load on page ready

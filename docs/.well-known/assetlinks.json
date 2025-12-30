@@ -1,0 +1,14 @@
+[
+    {
+        "relation": [
+            "delegate_permission/common.handle_all_urls"
+        ],
+        "target": {
+            "namespace": "android_app",
+            "package_name": "com.builtbylee.app80days",
+            "sha256_cert_fingerprints": [
+                "96:0C:71:4C:8E:E1:8A:8D:93:89:47:3B:34:E2:02:16:3E:59:E7:22:E4:8A:48:40:09:2F:11:8C:EE:36:9B:3D"
+            ]
+        }
+    }
+]
