@@ -334,11 +334,6 @@ export const TravelBattleGame: React.FC<TravelBattleGameProps> = ({ difficulty, 
                 </View>
             </View>
 
-            {/* Progress Bar */}
-            <View style={styles.progressContainer}>
-                <View style={[styles.progressBar, { width: `${(state.timeLeft / 30) * 100}%` }]} />
-            </View>
-
             {/* Question Area */}
             <View style={styles.questionContainer}>
                 {/* Show flag image for flag questions */}
@@ -364,6 +359,23 @@ export const TravelBattleGame: React.FC<TravelBattleGameProps> = ({ difficulty, 
                     </View>
                 )}
                 <Text style={styles.questionText}>{state.currentQuestion.text}</Text>
+
+                {/* Progress Bar - matching Flag Dash */}
+                <View style={{
+                    height: 6,
+                    backgroundColor: '#E5E7EB',
+                    borderRadius: 3,
+                    marginTop: 12,
+                    overflow: 'hidden',
+                    width: '100%',
+                }}>
+                    <View style={{
+                        height: '100%',
+                        width: `${(state.timeLeft / 30) * 100}%`,
+                        backgroundColor: state.timeLeft < 10 ? '#EF4444' : '#10B981',
+                        borderRadius: 3,
+                    }} />
+                </View>
             </View>
 
             {/* Options Grid - Vertical Stack */}
@@ -543,11 +555,11 @@ const styles = StyleSheet.create({
         height: '100%',
     },
     questionText: {
-        fontSize: isSmallScreen ? 16 : 18,
-        fontWeight: '600',
-        color: '#1a1a1a',
+        fontSize: isSmallScreen ? 14 : 16,
+        fontWeight: '400',
+        color: '#1F2937',
         textAlign: 'center',
-        lineHeight: 28,
+        lineHeight: isSmallScreen ? 20 : 24,
     },
     optionsGrid: {
         flexDirection: 'column',
