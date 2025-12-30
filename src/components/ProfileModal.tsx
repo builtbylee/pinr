@@ -366,11 +366,20 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                                         <Feather name="map-pin" size={24} color="#ccc" />
                                     </View>
                                 )}
+                                <View style={[
+                                    styles.statusPill,
+                                    item.status === 'booked' ? styles.pillBooked :
+                                        item.status === 'visited' ? styles.pillVisited : styles.pillWishlist
+                                ]}>
+                                    <Text style={[
+                                        styles.statusPillText,
+                                        (item.status === 'booked' || item.status === 'visited') ? { color: 'white' } : { color: '#1F2937' }
+                                    ]}>
+                                        {item.status === 'visited' ? 'Visited' : item.status === 'booked' ? 'Booked' : 'Wishlist'}
+                                    </Text>
+                                </View>
                                 <View style={styles.storyOverlay}>
                                     <Text style={styles.storyTitle} numberOfLines={2}>{item.locationName}</Text>
-                                    <Text style={styles.storyCount}>
-                                        {item.status === 'visited' ? '✅ Visited' : item.status === 'booked' ? '✈️ Booked' : '💭 Wishlist'}
-                                    </Text>
                                 </View>
                             </TouchableOpacity>
                         ))}
@@ -879,5 +888,35 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         marginRight: 12,
+    },
+    // Floating Pill Styles
+    statusPill: {
+        position: 'absolute',
+        top: 8,
+        right: 8,
+        paddingVertical: 4,
+        paddingHorizontal: 8,
+        borderRadius: 12,
+        zIndex: 10,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.1,
+        shadowRadius: 2,
+        elevation: 2,
+    },
+    pillBooked: {
+        backgroundColor: '#10B981', // Emerald 500
+    },
+    pillVisited: {
+        backgroundColor: '#3B82F6', // Blue 500
+    },
+    pillWishlist: {
+        backgroundColor: 'rgba(255, 255, 255, 0.9)',
+        borderWidth: 1,
+        borderColor: 'rgba(0,0,0,0.05)',
+    },
+    statusPillText: {
+        fontSize: 10,
+        fontWeight: '700',
     },
 });
