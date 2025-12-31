@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { View, TextInput, StyleSheet, Dimensions, Platform, TouchableOpacity, Text, ScrollView, ActivityIndicator, Keyboard, BackHandler, Pressable } from 'react-native';
+import { View, TextInput, StyleSheet, Dimensions, Platform, TouchableOpacity, Text, ScrollView, ActivityIndicator, Keyboard, BackHandler, Pressable, Image } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
-import { searchPlaces, GeocodingResult } from '../services/geocodingService';
+import { GeocodingResult } from '../services/geocodingService';
+import { searchWikiPlaces } from '../services/wikiService';
 
 const { width } = Dimensions.get('window');
 
@@ -36,7 +37,8 @@ export const ExploreSearchBar: React.FC<ExploreSearchBarProps> = ({ visible, onC
         const timer = setTimeout(async () => {
             if (query.length >= 3) {
                 setLoading(true);
-                const places = await searchPlaces(query);
+                // Use Wikipedia Search for Explore Mode (Rich content + Images)
+                const places = await searchWikiPlaces(query);
                 setResults(places);
                 setLoading(false);
             } else {
@@ -103,8 +105,18 @@ export const ExploreSearchBar: React.FC<ExploreSearchBarProps> = ({ visible, onC
                                             setResults([]);
                                         }}
                                     >
-                                        <Feather name="map-pin" size={16} color="#000" style={{ marginRight: 10 }} />
-                                        <View>
+                                    >
+                                        {/* Thumbnail or Fallback Icon */}
+                                        {item.image ? (
+                                            <Image
+                                                source={{ uri: item.image }}
+                                                style={{ width: 40, height: 40, borderRadius: 8, marginRight: 10, backgroundColor: '#eee' }}
+                                            />
+                                        ) : (
+                                            <Feather name="map-pin" size={16} color="#000" style={{ marginRight: 10, marginLeft: 12 }} />
+                                        )}
+
+                                        <View style={{ flex: 1, justifyContent: 'center' }}>
                                             <Text style={styles.resultTitle}>{item.text}</Text>
                                             <Text style={styles.resultSubtitle}>{item.place_name}</Text>
                                         </View>

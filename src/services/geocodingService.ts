@@ -8,6 +8,7 @@ export interface GeocodingResult {
     place_name: string;     // e.g. "Paris, France"
     center: [number, number]; // [lon, lat]
     context?: any[];
+    image?: string; // Optional thumbnail URL (e.g. from Wiki)
 }
 
 export const searchPlaces = async (query: string): Promise<GeocodingResult[]> => {

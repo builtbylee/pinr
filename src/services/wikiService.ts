@@ -1,3 +1,5 @@
+import { GeocodingResult } from './geocodingService';
+
 /**
  * Service to fetch place details from Wikipedia and Wikivoyage
  * Strategy: Wikivoyage First (Better Scenic Photos) -> Wikipedia Second -> Filter Flags/Maps
@@ -51,10 +53,51 @@ const searchWikiTitle = async (query: string): Promise<string | null> => {
         }
         return null;
     } catch (error) {
-        console.error('[WikiService] Title search failed:', error);
+        console.error('Wiki Service Error:', error);
         return null;
     }
-}
+};
+
+
+/**
+ * Search Wikipedia for places (with Coordinates & Images)
+ * Replaces Mapbox Geocoding for "Explore" mode to ensure rich content.
+ */
+export const searchWikiPlaces = async (query: string): Promise<GeocodingResult[]> => {
+    if (!query || query.length < 3) return [];
+
+    try {
+        // Query API: Get Title, Coords, Thumbnail, Description
+        // generator=prefixsearch finds titles starting with query (Autocomplete style)
+        // prop=coordinates|pageimages|description get details
+        const url = `${WIKI_SEARCH_API}?action=query&generator=prefixsearch&gpssearch=${encodeURIComponent(query)}&gpslimit=20&prop=coordinates|pageimages|description|extracts&piprop=thumbnail&pithumbsize=200&exintro&explaintext&exsentences=1&format=json&origin=*`;
+
+        const response = await fetch(url);
+        const data = await response.json();
+
+        if (!data.query || !data.query.pages) return [];
+
+        // Map pages (Object to Array)
+        const pages = Object.values(data.query.pages);
+
+        // Filter out items WITHOUT coordinates (Critical for map placement)
+        // Wiki returns many pages without coords. We must discard them for Geocoding purposes.
+        const validPages = pages.filter((p: any) => p.coordinates && p.coordinates.length > 0);
+
+        return validPages.map((p: any) => ({
+            id: `wiki-${p.pageid}`,
+            text: p.title,
+            place_name: p.description || (p.extract ? p.extract.slice(0, 50) + '...' : 'Wikipedia Entry'),
+            center: [p.coordinates[0].lon, p.coordinates[0].lat], // Wiki returns [{ lat, lon }]
+            image: p.thumbnail?.source,
+            context: []
+        }));
+
+    } catch (error) {
+        console.error('[WikiService] Search failed:', error);
+        return [];
+    }
+};
 
 const fetchSummary = async (title: string, apiBase: string, sourceName: 'wikipedia' | 'wikivoyage'): Promise<WikiPlaceDetails | null> => {
     try {
