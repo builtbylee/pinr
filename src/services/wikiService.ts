@@ -72,14 +72,27 @@ export const searchWikiPlaces = async (query: string): Promise<GeocodingResult[]
         // prop=coordinates|pageimages|description get details
         const url = `${WIKI_SEARCH_API}?action=query&generator=prefixsearch&gpssearch=${encodeURIComponent(query)}&gpslimit=20&prop=coordinates|pageimages|description|extracts&piprop=thumbnail&pithumbsize=200&exintro&explaintext&exsentences=1&format=json&origin=*`;
 
-        const response = await fetch(url, { headers: { 'User-Agent': 'PrimalSingularity/1.0', 'Api-User-Agent': 'PrimalSingularity/1.0' } });
-        if (!response.ok) return [];
+        // Use Api-User-Agent to appease Wiki without conflicting with Native UA
+        const headers = {
+            'Api-User-Agent': 'PrimalSingularity/1.0 (Mobile App; Contact: support@primalsingularity.com)'
+        };
+
+        const response = await fetch(url, { headers });
+
+        if (!response.ok) {
+            console.warn('[WikiService] HTTP Error:', response.status);
+            return [];
+        }
+
         const data = await response.json();
 
         if (!data.query || !data.query.pages) return [];
 
         // Map pages (Object to Array)
         const pages = Object.values(data.query.pages);
+
+        // Sort by 'index' (Relevance) provided by Wiki
+        pages.sort((a: any, b: any) => (a.index || 999) - (b.index || 999));
 
         // Filter out items WITHOUT coordinates (Critical for map placement)
         // Wiki returns many pages without coords. We must discard them for Geocoding purposes.
