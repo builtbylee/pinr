@@ -1,4 +1,5 @@
 import { GeocodingResult } from './geocodingService';
+import { wikiSearchCache, wikiDetailsCache } from '../utils/cache';
 
 /**
  * Service to fetch place details from Wikipedia and Wikivoyage
@@ -70,6 +71,14 @@ const searchWikiTitle = async (query: string): Promise<string | null> => {
 export const searchWikiPlaces = async (query: string): Promise<GeocodingResult[]> => {
     if (!query || query.length < 3) return [];
 
+    // Check cache first
+    const cacheKey = query.toLowerCase().trim();
+    const cached = wikiSearchCache.get(cacheKey);
+    if (cached) {
+        console.log('[WikiService] Cache hit for:', query);
+        return cached;
+    }
+
     try {
         // Query API: Get Title, Coords, Thumbnail, Description
         // generator=prefixsearch finds titles starting with query (Autocomplete style)
@@ -99,7 +108,7 @@ export const searchWikiPlaces = async (query: string): Promise<GeocodingResult[]
         // Wiki returns many pages without coords. We must discard them for Geocoding purposes.
         const validPages = pages.filter((p: any) => p.coordinates && p.coordinates.length > 0);
 
-        return validPages.map((p: any) => ({
+        const results = validPages.map((p: any) => ({
             id: `wiki-${p.pageid}`,
             text: p.title,
             place_name: p.description || (p.extract ? p.extract.slice(0, 50) + '...' : 'Wikipedia Entry'),
@@ -108,6 +117,12 @@ export const searchWikiPlaces = async (query: string): Promise<GeocodingResult[]
             image: p.thumbnail?.source,
             context: []
         }));
+
+        // Cache the results
+        wikiSearchCache.set(cacheKey, results);
+        console.log('[WikiService] Cached results for:', query);
+
+        return results;
 
     } catch (error) {
         console.error('[WikiService] Search failed:', error);
