@@ -27,17 +27,19 @@ export interface WikiPlaceDetails {
     source?: 'wikipedia' | 'wikivoyage';
 }
 
+// Common headers for all Wiki requests to prevent 403 Blocks
+const WIKI_HEADERS = {
+    'User-Agent': 'PrimalSingularity/1.0 (Mobile App; Contact: support@primalsingularity.com)',
+    'Api-User-Agent': 'PrimalSingularity/1.0',
+    'Accept': 'application/json'
+};
+
 // Search for the correct Wikipedia page title first
 const searchWikiTitle = async (query: string): Promise<string | null> => {
     try {
-        const headers = {
-            'User-Agent': 'PrimalSingularity/1.0 (contact@primalsingularity.app)',
-            'Accept': 'application/json'
-        };
-
         const response = await fetch(
             `${WIKI_SEARCH_API}?action=opensearch&search=${encodeURIComponent(query)}&limit=1&format=json`,
-            { headers }
+            { headers: WIKI_HEADERS }
         );
 
         if (!response.ok) return null;
@@ -73,15 +75,7 @@ export const searchWikiPlaces = async (query: string): Promise<GeocodingResult[]
         // Note: Removed origin=* to avoid potential Native CORS confusion with specific headers
         const url = `${WIKI_SEARCH_API}?action=query&generator=prefixsearch&gpssearch=${encodeURIComponent(query)}&gpslimit=20&prop=coordinates|pageimages|description|extracts&piprop=thumbnail&pithumbsize=200&exintro&explaintext&exsentences=1&format=json`;
 
-        // Explicitly set User-Agent to override native default.
-        // Wiki requires a specific format.
-        const headers = {
-            'User-Agent': 'PrimalSingularity/1.0 (Mobile App; Contact: support@primalsingularity.com)',
-            'Api-User-Agent': 'PrimalSingularity/1.0',
-            'Accept': 'application/json'
-        };
-
-        const response = await fetch(url, { headers });
+        const response = await fetch(url, { headers: WIKI_HEADERS });
 
         if (!response.ok) {
             console.warn('[WikiService] HTTP Error:', response.status);
@@ -121,11 +115,7 @@ export const searchWikiPlaces = async (query: string): Promise<GeocodingResult[]
 
 const fetchSummary = async (title: string, apiBase: string, sourceName: 'wikipedia' | 'wikivoyage'): Promise<WikiPlaceDetails | null> => {
     try {
-        const headers = {
-            'User-Agent': 'PrimalSingularity/1.0 (contact@primalsingularity.app)',
-            'Accept': 'application/json'
-        };
-        const response = await fetch(`${apiBase}/summary/${encodeURIComponent(title)}`, { headers });
+        const response = await fetch(`${apiBase}/summary/${encodeURIComponent(title)}`, { headers: WIKI_HEADERS });
         if (!response.ok) return null;
 
         const data = await response.json();

@@ -110,6 +110,7 @@ export const ExploreSearchBar: React.FC<ExploreSearchBarProps> = ({ visible, onC
                                             <Image
                                                 source={{ uri: item.image }}
                                                 style={{ width: 40, height: 40, borderRadius: 8, marginRight: 10, backgroundColor: '#eee' }}
+                                                resizeMode="cover"
                                             />
                                         ) : (
                                             <Feather name="map-pin" size={16} color="#000" style={{ marginRight: 10, marginLeft: 12 }} />

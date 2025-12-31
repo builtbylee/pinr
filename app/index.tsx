@@ -1344,7 +1344,7 @@ export default function App() {
             >
                 {selectedExplorePlace && (
                     <ExploreInfoCard
-                        placeName={selectedExplorePlace.place_name}
+                        placeName={selectedExplorePlace.text}
                         location={selectedExplorePlace}
                         onClose={() => {
                             setIsExploreInfoVisible(false);
