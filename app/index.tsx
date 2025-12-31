@@ -40,7 +40,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import * as Haptics from 'expo-haptics';
 import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { StyleSheet, View, Text, Image, Alert, Linking, BackHandler, Dimensions, TouchableOpacity, AppState, LayoutAnimation, UIManager, Platform, ActivityIndicator, Modal } from 'react-native';
-import Animated, { useSharedValue, useAnimatedStyle, withSpring, withTiming, withRepeat, withSequence, Easing as ReanimatedEasing } from 'react-native-reanimated';
+import Animated, { useSharedValue, useAnimatedStyle, withSpring, withTiming, withRepeat, withSequence, withDelay, Easing as ReanimatedEasing } from 'react-native-reanimated';
 import { useMapClusters, Point } from '@/src/hooks/useMapClusters';
 import { ClusterPin } from '@/src/components/ClusterPin';
 import { ClusterListModal } from '@/src/components/ClusterListModal';
@@ -1054,10 +1054,10 @@ export default function App() {
             }
         }
 
-        // Show info card after camera arrival + pulse animation
+        // Show info card immediately after globe spin (2000ms) + glow animation (800ms)
         setTimeout(() => {
             setIsExploreInfoVisible(true);
-        }, 2500);
+        }, 2800);
     };
 
     // Explore Pulse & Glow Animation
@@ -1072,14 +1072,28 @@ export default function App() {
         pulseAnim.value = 1;
         glowAnim.value = 0;
 
-        // Main Pulse (Scale) - Single Heartbeat
-        pulseAnim.value = withSequence(
-            withTiming(1.3, { duration: 200, easing: ReanimatedEasing.out(ReanimatedEasing.ease) }),
-            withTiming(1, { duration: 200, easing: ReanimatedEasing.in(ReanimatedEasing.ease) })
+        // TIMING: Globe fly = 2000ms, then pulse/glow, then card
+        const GLOBE_FLY_DURATION = 2000;
+        const PULSE_DURATION = 400; // 200ms up + 200ms down
+        const GLOW_DURATION = 800;
+
+        // Main Pulse (Scale) - Single Heartbeat, DELAYED until after globe spin
+        pulseAnim.value = withDelay(
+            GLOBE_FLY_DURATION,
+            withSequence(
+                withTiming(1.3, { duration: 200, easing: ReanimatedEasing.out(ReanimatedEasing.ease) }),
+                withTiming(1, { duration: 200, easing: ReanimatedEasing.in(ReanimatedEasing.ease) })
+            )
         );
 
-        // Glow Ring (Radar Ping) - Run Once, longer duration for visibility
-        glowAnim.value = withTiming(1, { duration: 1500, easing: ReanimatedEasing.out(ReanimatedEasing.ease) });
+        // Glow Ring (Radar Ping) - DELAYED until after globe spin
+        glowAnim.value = withDelay(
+            GLOBE_FLY_DURATION,
+            withTiming(1, { duration: GLOW_DURATION, easing: ReanimatedEasing.out(ReanimatedEasing.ease) })
+        );
+
+        // Show card immediately after glow completes
+        // Total wait = GLOBE_FLY_DURATION + GLOW_DURATION = 2800ms
     }, [selectedExplorePlace]);
 
     const pulseAnimatedStyle = useAnimatedStyle(() => ({
