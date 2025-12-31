@@ -1054,10 +1054,10 @@ export default function App() {
             }
         }
 
-        // Show info card after arrival (roughly)
+        // Show info card after camera arrival + pulse animation
         setTimeout(() => {
             setIsExploreInfoVisible(true);
-        }, 800);
+        }, 2500);
     };
 
     // Explore Pulse & Glow Animation
@@ -1078,8 +1078,8 @@ export default function App() {
             withTiming(1, { duration: 200, easing: ReanimatedEasing.in(ReanimatedEasing.ease) })
         );
 
-        // Glow Ring (Radar Ping) - Run Once
-        glowAnim.value = withTiming(1, { duration: 800, easing: ReanimatedEasing.out(ReanimatedEasing.ease) });
+        // Glow Ring (Radar Ping) - Run Once, longer duration for visibility
+        glowAnim.value = withTiming(1, { duration: 1500, easing: ReanimatedEasing.out(ReanimatedEasing.ease) });
     }, [selectedExplorePlace]);
 
     const pulseAnimatedStyle = useAnimatedStyle(() => ({
@@ -1088,7 +1088,7 @@ export default function App() {
 
     const glowRingStyle = useAnimatedStyle(() => ({
         opacity: 1 - glowAnim.value, // Fade out
-        transform: [{ scale: 1 + glowAnim.value * 1.5 }], // Scale 1 -> 2.5
+        transform: [{ scale: 1 + glowAnim.value * 3 }], // Scale 1 -> 4 (more visible)
     }));
 
 

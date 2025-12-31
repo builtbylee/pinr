@@ -45,7 +45,7 @@ export const ExploreSearchBar: React.FC<ExploreSearchBarProps> = ({ visible, onC
             } else {
                 setResults([]);
             }
-        }, 500);
+        }, 300);
 
         return () => clearTimeout(timer);
     }, [query]);
