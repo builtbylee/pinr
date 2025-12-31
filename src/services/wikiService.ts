@@ -70,17 +70,22 @@ export const searchWikiPlaces = async (query: string): Promise<GeocodingResult[]
         // Query API: Get Title, Coords, Thumbnail, Description
         // generator=prefixsearch finds titles starting with query (Autocomplete style)
         // prop=coordinates|pageimages|description get details
-        const url = `${WIKI_SEARCH_API}?action=query&generator=prefixsearch&gpssearch=${encodeURIComponent(query)}&gpslimit=20&prop=coordinates|pageimages|description|extracts&piprop=thumbnail&pithumbsize=200&exintro&explaintext&exsentences=1&format=json&origin=*`;
+        // Note: Removed origin=* to avoid potential Native CORS confusion with specific headers
+        const url = `${WIKI_SEARCH_API}?action=query&generator=prefixsearch&gpssearch=${encodeURIComponent(query)}&gpslimit=20&prop=coordinates|pageimages|description|extracts&piprop=thumbnail&pithumbsize=200&exintro&explaintext&exsentences=1&format=json`;
 
-        // Use Api-User-Agent to appease Wiki without conflicting with Native UA
+        // Explicitly set User-Agent to override native default.
+        // Wiki requires a specific format.
         const headers = {
-            'Api-User-Agent': 'PrimalSingularity/1.0 (Mobile App; Contact: support@primalsingularity.com)'
+            'User-Agent': 'PrimalSingularity/1.0 (Mobile App; Contact: support@primalsingularity.com)',
+            'Api-User-Agent': 'PrimalSingularity/1.0',
+            'Accept': 'application/json'
         };
 
         const response = await fetch(url, { headers });
 
         if (!response.ok) {
             console.warn('[WikiService] HTTP Error:', response.status);
+            // We return empty array on failure, which results in "No List" in UI.
             return [];
         }
 
