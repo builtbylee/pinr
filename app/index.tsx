@@ -259,39 +259,39 @@ export default function App() {
     const startAutoRotate = (currentCenter: [number, number]) => {
         if (isExploreInfoVisible || !cameraRef.current) return;
 
-        // Rotate Earth Left-to-Right (Camera moves West)
-        // Subtract Longitude (e.g. 0 -> -360) causes Camera to move West.
-        // Surface moves East (Left-to-Right).
+        // Continuous Westward Drift (Left-to-Right ground)
+        // We use -170 degrees to stay valid-ish, and loop.
+        // Duration: 60s for 170 degrees ~ 3 deg/s.
         cameraRef.current.setCamera({
-            centerCoordinate: [currentCenter[0] - 1000, currentCenter[1]],
-            animationDuration: 400000, // Very slow continuous drift
+            centerCoordinate: [currentCenter[0] - 170, currentCenter[1]],
+            animationDuration: 60000,
             animationMode: 'linear'
         });
     };
 
     const stopAutoRotate = () => {
         if (autoRotateTimer.current) clearTimeout(autoRotateTimer.current);
-        // We don't force stop animation here because gesture handles it naturally?
-        // Actually, if we touch, Mapbox stops. If we don't, we want it to stop.
-        // We can force a stop by setting camera to current?
-        // But let's trust gesture interrupt.
     };
 
     // Helper: Mapbox region change handler
     const onRegionDidChange = async (feature: any) => {
         if (!feature || !feature.properties) return;
 
-        // Restart Auto-Rotate Timer (Idle for 2s)
+        // Auto-Rotate Loop Logic
+        const isUserInteraction = feature.properties.isUserInteraction;
+        const delay = isUserInteraction ? 2000 : 50; // Resume quickly if just animation cycle
+
         stopAutoRotate();
         autoRotateTimer.current = setTimeout(() => {
             const center = feature.geometry.coordinates;
-            // Only rotate if zoomed out (Globe View)
-            // Zoom < 4? current zoom needs to be fetched but we have it in state 'zoomLevel' roughly?
-            // Actually let's fetch zoom.
+            // Only auto-rotate if we are in "Global View" (Zoom < 4).
+            // We can check the zoom from the feature or map state?
+            // Existing logic has zoom state.
+            // Let's assume safe to rotate if not ExploreInfoVisible.
             startAutoRotate(center);
-        }, 2000);
+        }, delay);
 
-        // Clear existing timer
+        // Clear existing timer (Debounce)
         if (regionUpdateTimeout.current) {
             clearTimeout(regionUpdateTimeout.current);
         }
@@ -1142,7 +1142,12 @@ export default function App() {
                     SplashScreen.hideAsync();
                 }}
                 decelerationRate={0.999}
-                onRegionWillChange={() => stopAutoRotate()}
+                onRegionWillChange={(feature: any) => {
+                    // Only stop if user is interacting
+                    if (feature?.properties?.isUserInteraction) {
+                        stopAutoRotate();
+                    }
+                }}
                 onRegionDidChange={onRegionDidChange}
             >
 
