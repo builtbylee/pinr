@@ -105,7 +105,6 @@ export const ExploreSearchBar: React.FC<ExploreSearchBarProps> = ({ visible, onC
                                             setResults([]);
                                         }}
                                     >
-                                    >
                                         {/* Thumbnail or Fallback Icon */}
                                         {item.image ? (
                                             <Image

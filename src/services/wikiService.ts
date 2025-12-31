@@ -107,7 +107,8 @@ export const searchWikiPlaces = async (query: string): Promise<GeocodingResult[]
             id: `wiki-${p.pageid}`,
             text: p.title,
             place_name: p.description || (p.extract ? p.extract.slice(0, 50) + '...' : 'Wikipedia Entry'),
-            center: [p.coordinates[0].lon, p.coordinates[0].lat], // Wiki returns [{ lat, lon }]
+            // Ensure coordinates are Numbers to prevent Native Module crashes
+            center: [Number(p.coordinates[0].lon), Number(p.coordinates[0].lat)],
             image: p.thumbnail?.source,
             context: []
         }));
