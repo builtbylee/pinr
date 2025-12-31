@@ -253,9 +253,42 @@ export default function App() {
     // Debounce timer for region updates
     const regionUpdateTimeout = useRef<NodeJS.Timeout | null>(null);
 
+    // Auto-Rotate Logic
+    const autoRotateTimer = useRef<NodeJS.Timeout | null>(null);
+
+    const startAutoRotate = (currentCenter: [number, number]) => {
+        if (isExploreInfoVisible || !cameraRef.current) return;
+
+        // Rotate Earth (Move Camera East, so continents move West)
+        // 100 degrees per 60s
+        cameraRef.current.setCamera({
+            centerCoordinate: [currentCenter[0] + 180, currentCenter[1]],
+            animationDuration: 120000,
+            animationMode: 'linear'
+        });
+    };
+
+    const stopAutoRotate = () => {
+        if (autoRotateTimer.current) clearTimeout(autoRotateTimer.current);
+        // We don't force stop animation here because gesture handles it naturally?
+        // Actually, if we touch, Mapbox stops. If we don't, we want it to stop.
+        // We can force a stop by setting camera to current?
+        // But let's trust gesture interrupt.
+    };
+
     // Helper: Mapbox region change handler
     const onRegionDidChange = async (feature: any) => {
         if (!feature || !feature.properties) return;
+
+        // Restart Auto-Rotate Timer (Idle for 2s)
+        stopAutoRotate();
+        autoRotateTimer.current = setTimeout(() => {
+            const center = feature.geometry.coordinates;
+            // Only rotate if zoomed out (Globe View)
+            // Zoom < 4? current zoom needs to be fetched but we have it in state 'zoomLevel' roughly?
+            // Actually let's fetch zoom.
+            startAutoRotate(center);
+        }, 2000);
 
         // Clear existing timer
         if (regionUpdateTimeout.current) {
@@ -1041,10 +1074,10 @@ export default function App() {
             false
         );
 
-        // Glow Ring (Radar Ping)
+        // Glow Ring (Radar Ping) - Run Once
         glowAnim.value = withRepeat(
             withTiming(1, { duration: 1500, easing: ReanimatedEasing.out(ReanimatedEasing.ease) }),
-            -1,
+            1, // Run ONCE
             false
         );
     }, []);
@@ -1057,6 +1090,7 @@ export default function App() {
         opacity: 1 - glowAnim.value, // Fade out
         transform: [{ scale: 1 + glowAnim.value * 1.5 }], // Scale 1 -> 2.5
     }));
+
 
     // Helper to get hex color from pinColor name (magenta, etc)
     const getUserHexColor = () => colorMap[(pinColor || 'orange').toLowerCase()] || '#FF8C00';
@@ -1106,6 +1140,7 @@ export default function App() {
                 onDidFinishLoadingStyle={() => {
                     SplashScreen.hideAsync();
                 }}
+                onRegionWillChange={() => stopAutoRotate()}
                 onRegionDidChange={onRegionDidChange}
             >
 
