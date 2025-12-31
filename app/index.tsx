@@ -259,11 +259,12 @@ export default function App() {
     const startAutoRotate = (currentCenter: [number, number]) => {
         if (isExploreInfoVisible || !cameraRef.current) return;
 
-        // Rotate Earth (Move Camera East, so continents move West)
-        // 100 degrees per 60s
+        // Rotate Earth Left-to-Right (Camera moves West)
+        // Subtract Longitude (e.g. 0 -> -360) causes Camera to move West.
+        // Surface moves East (Left-to-Right).
         cameraRef.current.setCamera({
-            centerCoordinate: [currentCenter[0] + 180, currentCenter[1]],
-            animationDuration: 120000,
+            centerCoordinate: [currentCenter[0] - 1000, currentCenter[1]],
+            animationDuration: 400000, // Very slow continuous drift
             animationMode: 'linear'
         });
     };
@@ -1140,6 +1141,7 @@ export default function App() {
                 onDidFinishLoadingStyle={() => {
                     SplashScreen.hideAsync();
                 }}
+                decelerationRate={0.999}
                 onRegionWillChange={() => stopAutoRotate()}
                 onRegionDidChange={onRegionDidChange}
             >
