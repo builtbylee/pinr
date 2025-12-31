@@ -40,7 +40,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import * as Haptics from 'expo-haptics';
 import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { StyleSheet, View, Text, Image, Alert, Linking, BackHandler, Dimensions, TouchableOpacity, AppState, LayoutAnimation, UIManager, Platform, ActivityIndicator, Modal } from 'react-native';
-import Animated, { useSharedValue, useAnimatedStyle, withSpring, withTiming, withRepeat, Easing as ReanimatedEasing } from 'react-native-reanimated';
+import Animated, { useSharedValue, useAnimatedStyle, withSpring, withTiming, withRepeat, withSequence, Easing as ReanimatedEasing } from 'react-native-reanimated';
 import { useMapClusters, Point } from '@/src/hooks/useMapClusters';
 import { ClusterPin } from '@/src/components/ClusterPin';
 import { ClusterListModal } from '@/src/components/ClusterListModal';
