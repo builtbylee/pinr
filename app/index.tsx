@@ -1023,7 +1023,7 @@ export default function App() {
         // Show info card after arrival (roughly)
         setTimeout(() => {
             setIsExploreInfoVisible(true);
-        }, 2000);
+        }, 800);
     };
 
     // Explore Pulse & Glow Animation
@@ -1031,11 +1031,14 @@ export default function App() {
     const glowAnim = useSharedValue(0);
 
     useEffect(() => {
-        // Main Pulse (Scale)
+        // Main Pulse (Scale) - Single Heartbeat
         pulseAnim.value = withRepeat(
-            withTiming(1.2, { duration: 1500, easing: ReanimatedEasing.ease }),
-            -1,
-            true
+            withSequence(
+                withTiming(1.3, { duration: 200, easing: ReanimatedEasing.out(ReanimatedEasing.ease) }),
+                withTiming(1, { duration: 200, easing: ReanimatedEasing.in(ReanimatedEasing.ease) })
+            ),
+            1, // Run once
+            false
         );
 
         // Glow Ring (Radar Ping)
