@@ -91,7 +91,7 @@ export const BucketListActionModal: React.FC<BucketListActionModalProps> = ({
                                     <Feather
                                         name={item.status === 'booked' ? "check-circle" : "calendar"}
                                         size={18}
-                                        color={item.status === 'booked' ? "#10B981" : "#4F46E5"}
+                                        color={item.status === 'booked' ? "#10B981" : "#1a1a1a"}
                                         style={{ marginRight: 8 }}
                                     />
                                     <Text style={item.status === 'booked' ? styles.bookedButtonText : styles.bookButtonText}>
@@ -236,12 +236,12 @@ const styles = StyleSheet.create({
         fontWeight: '600',
     },
     bookButton: {
-        backgroundColor: '#EEF2FF',
+        backgroundColor: '#FFFFFF',
         borderWidth: 1,
-        borderColor: '#C7D2FE',
+        borderColor: '#1a1a1a',
     },
     bookButtonText: {
-        color: '#4F46E5',
+        color: '#1a1a1a',
         fontSize: 16,
         fontWeight: '600',
     },
