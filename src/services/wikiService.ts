@@ -72,7 +72,8 @@ export const searchWikiPlaces = async (query: string): Promise<GeocodingResult[]
         // prop=coordinates|pageimages|description get details
         const url = `${WIKI_SEARCH_API}?action=query&generator=prefixsearch&gpssearch=${encodeURIComponent(query)}&gpslimit=20&prop=coordinates|pageimages|description|extracts&piprop=thumbnail&pithumbsize=200&exintro&explaintext&exsentences=1&format=json&origin=*`;
 
-        const response = await fetch(url);
+        const response = await fetch(url, { headers: { 'User-Agent': 'PrimalSingularity/1.0', 'Api-User-Agent': 'PrimalSingularity/1.0' } });
+        if (!response.ok) return [];
         const data = await response.json();
 
         if (!data.query || !data.query.pages) return [];
