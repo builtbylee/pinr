@@ -1065,23 +1065,22 @@ export default function App() {
     const glowAnim = useSharedValue(0);
 
     useEffect(() => {
+        // Only animate when a place is selected
+        if (!selectedExplorePlace) return;
+
+        // Reset animation values first
+        pulseAnim.value = 1;
+        glowAnim.value = 0;
+
         // Main Pulse (Scale) - Single Heartbeat
-        pulseAnim.value = withRepeat(
-            withSequence(
-                withTiming(1.3, { duration: 200, easing: ReanimatedEasing.out(ReanimatedEasing.ease) }),
-                withTiming(1, { duration: 200, easing: ReanimatedEasing.in(ReanimatedEasing.ease) })
-            ),
-            1, // Run once
-            false
+        pulseAnim.value = withSequence(
+            withTiming(1.3, { duration: 200, easing: ReanimatedEasing.out(ReanimatedEasing.ease) }),
+            withTiming(1, { duration: 200, easing: ReanimatedEasing.in(ReanimatedEasing.ease) })
         );
 
         // Glow Ring (Radar Ping) - Run Once
-        glowAnim.value = withRepeat(
-            withTiming(1, { duration: 1500, easing: ReanimatedEasing.out(ReanimatedEasing.ease) }),
-            1, // Run ONCE
-            false
-        );
-    }, []);
+        glowAnim.value = withTiming(1, { duration: 800, easing: ReanimatedEasing.out(ReanimatedEasing.ease) });
+    }, [selectedExplorePlace]);
 
     const pulseAnimatedStyle = useAnimatedStyle(() => ({
         transform: [{ scale: pulseAnim.value }],
