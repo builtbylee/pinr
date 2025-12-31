@@ -1,4 +1,4 @@
-const UNSPLASH_ACCESS_KEY = 'rFNlqCHJdsSgfm7qdipGVhQBc63hnawiBPazQUbH2qo';
+const UNSPLASH_ACCESS_KEY = 'rFNlqCHJdsSGfm7qdipGVhQBc63hnawiBPazQUbH2qo';
 const UNSPLASH_BASE_URL = 'https://api.unsplash.com';
 
 export interface UnsplashImage {
