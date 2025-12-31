@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { View, StyleSheet, Dimensions, Text, TouchableOpacity, ScrollView, ActivityIndicator, Pressable } from 'react-native';
+import { View, StyleSheet, Dimensions, Text, TouchableOpacity, ScrollView, ActivityIndicator, Pressable, Linking } from 'react-native';
 import { Image } from 'expo-image';
 import { Feather } from '@expo/vector-icons';
 import { getPlaceDetails, WikiPlaceDetails } from '../services/wikiService';
+import { searchUnsplashImage, UnsplashImage, triggerDownload } from '../services/unsplashService';
 
 import { useMemoryStore } from '../store/useMemoryStore';
 import { addToBucketList, getUserProfile } from '../services/userService';
@@ -19,6 +20,7 @@ interface ExploreInfoCardProps {
 
 export const ExploreInfoCard: React.FC<ExploreInfoCardProps> = ({ placeName, location, onClose }) => {
     const [details, setDetails] = useState<WikiPlaceDetails | null>(null);
+    const [unsplashImage, setUnsplashImage] = useState<UnsplashImage | null>(null);
     const [loading, setLoading] = useState(true);
     const [adding, setAdding] = useState(false);
     const [isInBucketList, setIsInBucketList] = useState(false);
@@ -26,14 +28,25 @@ export const ExploreInfoCard: React.FC<ExploreInfoCardProps> = ({ placeName, loc
     // Store access
     const { currentUserId, showToast } = useMemoryStore();
 
-    // 1. Fetch Details & Check Streak
+    // 1. Fetch Details & Unsplash Image
     useEffect(() => {
         const fetchDetails = async () => {
             setLoading(true);
-            // WikiService now handles splitting and permutations (e.g. "Takoradi, Ghana" -> attempts "Takoradi")
-            // So we pass the full name for maximum context.
-            const result = await getPlaceDetails(placeName);
-            setDetails(result);
+
+            // Parallel Fetch: Wiki Text + Unsplash Image
+            const [wikiResult, unsplashResult] = await Promise.all([
+                getPlaceDetails(placeName),
+                searchUnsplashImage(placeName)
+            ]);
+
+            setDetails(wikiResult);
+            setUnsplashImage(unsplashResult);
+
+            if (unsplashResult) {
+                // Ideally trigger download event for metrics, but optional for now
+                // triggerDownload(unsplashResult.downloadLocation); 
+            }
+
             setLoading(false);
         };
         fetchDetails();
@@ -65,7 +78,8 @@ export const ExploreInfoCard: React.FC<ExploreInfoCardProps> = ({ placeName, loc
                 locationName: placeName,
                 countryName: location.context?.find(c => c.id.startsWith('country'))?.text || '', // Fallback to empty string
                 location: location.center,
-                imageUrl: details?.thumbnail?.source || '', // Fallback to empty string
+                // Prioritize Unsplash Image for Bucket List too!
+                imageUrl: unsplashImage?.url || details?.thumbnail?.source || '',
                 status: 'wishlist',
                 addedAt: Date.now(),
             });
@@ -85,6 +99,9 @@ export const ExploreInfoCard: React.FC<ExploreInfoCardProps> = ({ placeName, loc
 
     const cardWidth = width * 0.9;
     const cardHeight = height * 0.75;
+
+    // Determine Image Source: Unsplash > Wiki > None
+    const imageSource = unsplashImage?.url || details?.originalimage?.source || details?.thumbnail?.source;
 
     return (
         <View style={styles.container} pointerEvents="box-none">
@@ -115,13 +132,26 @@ export const ExploreInfoCard: React.FC<ExploreInfoCardProps> = ({ placeName, loc
                         <>
                             {/* Photo Area */}
                             <View style={styles.imageContainer}>
-                                {details?.thumbnail ? (
-                                    <Image
-                                        source={{ uri: details.originalimage?.source || details.thumbnail.source }}
-                                        style={styles.image}
-                                        contentFit="cover"
-                                        transition={500}
-                                    />
+                                {imageSource ? (
+                                    <>
+                                        <Image
+                                            source={{ uri: imageSource }}
+                                            style={styles.image}
+                                            contentFit="cover"
+                                            transition={500}
+                                        />
+                                        {/* Unsplash Attribution Overlay */}
+                                        {unsplashImage && (
+                                            <TouchableOpacity
+                                                style={styles.attribution}
+                                                onPress={() => Linking.openURL(unsplashImage.photographer.url)}
+                                            >
+                                                <Text style={styles.attributionText}>
+                                                    Photo by {unsplashImage.photographer.name}
+                                                </Text>
+                                            </TouchableOpacity>
+                                        )}
+                                    </>
                                 ) : (
                                     <View style={styles.placeholderContainer}>
                                         <Feather name="image" size={40} color="gray" />
@@ -198,16 +228,7 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         color: '#1a1a1a',
     },
-    subheaderRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginTop: 4,
-        gap: 6,
-    },
-    locationSubheader: {
-        fontSize: 14,
-        color: 'rgba(0,0,0,0.6)',
-    },
+    // Subheader removed per request
     closeButton: {
         padding: 8,
         backgroundColor: 'rgba(0,0,0,0.05)',
@@ -223,10 +244,25 @@ const styles = StyleSheet.create({
         overflow: 'hidden',
         backgroundColor: '#f0f0f0',
         marginBottom: 16,
+        position: 'relative', // For absolute attribution
     },
     image: {
         width: '100%',
         height: '100%',
+    },
+    attribution: {
+        position: 'absolute',
+        bottom: 8,
+        left: 8,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        borderRadius: 8,
+    },
+    attributionText: {
+        color: 'white',
+        fontSize: 10,
+        fontWeight: '500',
     },
     placeholderContainer: {
         flex: 1,
