@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { View, TextInput, StyleSheet, Dimensions, Platform, TouchableOpacity, Text, ScrollView, ActivityIndicator, Keyboard, BackHandler, Pressable, Image } from 'react-native';
+import { View, TextInput, StyleSheet, Dimensions, Platform, TouchableOpacity, Text, ScrollView, ActivityIndicator, Keyboard, BackHandler, Pressable } from 'react-native';
+import { Image } from 'expo-image';
 import { Feather } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import { GeocodingResult } from '../services/geocodingService';
@@ -108,9 +109,10 @@ export const ExploreSearchBar: React.FC<ExploreSearchBarProps> = ({ visible, onC
                                         {/* Thumbnail or Fallback Icon */}
                                         {item.image ? (
                                             <Image
-                                                source={{ uri: item.image }}
+                                                source={item.image}
                                                 style={{ width: 40, height: 40, borderRadius: 8, marginRight: 10, backgroundColor: '#eee' }}
-                                                resizeMode="cover"
+                                                contentFit="cover"
+                                                transition={200}
                                             />
                                         ) : (
                                             <Feather name="map-pin" size={16} color="#000" style={{ marginRight: 10, marginLeft: 12 }} />

@@ -94,10 +94,6 @@ export const ExploreInfoCard: React.FC<ExploreInfoCardProps> = ({ placeName, loc
                 <View style={styles.header}>
                     <View style={{ flex: 1 }}>
                         <Text style={styles.mainTitle}>{details?.title || placeName}</Text>
-                        <View style={styles.subheaderRow}>
-                            <Feather name="map-pin" size={14} color="rgba(0,0,0,0.5)" />
-                            <Text style={styles.locationSubheader}>{placeName}</Text>
-                        </View>
                     </View>
                     <Pressable
                         onPress={onClose}
