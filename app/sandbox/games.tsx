@@ -1,6 +1,6 @@
 import firestore from '@react-native-firebase/firestore';
-import React, { useEffect, useState, useRef } from 'react';
-import { StyleSheet, Text, View, TouchableOpacity, Dimensions, SafeAreaView, ScrollView, Animated, Modal, ActivityIndicator, FlatList, BackHandler, PanResponder } from 'react-native';
+import React, { useEffect, useState, useRef, useMemo } from 'react';
+import { StyleSheet, Text, View, TouchableOpacity, Dimensions, SafeAreaView, ScrollView, Animated, Modal, ActivityIndicator, FlatList, BackHandler, PanResponder, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 import { Feather } from '@expo/vector-icons';
@@ -19,12 +19,12 @@ import { ChallengeFriendModal } from '../../src/components/ChallengeFriendModal'
 
 import { useMemoryStore } from '../../src/store/useMemoryStore';
 
-const { width, height } = Dimensions.get('window');
-const isSmallScreen = height < 700;
-
 export default function GameSandbox() {
     const insets = useSafeAreaInsets();
-    console.log('[GameSandbox] Rendering with insets:', insets);
+    const { width, height } = useWindowDimensions();
+    const isSmallScreen = height < 700;
+
+    console.log('[GameSandbox] Rendering with insets:', insets, 'and dimensions:', width, 'x', height);
     // Debug: Log all relevant state at render time
     // Persistence
     const activeGameId = useMemoryStore(state => state.activeGameId);
@@ -77,7 +77,7 @@ export default function GameSandbox() {
     // Tab swipe animation
     const tabTranslateX = useRef(new Animated.Value(0)).current;
 
-    const panResponder = useRef(
+    const panResponder = useMemo(() =>
         PanResponder.create({
             onMoveShouldSetPanResponder: (_, gestureState) => {
                 // Only respond to horizontal swipes > 10px
@@ -103,10 +103,8 @@ export default function GameSandbox() {
                         useNativeDriver: true,
                         tension: 50,
                         friction: 10,
-                    }).start(() => {
-                        setActiveTab('leaderboard');
-                        fetchLeaderboard();
-                    });
+                    }).start();
+                    setActiveTab('leaderboard');
                 } else if (activeTab === 'leaderboard' && gestureState.dx > swipeThreshold) {
                     // Swipe right to Home
                     Animated.spring(tabTranslateX, {
@@ -114,11 +112,10 @@ export default function GameSandbox() {
                         useNativeDriver: true,
                         tension: 50,
                         friction: 10,
-                    }).start(() => {
-                        setActiveTab('home');
-                    });
+                    }).start();
+                    setActiveTab('home');
                 } else {
-                    // Snap back
+                    // Reset to current tab
                     Animated.spring(tabTranslateX, {
                         toValue: activeTab === 'home' ? 0 : -width,
                         useNativeDriver: true,
@@ -127,8 +124,8 @@ export default function GameSandbox() {
                     }).start();
                 }
             },
-        })
-    ).current;
+        }),
+        [activeTab, width]);
 
     // Deep Link Logic & Persistence Hydration
     useEffect(() => {
@@ -2225,6 +2222,7 @@ export default function GameSandbox() {
 
                     {/* Animated Tab Container */}
                     <Animated.View
+                        {...panResponder.panHandlers}
                         style={{
                             flex: 1,
                             flexDirection: 'row',

@@ -1041,7 +1041,6 @@ export default function App() {
         if (cameraRef.current) {
             cameraRef.current.setCamera({
                 centerCoordinate: location.center,
-                zoomLevel: 4, // Increased zoom for better focus
                 animationDuration: 2000,
                 animationMode: 'flyTo',
             });
