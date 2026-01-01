@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState, useRef } from 'react';
-import { StyleSheet, View, Text, TouchableOpacity, Animated, useWindowDimensions } from 'react-native';
+import { StyleSheet, View, Text, TouchableOpacity, Animated, useWindowDimensions, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { Image } from 'expo-image';
@@ -322,7 +322,14 @@ export const TravelBattleGame: React.FC<TravelBattleGameProps> = ({ difficulty, 
         );
     }
 
-    if (!state.currentQuestion) return null;
+    if (!state.currentQuestion) {
+        return (
+            <View style={{ flex: 1, backgroundColor: '#F3F4F6', justifyContent: 'center', alignItems: 'center' }}>
+                <ActivityIndicator size="large" color="#F59E0B" />
+                <Text style={{ marginTop: 16, color: '#6B7280', fontWeight: '600' }}>Starting Game...</Text>
+            </View>
+        );
+    }
 
     return (
         <View style={[styles.container, { paddingBottom: Math.max(20, insets.bottom + 20) }]}>
