@@ -6,13 +6,11 @@
  */
 
 import React, { useState, useEffect, useRef } from 'react';
-import { StyleSheet, View, Text, TouchableOpacity, Dimensions, Modal, Animated, BackHandler, Image, ScrollView } from 'react-native';
+import { StyleSheet, View, Text, TouchableOpacity, Modal, Animated, BackHandler, Image, ScrollView, useWindowDimensions } from 'react-native';
 import Mapbox, { MapView, Camera, PointAnnotation, MarkerView } from '@rnmapbox/maps';
 import { Feather } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { pinDropService, PinDropState, PinDropDifficulty, RoundResult } from '../services/PinDropService';
-
-const { width, height } = Dimensions.get('window');
 
 // Globe style matching main app - 3D globe with labels hidden for game difficulty
 const GLOBE_STYLE = {
@@ -47,6 +45,8 @@ export const PinDropGame: React.FC<PinDropGameProps> = ({
     onGameOver,
     onQuit,
 }) => {
+    const { width, height } = useWindowDimensions();
+    const isSmallScreen = height < 700;
     const [state, setState] = useState<PinDropState>(pinDropService.getState());
     const [droppedPin, setDroppedPin] = useState<[number, number] | null>(null);
     const [roundResult, setRoundResult] = useState<RoundResult | null>(null);

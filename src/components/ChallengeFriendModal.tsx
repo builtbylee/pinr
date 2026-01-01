@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Modal, FlatList, TextInput, ActivityIndicator, Dimensions, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Modal, FlatList, TextInput, ActivityIndicator, ScrollView, useWindowDimensions } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
 
-const { width, height } = Dimensions.get('window');
+
 
 type GameType = 'flagdash' | 'pindrop' | 'travelbattle';
 type Difficulty = 'easy' | 'medium' | 'hard';
@@ -46,6 +46,7 @@ export const ChallengeFriendModal: React.FC<ChallengeFriendModalProps> = ({
     onSendChallenge,
     loadingFriends = false,
 }) => {
+    const { width, height } = useWindowDimensions();
     const animation = useSharedValue(0);
     const [searchQuery, setSearchQuery] = useState('');
     const [invitedIds, setInvitedIds] = useState<Set<string>>(new Set());
@@ -117,7 +118,7 @@ export const ChallengeFriendModal: React.FC<ChallengeFriendModalProps> = ({
                 </TouchableOpacity>
 
                 {/* Glass Card */}
-                <Animated.View style={[styles.cardContainer, animatedStyle]}>
+                <Animated.View style={[styles.cardContainer, animatedStyle, { width: width * 0.92, height: height * 0.8 }]}>
                     <View style={styles.glassCard}>
                         {/* Header */}
                         <View style={styles.header}>
@@ -313,8 +314,6 @@ const styles = StyleSheet.create({
         backgroundColor: 'rgba(0,0,0,0.5)',
     },
     cardContainer: {
-        width: width * 0.92,
-        height: height * 0.8,
         borderRadius: 24,
         overflow: 'hidden',
         shadowColor: "#000",

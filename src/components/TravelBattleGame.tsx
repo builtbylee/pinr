@@ -1,15 +1,12 @@
 
 import React, { useEffect, useState, useRef } from 'react';
-import { StyleSheet, View, Text, TouchableOpacity, Dimensions, Animated } from 'react-native';
+import { StyleSheet, View, Text, TouchableOpacity, Animated, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { gameService, GameState, Difficulty } from '@/src/services/GameService';
 import { getTriviaImage } from '@/src/data/triviaImages';
 import * as Haptics from 'expo-haptics';
-
-const { width, height } = Dimensions.get('window');
-const isSmallScreen = height < 700;
 
 interface TravelBattleGameProps {
     difficulty: Difficulty;
@@ -21,6 +18,10 @@ interface TravelBattleGameProps {
 }
 
 export const TravelBattleGame: React.FC<TravelBattleGameProps> = ({ difficulty, gameMode, onQuit, onGameMenu, onExit, onGameOver }) => {
+    const { width, height } = useWindowDimensions();
+    const isSmallScreen = height < 700;
+    const styles = React.useMemo(() => createStyles(isSmallScreen), [isSmallScreen]);
+
     const insets = useSafeAreaInsets();
     const [state, setState] = useState<GameState>(gameService.getState());
     const [selectedOptionId, setSelectedOptionId] = useState<string | null>(null);
@@ -506,7 +507,7 @@ const OptionButton = ({ option, selectedOptionId, lastAnswerCorrect, correctOpti
     );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (isSmallScreen: boolean) => StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#F3F4F6',
