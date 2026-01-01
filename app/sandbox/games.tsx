@@ -22,12 +22,12 @@ const PinDropGame = React.lazy(async () => {
     return { default: module.PinDropGame };
 });
 
-/*
 const TravelBattleGame = React.lazy(async () => {
     const module = await import('../../src/components/TravelBattleGame');
     return { default: module.TravelBattleGame };
 });
 
+/*
 const ChallengeFriendModal = React.lazy(async () => {
     const module = await import('../../src/components/ChallengeFriendModal');
     return { default: module.ChallengeFriendModal };
@@ -529,25 +529,24 @@ export default function GameSandbox() {
                         <Feather name="chevron-right" size={24} color="#F87171" />
                     </TouchableOpacity>
 
-                    {/* FLAG DASH */}
+                    {/* TRAVEL BATTLE (Test) - Replaces Flag Dash for Diagnostic */}
                     <TouchableOpacity
                         style={[styles.gameCard, { backgroundColor: '#EFF6FF', borderColor: '#BFDBFE' }]}
                         activeOpacity={0.9}
                         onPress={() => {
-                            // setState(prev => ({ ...prev, difficulty: 'medium' })); // Default
-                            // handleStart();
-                            console.log('Flag Dash pressed (disabled in Phase 2)');
+                            setPinDropDifficulty('medium');
+                            setSelectedGameType('travelbattle');
                         }}
                     >
                         <View style={[styles.gameIconContainer, { backgroundColor: '#3B82F6' }]}>
-                            <Feather name="flag" size={28} color="white" />
+                            <Feather name="globe" size={28} color="white" />
                         </View>
                         <View style={styles.gameInfo}>
-                            <Text style={[styles.gameTitle, { color: '#1E40AF' }]}>Flag Dash</Text>
-                            <Text style={styles.gameDescription}>Race against time to identify flags.</Text>
+                            <Text style={[styles.gameTitle, { color: '#1E40AF' }]}>Travel Battle</Text>
+                            <Text style={styles.gameDescription}>Test for crash (Phase 3.2)</Text>
                             <View style={styles.badgeRow}>
                                 <View style={[styles.badge, { backgroundColor: '#DBEAFE' }]}>
-                                    <Text style={[styles.badgeText, { color: '#1D4ED8' }]}>Fast Paced</Text>
+                                    <Text style={[styles.badgeText, { color: '#1D4ED8' }]}>Diagnostic</Text>
                                 </View>
                             </View>
                         </View>
@@ -606,6 +605,34 @@ export default function GameSandbox() {
                         }}
                         onQuit={() => {
                             setSelectedGameType(null);
+                        }}
+                    />
+                </React.Suspense>
+            )}
+
+            {/* Travel Battle Game (NEW - with Trivia) */}
+            {selectedGameType === 'travelbattle' && (
+                <React.Suspense fallback={<View style={styles.centerContainer}><ActivityIndicator size="large" color="#F59E0B" /></View>}>
+                    <TravelBattleGame
+                        difficulty={selectedDifficulty}
+                        gameMode="travelbattle"
+                        onGameOver={async (score) => {
+                            setState(prev => ({ ...prev, score, gameOver: true }));
+                            // Record streak
+                            const result = await streakService.recordGamePlayed();
+                            setDailyStreak(result.streak);
+                        }}
+                        onQuit={() => {
+                            handleQuit();
+                        }}
+                        onGameMenu={() => {
+                            gameService.stopGame();
+                            setSelectedGameType(null);
+                        }}
+                        onExit={() => {
+                            gameService.stopGame();
+                            setSelectedGameType(null);
+                            router.push('/' as any);
                         }}
                     />
                 </React.Suspense>
