@@ -11,7 +11,7 @@ import { leaderboardService, LeaderboardEntry } from '../../src/services/Leaderb
 import { challengeService, GameChallenge } from '../../src/services/ChallengeService';
 import { getUserProfile, getFriends } from '../../src/services/userService';
 import { getCurrentUser } from '../../src/services/authService';
-import { getCurrentUser } from '../../src/services/authService';
+
 import { PinDropDifficulty } from '../../src/services/PinDropService';
 import { streakService } from '../../src/services/StreakService';
 import { useMemoryStore } from '../../src/store/useMemoryStore';
