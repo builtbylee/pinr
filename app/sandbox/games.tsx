@@ -22,6 +22,11 @@ const PinDropGame = React.lazy(async () => {
     return { default: module.PinDropGame };
 });
 
+const FlagDashGame = React.lazy(async () => {
+    const module = await import('../../src/components/FlagDashGame');
+    return { default: module.FlagDashGame };
+});
+
 const TravelBattleGame = React.lazy(async () => {
     const module = await import('../../src/components/TravelBattleGame');
     return { default: module.TravelBattleGame };
@@ -529,24 +534,24 @@ export default function GameSandbox() {
                         <Feather name="chevron-right" size={24} color="#F87171" />
                     </TouchableOpacity>
 
-                    {/* TRAVEL BATTLE (Test) - Replaces Flag Dash for Diagnostic */}
+                    {/* FLAG DASH */}
                     <TouchableOpacity
                         style={[styles.gameCard, { backgroundColor: '#EFF6FF', borderColor: '#BFDBFE' }]}
                         activeOpacity={0.9}
                         onPress={() => {
-                            setPinDropDifficulty('medium');
-                            setSelectedGameType('travelbattle');
+                            setState(prev => ({ ...prev, difficulty: 'medium' })); // Default
+                            handleStart();
                         }}
                     >
                         <View style={[styles.gameIconContainer, { backgroundColor: '#3B82F6' }]}>
-                            <Feather name="globe" size={28} color="white" />
+                            <Feather name="flag" size={28} color="white" />
                         </View>
                         <View style={styles.gameInfo}>
-                            <Text style={[styles.gameTitle, { color: '#1E40AF' }]}>Travel Battle</Text>
-                            <Text style={styles.gameDescription}>Test for crash (Phase 3.2)</Text>
+                            <Text style={[styles.gameTitle, { color: '#1E40AF' }]}>Flag Dash</Text>
+                            <Text style={styles.gameDescription}>Race against time to identify flags.</Text>
                             <View style={styles.badgeRow}>
                                 <View style={[styles.badge, { backgroundColor: '#DBEAFE' }]}>
-                                    <Text style={[styles.badgeText, { color: '#1D4ED8' }]}>Diagnostic</Text>
+                                    <Text style={[styles.badgeText, { color: '#1D4ED8' }]}>Fast Paced</Text>
                                 </View>
                             </View>
                         </View>
@@ -605,6 +610,25 @@ export default function GameSandbox() {
                         }}
                         onQuit={() => {
                             setSelectedGameType(null);
+                        }}
+                    />
+                </React.Suspense>
+            )}
+
+            {/* Flag Dash Game (Refactored to Component) */}
+            {selectedGameType === 'flagdash' && (
+                <React.Suspense fallback={<View style={styles.centerContainer}><ActivityIndicator size="large" color="#3B82F6" /></View>}>
+                    <FlagDashGame
+                        difficulty={selectedDifficulty}
+                        onGameOver={async (score) => {
+                            // Update local state for result display logic if needed, or rely on GameService state
+                            setState(prev => ({ ...prev, score, gameOver: true }));
+                            // Record streak
+                            const result = await streakService.recordGamePlayed();
+                            setDailyStreak(result.streak);
+                        }}
+                        onQuit={() => {
+                            handleQuit();
                         }}
                     />
                 </React.Suspense>
