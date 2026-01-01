@@ -1,6 +1,6 @@
 import firestore from '@react-native-firebase/firestore';
 import React, { useEffect, useState, useRef, useMemo } from 'react';
-import { StyleSheet, Text, View, TouchableOpacity, Dimensions, SafeAreaView, ScrollView, Animated, Modal, ActivityIndicator, FlatList, BackHandler, PanResponder, useWindowDimensions } from 'react-native';
+import { StyleSheet, Text, View, TouchableOpacity, SafeAreaView, ScrollView, Animated, Modal, ActivityIndicator, FlatList, BackHandler, PanResponder, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 import { Feather } from '@expo/vector-icons';
@@ -19,15 +19,14 @@ import { ChallengeFriendModal } from '../../src/components/ChallengeFriendModal'
 
 import { useMemoryStore } from '../../src/store/useMemoryStore';
 
-const { height: windowHeight } = Dimensions.get('window');
-const isSmallScreen = windowHeight < 700;
+
 
 export default function GameSandbox() {
     const insets = useSafeAreaInsets();
     const { width, height } = useWindowDimensions();
     const isSmallScreen = height < 700;
 
-    console.log('[GameSandbox] Rendering with insets:', insets, 'and dimensions:', width, 'x', height);
+
     // Debug: Log all relevant state at render time
     // Persistence
     const activeGameId = useMemoryStore(state => state.activeGameId);
@@ -2225,7 +2224,7 @@ export default function GameSandbox() {
 
                     {/* Animated Tab Container */}
                     <Animated.View
-                        {...panResponder.panHandlers}
+                        // {...panResponder.panHandlers}
                         style={{
                             flex: 1,
                             flexDirection: 'row',
@@ -2236,7 +2235,7 @@ export default function GameSandbox() {
                         {/* Home Tab */}
                         <ScrollView
                             style={[styles.content, { width }]}
-                            contentContainerStyle={styles.contentContainer}
+                            contentContainerStyle={[styles.contentContainer, { padding: isSmallScreen ? 16 : 24 }]}
                             showsVerticalScrollIndicator={false}
                         >
                             {renderStartScreen()}
@@ -2398,7 +2397,6 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     contentContainer: {
-        padding: isSmallScreen ? 16 : 24,
         flexGrow: 1,
     },
     centerContainer: {
@@ -2409,28 +2407,6 @@ const styles = StyleSheet.create({
     gameContainer: {
         flex: 1,
         width: '100%',
-    },
-    title: {
-        fontSize: isSmallScreen ? 26 : 32,
-        fontWeight: '900',
-        color: '#111827',
-        marginTop: isSmallScreen ? 16 : 24,
-        marginBottom: 8,
-    },
-    subtitle: {
-        fontSize: 16,
-        color: '#6B7280',
-        textAlign: 'center',
-        marginBottom: 40,
-        maxWidth: 260,
-    },
-    iconCircle: {
-        width: isSmallScreen ? 90 : 120,
-        height: isSmallScreen ? 90 : 120,
-        borderRadius: isSmallScreen ? 45 : 60,
-        backgroundColor: '#EEF2FF',
-        justifyContent: 'center',
-        alignItems: 'center',
     },
     startButton: {
         flexDirection: 'row',
