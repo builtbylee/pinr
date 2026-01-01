@@ -780,7 +780,7 @@ export default function GameSandbox() {
                                         shadowColor: '#000',
                                         shadowOpacity: 0.1,
                                         shadowRadius: 2,
-                                        elevation: 1.
+                                        elevation: 1,
                                     }}>
                                         <Feather
                                             name={item.gameType === 'pindrop' ? 'map-pin' : item.gameType === 'travelbattle' ? 'globe' : 'flag'}

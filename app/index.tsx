@@ -88,6 +88,7 @@ export default function App() {
     const [showStreakCelebration, setShowStreakCelebration] = useState(false);
     const [celebrationStreak, setCelebrationStreak] = useState(0);
     const [highlightedPinId, setHighlightedPinId] = useState<string | null>(null);
+    const isCameraAnimating = useRef(false);
 
     // Global Story Editor State (For "Create Story from Pin" flow)
     const [isGlobalStoryEditorVisible, setIsGlobalStoryEditorVisible] = useState(false);
@@ -275,7 +276,7 @@ export default function App() {
 
     // Helper: Mapbox region change handler
     const onRegionDidChange = async (feature: any) => {
-        if (!feature || !feature.properties) return;
+        if (!feature || !feature.properties || isCameraAnimating.current) return;
 
         // Auto-Rotate Loop Logic
         const isUserInteraction = feature.properties.isUserInteraction;
@@ -1031,16 +1032,23 @@ export default function App() {
     const handleExploreSelect = async (location: GeocodingResult) => {
         setIsExploreSearchVisible(false);
         setSelectedExplorePlace(location);
+        isCameraAnimating.current = true;
+        stopAutoRotate();
 
         // Fly to location
         if (cameraRef.current) {
             cameraRef.current.setCamera({
                 centerCoordinate: location.center,
-                zoomLevel: 2,
+                zoomLevel: 4, // Increased zoom for better focus
                 animationDuration: 2000,
                 animationMode: 'flyTo',
             });
         }
+
+        // Reset camera animating state after flight
+        setTimeout(() => {
+            isCameraAnimating.current = false;
+        }, 2000);
 
         // Track exploration streak
         if (currentUserId) {
@@ -1621,6 +1629,7 @@ export default function App() {
                 contextMenuPinId && (() => {
                     const pin = memories.find(m => m.id === contextMenuPinId);
                     const isOwner = pin?.creatorId === currentUserId;
+                    const isStory = storyPinIds.has(contextMenuPinId);
                     // Get creator name (fallback to 'User')
                     // Note: authorAvatars keys are UIDs, but values are URIs. We don't have names easily available here.
                     // We'll rely on the profile modal to show full info or fetch if needed. 
@@ -1634,6 +1643,7 @@ export default function App() {
                             pinTitle={pin?.title || 'Pin'}
                             locationName={pin?.locationName || 'Unknown'}
                             isOwner={!!isOwner}
+                            isStory={isStory}
                             creatorName={"User"}
                             onViewProfile={() => {
                                 if (pin) setSelectedUserProfileId(pin.creatorId);
@@ -1665,29 +1675,64 @@ export default function App() {
                                 setContextMenuPinId(null);
                             }}
                             onEdit={() => {
-                                setEditingMemory(pin || null);
-                                setIsCreationModalVisible(true);
+                                if (isStory) {
+                                    // For journey pins, open the story editor
+                                    const story = pinToStoryMap[contextMenuPinId];
+                                    if (story && pin) {
+                                        setStoryEditorInitialPinId(contextMenuPinId);
+                                        setIsGlobalStoryEditorVisible(true);
+                                    }
+                                } else {
+                                    // For single pins, open the pin creator/editor
+                                    setEditingMemory(pin || null);
+                                    setIsCreationModalVisible(true);
+                                }
                                 setContextMenuPinId(null);
                             }}
                             onDelete={() => {
-                                Alert.alert(
-                                    'Delete Pin',
-                                    'Are you sure you want to delete this memory?',
-                                    [
-                                        { text: 'Cancel', style: 'cancel' },
-                                        {
-                                            text: 'Delete',
-                                            style: 'destructive',
-                                            onPress: async () => {
-                                                if (pin) {
-                                                    await deletePin(pin.id);
-                                                    useMemoryStore.getState().deleteMemory(pin.id);
+                                if (isStory) {
+                                    // For journey pins, delete the entire story
+                                    const story = pinToStoryMap[contextMenuPinId];
+                                    Alert.alert(
+                                        'Delete Journey',
+                                        'Are you sure you want to delete this entire journey and all its pins?',
+                                        [
+                                            { text: 'Cancel', style: 'cancel' },
+                                            {
+                                                text: 'Delete Journey',
+                                                style: 'destructive',
+                                                onPress: async () => {
+                                                    if (story) {
+                                                        const { storyService } = require('@/src/services/StoryService');
+                                                        await storyService.deleteStory(story.id);
+                                                        useMemoryStore.getState().showToast('Journey deleted', 'success');
+                                                    }
+                                                    setContextMenuPinId(null);
                                                 }
-                                                setContextMenuPinId(null);
                                             }
-                                        }
-                                    ]
-                                );
+                                        ]
+                                    );
+                                } else {
+                                    // For single pins, delete just the pin
+                                    Alert.alert(
+                                        'Delete Pin',
+                                        'Are you sure you want to delete this memory?',
+                                        [
+                                            { text: 'Cancel', style: 'cancel' },
+                                            {
+                                                text: 'Delete',
+                                                style: 'destructive',
+                                                onPress: async () => {
+                                                    if (pin) {
+                                                        await deletePin(pin.id);
+                                                        useMemoryStore.getState().deleteMemory(pin.id);
+                                                    }
+                                                    setContextMenuPinId(null);
+                                                }
+                                            }
+                                        ]
+                                    );
+                                }
                             }}
                             onHidePin={async () => {
                                 if (currentUserId && pin) {

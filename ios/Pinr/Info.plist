@@ -30,6 +30,18 @@
           <string>com.googleusercontent.apps.760973100570-5fqp07ov3b7d2vmikd8budg5t9gvjj7k</string>
         </array>
       </dict>
+      <dict>
+        <key>CFBundleURLSchemes</key>
+        <array>
+          <string>pinr</string>
+        </array>
+      </dict>
+      <dict>
+        <key>CFBundleURLSchemes</key>
+        <array>
+          <string>exp+80days</string>
+        </array>
+      </dict>
     </array>
     <key>CFBundleVersion</key>
     <string>1</string>
@@ -47,7 +59,7 @@
     <key>NSCameraUsageDescription</key>
     <string>Take photos for your travel memories.</string>
     <key>NSFaceIDUsageDescription</key>
-    <string>Allow $(PRODUCT_NAME) to use Face ID</string>
+    <string>Allow $(PRODUCT_NAME) to access your Face ID biometric data.</string>
     <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
     <string>Allow Pinr to use your location.</string>
     <key>NSLocationAlwaysUsageDescription</key>

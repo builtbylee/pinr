@@ -10,6 +10,7 @@ interface PinContextMenuProps {
     pinTitle: string;
     locationName: string;
     isOwner: boolean;
+    isStory?: boolean; // If true, show "Journey" instead of "Pin"
     creatorName: string;
     onViewProfile: () => void;
     onShare?: () => void;
@@ -26,6 +27,7 @@ export const PinContextMenu: React.FC<PinContextMenuProps> = ({
     pinTitle,
     locationName,
     isOwner,
+    isStory = false,
     creatorName,
     onViewProfile,
     onShare,
@@ -35,6 +37,8 @@ export const PinContextMenu: React.FC<PinContextMenuProps> = ({
     onHideUser,
     onReport,
 }) => {
+    // Dynamic label based on whether this is a journey pin or single pin
+    const itemType = isStory ? 'Journey' : 'Pin';
 
     if (!visible) return null;
 
@@ -69,19 +73,19 @@ export const PinContextMenu: React.FC<PinContextMenuProps> = ({
                                         {/* Owner Actions */}
                                         <TouchableOpacity style={styles.actionItem} onPress={onEdit}>
                                             <Feather name="edit-2" size={20} color="#007AFF" />
-                                            <Text style={styles.actionText}>Edit Pin</Text>
+                                            <Text style={styles.actionText}>Edit {itemType}</Text>
                                         </TouchableOpacity>
 
                                         <TouchableOpacity style={[styles.actionItem, styles.destructiveAction]} onPress={onDelete}>
                                             <Feather name="trash-2" size={20} color="#FF3B30" />
-                                            <Text style={[styles.actionText, styles.destructiveText]}>Delete Pin</Text>
+                                            <Text style={[styles.actionText, styles.destructiveText]}>Delete {itemType}</Text>
                                         </TouchableOpacity>
                                     </>
                                 ) : (
                                     <>
                                         <TouchableOpacity style={styles.actionItem} onPress={onHidePin}>
                                             <Feather name="eye-off" size={20} color="#6B7280" />
-                                            <Text style={styles.actionText}>Hide This Pin</Text>
+                                            <Text style={styles.actionText}>Hide This {itemType}</Text>
                                         </TouchableOpacity>
 
                                         <TouchableOpacity style={styles.actionItem} onPress={onReport}>

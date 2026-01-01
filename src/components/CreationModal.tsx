@@ -46,6 +46,10 @@ export const CreationModal: React.FC<CreationModalProps> = ({ visible, onClose, 
     const [showYearPicker, setShowYearPicker] = useState(false);
     const [showDurationPicker, setShowDurationPicker] = useState(false);
 
+    // Temporary picker state (so picker doesn't close on each selection)
+    const [tempPickerYear, setTempPickerYear] = useState<number>(new Date().getFullYear());
+    const [tempPickerMonth, setTempPickerMonth] = useState<number>(new Date().getMonth());
+
     // Pin duration state
     const DURATION_OPTIONS = [
         { label: '1 Day', value: 1 * 24 * 60 * 60 * 1000 },
@@ -271,10 +275,27 @@ export const CreationModal: React.FC<CreationModalProps> = ({ visible, onClose, 
         return marked;
     }, [startDate, endDate]);
 
-    const handleYearMonthSelect = (year: number, monthIndex: number) => {
-        const newDate = dayjs().year(year).month(monthIndex).date(1).format('YYYY-MM-DD');
+    // Update temp picker state without closing the modal
+    const handleYearSelect = (year: number) => {
+        setTempPickerYear(year);
+    };
+
+    const handleMonthSelect = (monthIndex: number) => {
+        setTempPickerMonth(monthIndex);
+    };
+
+    // Confirm selection and close the picker
+    const confirmYearMonthSelection = () => {
+        const newDate = dayjs().year(tempPickerYear).month(tempPickerMonth).date(1).format('YYYY-MM-DD');
         setCurrentDate(newDate);
         setShowYearPicker(false);
+    };
+
+    // Initialize temp picker state when opening
+    const openYearPicker = () => {
+        setTempPickerYear(dayjs(currentDate).year());
+        setTempPickerMonth(dayjs(currentDate).month());
+        setShowYearPicker(true);
     };
 
     const getDisplayText = () => {
@@ -477,7 +498,7 @@ export const CreationModal: React.FC<CreationModalProps> = ({ visible, onClose, 
                                 markedDates={getMarkedDates()}
                                 renderHeader={(date) => (
                                     <TouchableOpacity
-                                        onPress={() => setShowYearPicker(true)}
+                                        onPress={() => openYearPicker()}
                                         style={styles.customHeader}
                                     >
                                         <Text style={styles.customHeaderText}>
@@ -531,19 +552,19 @@ export const CreationModal: React.FC<CreationModalProps> = ({ visible, onClose, 
                                         data={YEARS}
                                         keyExtractor={(item) => item.toString()}
                                         showsVerticalScrollIndicator={false}
-                                        initialScrollIndex={Math.max(0, YEARS.indexOf(currentYear) - 2)}
+                                        initialScrollIndex={Math.max(0, YEARS.indexOf(tempPickerYear) - 2)}
                                         getItemLayout={(_, index) => ({ length: 44, offset: 44 * index, index })}
                                         renderItem={({ item }) => (
                                             <TouchableOpacity
                                                 style={[
                                                     styles.pickerItem,
-                                                    item === currentYear && styles.pickerItemSelected
+                                                    item === tempPickerYear && styles.pickerItemSelected
                                                 ]}
-                                                onPress={() => handleYearMonthSelect(item, currentMonthIndex)}
+                                                onPress={() => handleYearSelect(item)}
                                             >
                                                 <Text style={[
                                                     styles.pickerItemText,
-                                                    item === currentYear && styles.pickerItemTextSelected
+                                                    item === tempPickerYear && styles.pickerItemTextSelected
                                                 ]}>
                                                     {item}
                                                 </Text>
@@ -561,13 +582,13 @@ export const CreationModal: React.FC<CreationModalProps> = ({ visible, onClose, 
                                                 key={month}
                                                 style={[
                                                     styles.pickerItem,
-                                                    index === currentMonthIndex && styles.pickerItemSelected
+                                                    index === tempPickerMonth && styles.pickerItemSelected
                                                 ]}
-                                                onPress={() => handleYearMonthSelect(currentYear, index)}
+                                                onPress={() => handleMonthSelect(index)}
                                             >
                                                 <Text style={[
                                                     styles.pickerItemText,
-                                                    index === currentMonthIndex && styles.pickerItemTextSelected
+                                                    index === tempPickerMonth && styles.pickerItemTextSelected
                                                 ]}>
                                                     {month}
                                                 </Text>
@@ -576,6 +597,11 @@ export const CreationModal: React.FC<CreationModalProps> = ({ visible, onClose, 
                                     </ScrollView>
                                 </View>
                             </View>
+
+                            {/* Done Button */}
+                            <TouchableOpacity style={styles.confirmButton} onPress={confirmYearMonthSelection}>
+                                <Text style={styles.confirmButtonText}>Done</Text>
+                            </TouchableOpacity>
                         </View>
                     </View>
                 </Modal>
