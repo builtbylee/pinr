@@ -11,11 +11,26 @@ import { leaderboardService, LeaderboardEntry } from '../../src/services/Leaderb
 import { challengeService, GameChallenge } from '../../src/services/ChallengeService';
 import { getUserProfile, getFriends } from '../../src/services/userService';
 import { getCurrentUser } from '../../src/services/authService';
-import { PinDropGame } from '../../src/components/PinDropGame';
-import { TravelBattleGame } from '../../src/components/TravelBattleGame';
+import { getCurrentUser } from '../../src/services/authService';
 import { PinDropDifficulty } from '../../src/services/PinDropService';
 import { streakService } from '../../src/services/StreakService';
-import { ChallengeFriendModal } from '../../src/components/ChallengeFriendModal';
+import { useMemoryStore } from '../../src/store/useMemoryStore';
+
+// Lazy load games to isolate crashes (e.g. Mapbox native issues)
+const PinDropGame = React.lazy(async () => {
+    const module = await import('../../src/components/PinDropGame');
+    return { default: module.PinDropGame };
+});
+
+const TravelBattleGame = React.lazy(async () => {
+    const module = await import('../../src/components/TravelBattleGame');
+    return { default: module.TravelBattleGame };
+});
+
+const ChallengeFriendModal = React.lazy(async () => {
+    const module = await import('../../src/components/ChallengeFriendModal');
+    return { default: module.ChallengeFriendModal };
+});
 
 import { useMemoryStore } from '../../src/store/useMemoryStore';
 
@@ -2159,20 +2174,22 @@ export default function GameSandbox() {
 
             {/* Pin Drop Full Screen Game - only when NOT viewing completed result */}
             {selectedGameType === 'pindrop' && !(state.gameOver && activeChallenge && challengeResult) && (
-                <PinDropGame
-                    difficulty={pinDropDifficulty}
-                    onGameOver={async (score) => {
-                        // Note: PinDrop scores are now submitted via Cloud Functions
-                        // The PinDropGame component handles score submission internally
-                        // Record streak
-                        const result = await streakService.recordGamePlayed();
-                        setDailyStreak(result.streak);
-                        setSelectedGameType(null);
-                    }}
-                    onQuit={() => {
-                        setSelectedGameType(null);
-                    }}
-                />
+                <React.Suspense fallback={<View style={styles.centerContainer}><ActivityIndicator size="large" color="#10B981" /></View>}>
+                    <PinDropGame
+                        difficulty={pinDropDifficulty}
+                        onGameOver={async (score) => {
+                            // Note: PinDrop scores are now submitted via Cloud Functions
+                            // The PinDropGame component handles score submission internally
+                            // Record streak
+                            const result = await streakService.recordGamePlayed();
+                            setDailyStreak(result.streak);
+                            setSelectedGameType(null);
+                        }}
+                        onQuit={() => {
+                            setSelectedGameType(null);
+                        }}
+                    />
+                </React.Suspense>
             )}
 
             {/* Flag Dash Game - Original inline implementation */}
@@ -2192,28 +2209,30 @@ export default function GameSandbox() {
 
             {/* Travel Battle Game (NEW - with Trivia) */}
             {selectedGameType === 'travelbattle' && (
-                <TravelBattleGame
-                    difficulty={selectedDifficulty}
-                    gameMode="travelbattle"
-                    onGameOver={async (score) => {
-                        setState(prev => ({ ...prev, score, gameOver: true }));
-                        // Record streak
-                        const result = await streakService.recordGamePlayed();
-                        setDailyStreak(result.streak);
-                    }}
-                    onQuit={() => {
-                        handleQuit();
-                    }}
-                    onGameMenu={() => {
-                        gameService.stopGame();
-                        setSelectedGameType(null);
-                    }}
-                    onExit={() => {
-                        gameService.stopGame();
-                        setSelectedGameType(null);
-                        router.push('/' as any);
-                    }}
-                />
+                <React.Suspense fallback={<View style={styles.centerContainer}><ActivityIndicator size="large" color="#F59E0B" /></View>}>
+                    <TravelBattleGame
+                        difficulty={selectedDifficulty}
+                        gameMode="travelbattle"
+                        onGameOver={async (score) => {
+                            setState(prev => ({ ...prev, score, gameOver: true }));
+                            // Record streak
+                            const result = await streakService.recordGamePlayed();
+                            setDailyStreak(result.streak);
+                        }}
+                        onQuit={() => {
+                            handleQuit();
+                        }}
+                        onGameMenu={() => {
+                            gameService.stopGame();
+                            setSelectedGameType(null);
+                        }}
+                        onExit={() => {
+                            gameService.stopGame();
+                            setSelectedGameType(null);
+                            router.push('/' as any);
+                        }}
+                    />
+                </React.Suspense>
             )}
 
             {/* Hub (Start Screen) - Only show if NO game selected */}
@@ -2373,16 +2392,20 @@ export default function GameSandbox() {
             </Modal>
 
             {/* Challenge Friend Modal (Scalable with Search) */}
-            <ChallengeFriendModal
-                visible={showChallengePicker}
-                onClose={() => setShowChallengePicker(false)}
-                friends={friends}
-                difficulty={selectedDifficulty}
-                loadingFriends={loadingFriends}
-                onSendChallenge={async (friend, gameType, difficulty) => {
-                    await sendChallenge(friend.uid, gameType, difficulty);
-                }}
-            />
+            {showChallengePicker && (
+                <React.Suspense fallback={null}>
+                    <ChallengeFriendModal
+                        visible={showChallengePicker}
+                        onClose={() => setShowChallengePicker(false)}
+                        friends={friends}
+                        difficulty={selectedDifficulty}
+                        loadingFriends={loadingFriends}
+                        onSendChallenge={async (friend, gameType, difficulty) => {
+                            await sendChallenge(friend.uid, gameType, difficulty);
+                        }}
+                    />
+                </React.Suspense>
+            )}
         </View>
     );
 }
