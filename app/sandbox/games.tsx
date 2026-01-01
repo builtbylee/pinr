@@ -2215,7 +2215,7 @@ export default function GameSandbox() {
                         <View style={{ width }}>
                             {renderLeaderboardTab()}
                         </View>
-                    </Animated.View>
+                    </View>
 
                     {/* Bottom Navigation */}
                     {renderBottomNav()}
