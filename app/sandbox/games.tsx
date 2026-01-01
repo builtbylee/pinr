@@ -1,6 +1,6 @@
 import firestore from '@react-native-firebase/firestore';
 import React, { useEffect, useState, useRef, useMemo } from 'react';
-import { StyleSheet, Text, View, TouchableOpacity, SafeAreaView, ScrollView, Animated, Modal, ActivityIndicator, FlatList, BackHandler, PanResponder, useWindowDimensions } from 'react-native';
+import { StyleSheet, Text, View, TouchableOpacity, ScrollView, Animated, Modal, ActivityIndicator, FlatList, BackHandler, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 import { Feather } from '@expo/vector-icons';
@@ -91,58 +91,9 @@ export default function GameSandbox() {
     const pulseAnim = useRef(new Animated.Value(1)).current;
     const colorAnim = useRef(new Animated.Value(0)).current;
 
-    // Tab swipe animation
+    // PanResponder and tab swipe animations removed for crash resilience
+    const panResponder = { panHandlers: {} };
     const tabTranslateX = useRef(new Animated.Value(0)).current;
-
-    const panResponder = useMemo(() =>
-        PanResponder.create({
-            onMoveShouldSetPanResponder: (_, gestureState) => {
-                // Only respond to horizontal swipes > 10px
-                return Math.abs(gestureState.dx) > 10 && Math.abs(gestureState.dy) < 50;
-            },
-            onPanResponderMove: (_, gestureState) => {
-                // Constrain movement based on current tab
-                if (activeTab === 'home') {
-                    // On home tab, only allow left swipe (negative dx)
-                    tabTranslateX.setValue(Math.min(0, gestureState.dx));
-                } else {
-                    // On leaderboard tab, only allow right swipe (positive dx) from -width
-                    tabTranslateX.setValue(Math.max(-width, -width + gestureState.dx));
-                }
-            },
-            onPanResponderRelease: (_, gestureState) => {
-                const swipeThreshold = width * 0.25;
-
-                if (activeTab === 'home' && gestureState.dx < -swipeThreshold) {
-                    // Swipe left to Scores
-                    Animated.spring(tabTranslateX, {
-                        toValue: -width,
-                        useNativeDriver: true,
-                        tension: 50,
-                        friction: 10,
-                    }).start();
-                    setActiveTab('leaderboard');
-                } else if (activeTab === 'leaderboard' && gestureState.dx > swipeThreshold) {
-                    // Swipe right to Home
-                    Animated.spring(tabTranslateX, {
-                        toValue: 0,
-                        useNativeDriver: true,
-                        tension: 50,
-                        friction: 10,
-                    }).start();
-                    setActiveTab('home');
-                } else {
-                    // Reset to current tab
-                    Animated.spring(tabTranslateX, {
-                        toValue: activeTab === 'home' ? 0 : -width,
-                        useNativeDriver: true,
-                        tension: 50,
-                        friction: 10,
-                    }).start();
-                }
-            },
-        }),
-        [activeTab, width]);
 
     // Deep Link Logic & Persistence Hydration
     useEffect(() => {
@@ -2241,14 +2192,14 @@ export default function GameSandbox() {
                     <Stack.Screen options={{ title: '' }} />
                     {renderQuitConfirmationModal()}
 
-                    {/* Animated Tab Container */}
-                    <Animated.View
-                        // {...panResponder.panHandlers}
+                    {/* Animated Tab Container - Simplified to View */}
+                    <View
                         style={{
                             flex: 1,
                             flexDirection: 'row',
                             width: width * 2,
-                            transform: [{ translateX: tabTranslateX }],
+                            // Transform removed - just show based on activeTab
+                            transform: [{ translateX: activeTab === 'leaderboard' ? -width : 0 }],
                         }}
                     >
                         {/* Home Tab */}
