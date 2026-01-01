@@ -583,28 +583,60 @@ export default function GameSandbox() {
     // Main Render
     return (
         <View style={[styles.container, { paddingTop: insets.top }]}>
-            {renderHeader()}
-            <View style={{ flex: 1 }}>
+            {/* Pin Drop Challenge Result - show when viewing completed challenge */}
+            {selectedGameType === 'pindrop' && state.gameOver && activeChallenge && challengeResult && (
+                <>
+                    {renderQuitConfirmationModal()}
+                    {renderGameOver()}
+                </>
+            )}
 
-                {/* Simplified Tab Render - No Animations */}
-                <View
-                    style={{
-                        flex: 1,
-                        flexDirection: 'row',
-                        width: width * 2,
-                        transform: [{ translateX: activeTab === 'leaderboard' ? -width : 0 }],
-                    }}
-                >
-                    <View style={{ width }}>
-                        {renderStartScreen()}
-                    </View>
-                    <View style={{ width }}>
-                        {renderLeaderboardTab()}
-                    </View>
-                </View>
+            {/* Pin Drop Full Screen Game - only when NOT viewing completed result */}
+            {selectedGameType === 'pindrop' && !(state.gameOver && activeChallenge && challengeResult) && (
+                <React.Suspense fallback={<View style={styles.centerContainer}><ActivityIndicator size="large" color="#10B981" /></View>}>
+                    <PinDropGame
+                        difficulty={pinDropDifficulty}
+                        onGameOver={async (score) => {
+                            // Note: PinDrop scores are now submitted via Cloud Functions
+                            // The PinDropGame component handles score submission internally
+                            // Record streak
+                            const result = await streakService.recordGamePlayed();
+                            setDailyStreak(result.streak);
+                            setSelectedGameType(null);
+                        }}
+                        onQuit={() => {
+                            setSelectedGameType(null);
+                        }}
+                    />
+                </React.Suspense>
+            )}
 
-                {renderBottomNav()}
-            </View>
+            {!selectedGameType && (
+                <>
+                    {renderHeader()}
+                    <View style={{ flex: 1 }}>
+
+                        {/* Simplified Tab Render - No Animations */}
+                        <View
+                            style={{
+                                flex: 1,
+                                flexDirection: 'row',
+                                width: width * 2,
+                                transform: [{ translateX: activeTab === 'leaderboard' ? -width : 0 }],
+                            }}
+                        >
+                            <View style={{ width }}>
+                                {renderStartScreen()}
+                            </View>
+                            <View style={{ width }}>
+                                {renderLeaderboardTab()}
+                            </View>
+                        </View>
+
+                        {renderBottomNav()}
+                    </View>
+                </>
+            )}
         </View>
     );
 }
