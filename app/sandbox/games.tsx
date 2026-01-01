@@ -56,6 +56,7 @@ export default function GameSandbox() {
     const [selectedGameType, setSelectedGameType] = useState<'flagdash' | 'pindrop' | 'travelbattle' | null>(null);
     const [previewGame, setPreviewGame] = useState<'flagdash' | 'pindrop' | 'travelbattle' | null>(null); // For bottom sheet
     const [pinDropDifficulty, setPinDropDifficulty] = useState<PinDropDifficulty>('medium');
+    const [errorInfo, setErrorInfo] = useState<string | null>(null);
 
     // Challenge state
     const [showChallengePicker, setShowChallengePicker] = useState(false);
@@ -250,8 +251,9 @@ export default function GameSandbox() {
                     if (Object.keys(dataUpdates).length > 0) {
                         setOpponentData(prev => ({ ...prev, ...dataUpdates }));
                     }
-                } catch (error) {
+                } catch (error: any) {
                     console.error('[GameSandbox] Error in challenge subscription:', error);
+                    setErrorInfo('Failed to load games: ' + (error.message || 'Unknown error'));
                 }
             });
         }
@@ -442,8 +444,9 @@ export default function GameSandbox() {
         try {
             const challenges = await challengeService.getPendingChallenges();
             setPendingChallenges(challenges);
-        } catch (error) {
+        } catch (error: any) {
             console.error('Failed to load pending challenges:', error);
+            setErrorInfo('Pending challenges error: ' + error.message);
         }
     };
 
@@ -2124,6 +2127,26 @@ export default function GameSandbox() {
 
     // DEBUG: Log render path
     console.log('[GameSandbox] Render state:', { selectedGameType, gameOver: state.gameOver, isPlaying: state.isPlaying });
+
+    if (errorInfo) {
+        return (
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20, paddingTop: 50, backgroundColor: 'white' }}>
+                <Feather name="alert-triangle" size={48} color="#EF4444" />
+                <Text style={{ color: '#EF4444', fontSize: 18, fontWeight: 'bold', marginVertical: 10 }}>Something went wrong</Text>
+                <Text style={{ color: '#374151', textAlign: 'center' }}>{errorInfo}</Text>
+                <TouchableOpacity
+                    onPress={() => setErrorInfo(null)}
+                    style={{ marginTop: 20, padding: 12, backgroundColor: '#EFF6FF', borderRadius: 8 }}
+                >
+                    <Text style={{ color: '#3B82F6' }}>Retry</Text>
+                </TouchableOpacity>
+            </View>
+        );
+    }
+
+    if (!width || !height) {
+        return <View style={{ flex: 1, backgroundColor: 'white' }} />;
+    }
 
     return (
         <View style={[styles.container, { paddingTop: insets.top }]}>
