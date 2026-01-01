@@ -19,6 +19,9 @@ import { ChallengeFriendModal } from '../../src/components/ChallengeFriendModal'
 
 import { useMemoryStore } from '../../src/store/useMemoryStore';
 
+const { height: windowHeight } = Dimensions.get('window');
+const isSmallScreen = windowHeight < 700;
+
 export default function GameSandbox() {
     const insets = useSafeAreaInsets();
     const { width, height } = useWindowDimensions();
