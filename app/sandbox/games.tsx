@@ -16,13 +16,13 @@ import { PinDropDifficulty } from '../../src/services/PinDropService';
 import { streakService } from '../../src/services/StreakService';
 import { useMemoryStore } from '../../src/store/useMemoryStore';
 
-// PHASE 2: Stubbed Imports (Commented out to prevent loading)
-/*
+// Lazy load games to isolate crashes (e.g. Mapbox native issues)
 const PinDropGame = React.lazy(async () => {
     const module = await import('../../src/components/PinDropGame');
     return { default: module.PinDropGame };
 });
 
+/*
 const TravelBattleGame = React.lazy(async () => {
     const module = await import('../../src/components/TravelBattleGame');
     return { default: module.TravelBattleGame };
@@ -510,9 +510,8 @@ export default function GameSandbox() {
                         style={[styles.gameCard, { backgroundColor: '#FFF5F5', borderColor: '#FECACA' }]}
                         activeOpacity={0.9}
                         onPress={() => {
-                            // setPreviewGame('pindrop');
-                            // setPinDropDifficulty('medium'); // Default
-                            console.log('Pin Drop pressed (disabled in Phase 2)');
+                            setPinDropDifficulty('medium'); // Default
+                            setSelectedGameType('pindrop');
                         }}
                     >
                         <View style={[styles.gameIconContainer, { backgroundColor: '#EF4444' }]}>
