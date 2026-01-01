@@ -2126,7 +2126,7 @@ export default function GameSandbox() {
     console.log('[GameSandbox] Render state:', { selectedGameType, gameOver: state.gameOver, isPlaying: state.isPlaying });
 
     return (
-        <SafeAreaView style={styles.container}>
+        <View style={[styles.container, { paddingTop: insets.top }]}>
             {/* Pin Drop Challenge Result - show when viewing completed challenge */}
             {selectedGameType === 'pindrop' && state.gameOver && activeChallenge && challengeResult && (
                 <>
@@ -2360,7 +2360,7 @@ export default function GameSandbox() {
                     await sendChallenge(friend.uid, gameType, difficulty);
                 }}
             />
-        </SafeAreaView>
+        </View>
     );
 }
 

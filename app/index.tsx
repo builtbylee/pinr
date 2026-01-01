@@ -96,6 +96,8 @@ export default function App() {
 
     // Story Creation Flow (photo-first story wizard)
     const [isStoryCreationVisible, setIsStoryCreationVisible] = useState(false);
+    const [editingStory, setEditingStory] = useState<Story | undefined>(undefined);
+    const [editingStoryPins, setEditingStoryPins] = useState<Memory[] | undefined>(undefined);
 
     const cameraRef = useRef<Mapbox.Camera>(null);
     const mapRef = useRef<Mapbox.MapView>(null);
@@ -1560,7 +1562,13 @@ export default function App() {
                 isStoryCreationVisible && currentUserId && (
                     <StoryCreationFlow
                         visible={isStoryCreationVisible}
-                        onClose={() => setIsStoryCreationVisible(false)}
+                        initialStory={editingStory}
+                        initialPins={editingStoryPins}
+                        onClose={() => {
+                            setIsStoryCreationVisible(false);
+                            setEditingStory(undefined);
+                            setEditingStoryPins(undefined);
+                        }}
                         onCreateSinglePin={async (pinDraft) => {
                             console.log('[App] Creating single pin:', pinDraft.title);
                             try {
@@ -1585,10 +1593,28 @@ export default function App() {
                             }
                         }}
                         onComplete={async (storyTitle, pinDrafts) => {
-                            console.log('[App] Story creation complete:', storyTitle, pinDrafts.length, 'pins');
-                            try {
-                                const { storyService } = require('@/src/services/StoryService');
-                                const store = useMemoryStore.getState();
+                            console.log('[App] Story creation/update complete:', storyTitle, pinDrafts.length, 'pins');
+                            const store = useMemoryStore.getState();
+                            const { storyService } = require('@/src/services/StoryService');
+
+                            if (editingStory) {
+                                // Update existing story
+                                const result = await storyService.updateStoryWithPhotos(
+                                    currentUserId,
+                                    editingStory.id,
+                                    storyTitle,
+                                    pinDrafts
+                                );
+                                if (result.success) {
+                                    setIsStoryCreationVisible(false);
+                                    setEditingStory(undefined);
+                                    setEditingStoryPins(undefined);
+                                    useMemoryStore.getState().showToast('Journey updated!', 'success');
+                                } else {
+                                    useMemoryStore.getState().showToast('Failed to update journey', 'error');
+                                }
+                            } else {
+                                // Create new story
                                 const result = await storyService.createStoryWithPhotos(
                                     currentUserId,
                                     storyTitle,
@@ -1604,9 +1630,6 @@ export default function App() {
                                 } else {
                                     useMemoryStore.getState().showToast(result.error || 'Failed to create story', 'error');
                                 }
-                            } catch (error) {
-                                console.error('[App] Story creation error:', error);
-                                useMemoryStore.getState().showToast('Failed to create story', 'error');
                             }
                         }}
                     />
@@ -1676,11 +1699,16 @@ export default function App() {
                             }}
                             onEdit={() => {
                                 if (isStory) {
-                                    // For journey pins, open the story editor
+                                    // For journey pins, open the story editor via StoryCreationFlow
                                     const story = pinToStoryMap[contextMenuPinId];
-                                    if (story && pin) {
-                                        setStoryEditorInitialPinId(contextMenuPinId);
-                                        setIsGlobalStoryEditorVisible(true);
+                                    if (story) {
+                                        // Filter pins and sort by order in story.pinIds
+                                        const pins = memories.filter(m => story.pinIds.includes(m.id));
+                                        const sortedPins = pins.sort((a, b) => story.pinIds.indexOf(a.id) - story.pinIds.indexOf(b.id));
+
+                                        setEditingStory(story);
+                                        setEditingStoryPins(sortedPins);
+                                        setIsStoryCreationVisible(true);
                                     }
                                 } else {
                                     // For single pins, open the pin creator/editor

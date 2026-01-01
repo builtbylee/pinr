@@ -43,6 +43,9 @@ const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 
 const YEARS = Array.from({ length: 100 }, (_, i) => new Date().getFullYear() - 50 + i);
 
 
+import { Story } from '../services/StoryService';
+import { Memory } from '../store/useMemoryStore';
+
 // Types - exported for StoryService
 export interface PinDraft {
     tempId: string;
@@ -58,6 +61,8 @@ interface StoryCreationFlowProps {
     onClose: () => void;
     onComplete: (storyTitle: string, pinDrafts: PinDraft[]) => Promise<void>; // For 2+ photos
     onCreateSinglePin?: (pinDraft: PinDraft) => Promise<void>; // For 1 photo
+    initialStory?: Story;
+    initialPins?: Memory[];
 }
 
 type Step = 'photos' | 'details' | 'reorder';
@@ -69,6 +74,8 @@ export const StoryCreationFlow: React.FC<StoryCreationFlowProps> = ({
     onClose,
     onComplete,
     onCreateSinglePin,
+    initialStory,
+    initialPins
 }) => {
     // State
     const [step, setStep] = useState<Step>('photos');
@@ -92,12 +99,16 @@ export const StoryCreationFlow: React.FC<StoryCreationFlowProps> = ({
     const [tempStartDate, setTempStartDate] = useState<string | null>(null);
     const [tempEndDate, setTempEndDate] = useState<string | null>(null);
 
+    // Temp state for Year/Month picker
+    const [tempPickerYear, setTempPickerYear] = useState<number>(dayjs().year());
+    const [tempPickerMonth, setTempPickerMonth] = useState<number>(dayjs().month());
+
     // Back Handler - handle back gesture throughout flow
     useEffect(() => {
         if (!visible) return;
 
         const onBackPress = () => {
-            if (step === 'reorder') {
+            if (step === 'reorder' && !initialStory) { // Only allow back to details if not editing an existing story (or handle differently)
                 setStep('details');
                 return true;
             }
@@ -112,7 +123,36 @@ export const StoryCreationFlow: React.FC<StoryCreationFlowProps> = ({
 
         const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
         return () => subscription.remove();
-    }, [visible, step]);
+    }, [visible, step, initialStory]);
+
+    // Initialize Edit Mode
+    useEffect(() => {
+        if (visible && initialStory && initialPins && initialPins.length > 0) {
+            console.log('[StoryCreation] Initializing Edit Mode for:', initialStory.title);
+
+            // Map existing pins to PinDrafts
+            const drafts: PinDraft[] = initialPins.map(pin => ({
+                tempId: pin.id, // Use actual ID as tempId
+                localImageUri: pin.imageUris[0] || '', // Use first image
+                title: pin.title || '',
+                location: {
+                    lat: pin.location[1],
+                    lon: pin.location[0],
+                    name: pin.locationName || 'Unknown'
+                },
+                visitDate: pin.date ? new Date(pin.date).getTime() : null,
+                // visitEndDate is not standard on Memory yet, but could be added if needed
+            }));
+
+            // Hydrate state
+            setPinDrafts(drafts);
+            setSelectedPhotos(drafts.map(d => ({ uri: d.localImageUri, tempId: d.tempId })));
+            setStoryTitle(initialStory.title);
+
+            // Jump directly to Reorder (Review) step as requested
+            setStep('reorder');
+        }
+    }, [visible, initialStory, initialPins]);
 
     // Reset on close
     const handleClose = () => {
@@ -423,8 +463,22 @@ export const StoryCreationFlow: React.FC<StoryCreationFlowProps> = ({
         return startFormatted;
     };
 
-    const handleYearMonthSelect = (year: number, monthIndex: number) => {
-        const newDate = dayjs().year(year).month(monthIndex).date(1).format('YYYY-MM-DD');
+    const openYearPicker = () => {
+        setTempPickerYear(dayjs(calendarCurrentDate).year());
+        setTempPickerMonth(dayjs(calendarCurrentDate).month());
+        setShowYearPicker(true);
+    };
+
+    const handleYearSelect = (year: number) => {
+        setTempPickerYear(year);
+    };
+
+    const handleMonthSelect = (monthIndex: number) => {
+        setTempPickerMonth(monthIndex);
+    };
+
+    const confirmYearMonthSelection = () => {
+        const newDate = dayjs().year(tempPickerYear).month(tempPickerMonth).date(1).format('YYYY-MM-DD');
         setCalendarCurrentDate(newDate);
         setShowYearPicker(false);
     };
@@ -831,7 +885,7 @@ export const StoryCreationFlow: React.FC<StoryCreationFlowProps> = ({
                             markedDates={getMarkedDates()}
                             renderHeader={(date) => (
                                 <TouchableOpacity
-                                    onPress={() => setShowYearPicker(true)}
+                                    onPress={openYearPicker}
                                     style={styles.customHeader}
                                 >
                                     <Text style={styles.customHeaderText}>
@@ -885,19 +939,19 @@ export const StoryCreationFlow: React.FC<StoryCreationFlowProps> = ({
                                     data={YEARS}
                                     keyExtractor={(item) => item.toString()}
                                     showsVerticalScrollIndicator={false}
-                                    initialScrollIndex={Math.max(0, YEARS.indexOf(calendarCurrentYear) - 2)}
+                                    initialScrollIndex={Math.max(0, YEARS.indexOf(tempPickerYear) - 2)}
                                     getItemLayout={(_, index) => ({ length: 44, offset: 44 * index, index })}
                                     renderItem={({ item }) => (
                                         <TouchableOpacity
                                             style={[
                                                 styles.pickerItem,
-                                                item === calendarCurrentYear && styles.pickerItemSelected
+                                                item === tempPickerYear && styles.pickerItemSelected
                                             ]}
-                                            onPress={() => handleYearMonthSelect(item, calendarCurrentMonthIndex)}
+                                            onPress={() => handleYearSelect(item)}
                                         >
                                             <Text style={[
                                                 styles.pickerItemText,
-                                                item === calendarCurrentYear && styles.pickerItemTextSelected
+                                                item === tempPickerYear && styles.pickerItemTextSelected
                                             ]}>
                                                 {item}
                                             </Text>
@@ -915,13 +969,13 @@ export const StoryCreationFlow: React.FC<StoryCreationFlowProps> = ({
                                             key={month}
                                             style={[
                                                 styles.pickerItem,
-                                                index === calendarCurrentMonthIndex && styles.pickerItemSelected
+                                                index === tempPickerMonth && styles.pickerItemSelected
                                             ]}
-                                            onPress={() => handleYearMonthSelect(calendarCurrentYear, index)}
+                                            onPress={() => handleMonthSelect(index)}
                                         >
                                             <Text style={[
                                                 styles.pickerItemText,
-                                                index === calendarCurrentMonthIndex && styles.pickerItemTextSelected
+                                                index === tempPickerMonth && styles.pickerItemTextSelected
                                             ]}>
                                                 {month}
                                             </Text>
@@ -929,6 +983,16 @@ export const StoryCreationFlow: React.FC<StoryCreationFlowProps> = ({
                                     ))}
                                 </ScrollView>
                             </View>
+                        </View>
+
+                        {/* Done Button */}
+                        <View style={{ padding: 16, borderTopWidth: 1, borderTopColor: '#f0f0f0' }}>
+                            <TouchableOpacity
+                                style={{ backgroundColor: 'black', borderRadius: 25, paddingVertical: 12, alignItems: 'center' }}
+                                onPress={confirmYearMonthSelection}
+                            >
+                                <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 16 }}>Done</Text>
+                            </TouchableOpacity>
                         </View>
                     </View>
                 </View>

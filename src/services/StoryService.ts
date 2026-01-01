@@ -163,6 +163,97 @@ class StoryService {
     }
 
     /**
+     * Update a story with pin drafts (handles new photos, updates to existing pins, and reordering).
+     */
+    async updateStoryWithPhotos(
+        userId: string,
+        storyId: string,
+        storyTitle: string,
+        pinDrafts: PinDraft[]
+    ): Promise<{ success: boolean; error?: string }> {
+        try {
+            console.log('[StoryService] Starting story update:', storyTitle);
+            const { updatePin } = require('./firestoreService');
+
+            // 1. Separate new vs existing pins
+            const newDrafts = pinDrafts.filter(d => d.tempId.startsWith('temp_'));
+            const existingDrafts = pinDrafts.filter(d => !d.tempId.startsWith('temp_'));
+
+            // 2. Create new pins
+            const newPinIdMap: Record<string, string> = {};
+
+            if (newDrafts.length > 0) {
+                const uploadPromises = newDrafts.map(async (draft) => {
+                    try {
+                        const pinId = `story_pin_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+                        const downloadUrl = await uploadImage(draft.localImageUri, userId, pinId);
+
+                        const pinData = {
+                            id: '',
+                            title: draft.title,
+                            location: draft.location
+                                ? [draft.location.lon, draft.location.lat] as [number, number]
+                                : [0, 0] as [number, number],
+                            locationName: draft.location?.name || 'Unknown Location',
+                            imageUris: [downloadUrl],
+                            date: draft.visitDate ? new Date(draft.visitDate).toISOString() : new Date().toISOString(),
+                            creatorId: userId,
+                            pinColor: 'magenta' as const,
+                            expiresAt: null,
+                        };
+
+                        const newPinId = await addPin(pinData as any);
+                        newPinIdMap[draft.tempId] = newPinId;
+                        return newPinId;
+                    } catch (e) {
+                        console.error('[StoryService] Error creating new pin for update:', e);
+                        return null;
+                    }
+                });
+                await Promise.all(uploadPromises);
+            }
+
+            // 3. Update existing pins
+            const updatePromises = existingDrafts.map(async (draft) => {
+                try {
+                    await updatePin(draft.tempId, {
+                        title: draft.title,
+                        location: draft.location
+                            ? [draft.location.lon, draft.location.lat]
+                            : [0, 0], // Note: firestoreService might expect geopoint or array, checking usage
+                        locationName: draft.location?.name,
+                        date: draft.visitDate ? new Date(draft.visitDate).toISOString() : undefined
+                    });
+                } catch (e) {
+                    console.error('[StoryService] Error updating pin:', draft.tempId, e);
+                }
+            });
+            await Promise.all(updatePromises);
+
+            // 4. Construct final pin ID list in order
+            const finalPinIds = pinDrafts.map(d => {
+                if (d.tempId.startsWith('temp_')) {
+                    return newPinIdMap[d.tempId];
+                }
+                return d.tempId;
+            }).filter(id => !!id); // Filter out any failed creations
+
+            // 5. Update Story
+            await this.updateStory(storyId, {
+                title: storyTitle,
+                pinIds: finalPinIds,
+                coverPinId: finalPinIds[0] // Update cover to first pin
+            });
+
+            return { success: true };
+
+        } catch (error) {
+            console.error('[StoryService] Error in updateStoryWithPhotos:', error);
+            return { success: false, error: 'Failed to update story.' };
+        }
+    }
+
+    /**
      * Update an existing story.
      */
     async updateStory(storyId: string, updates: Partial<Pick<Story, 'title' | 'description' | 'pinIds' | 'coverPinId'>>): Promise<{ success: boolean; error?: string }> {

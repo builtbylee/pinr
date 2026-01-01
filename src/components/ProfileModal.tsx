@@ -150,7 +150,11 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
             {
                 text: 'Delete',
                 style: 'destructive',
-                onPress: () => storyService.deleteStory(storyId)
+                onPress: async () => {
+                    // Optimistic update to immediately remove from UI
+                    setStories(prev => prev.filter(s => s.id !== storyId));
+                    await storyService.deleteStory(storyId);
+                }
             }
         ]);
     };
