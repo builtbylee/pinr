@@ -140,119 +140,124 @@ export const subscribeToPins = (
             expiredPinIds.forEach(id => deletePin(id).catch(err => console.warn('Failed to delete expired pin:', id, err)));
         }
 
-        console.log('[Firestore] processPins: Processed', memories.length, 'memories from', rawPins.length, 'raw pins');
-        if (memories.length > 0) {
-            console.log('[Firestore] processPins: First memory sample:', {
-                id: memories[0].id,
-                title: memories[0].title,
-                creatorId: memories[0].creatorId
-            });
-        }
         callback(memories);
     };
 
     // Wait for Firestore to be ready before subscribing
-    // This is REQUIRED on iOS to ensure the SDK socket is connected
     const { waitForFirestore } = require('./firebaseInitService');
     let hasReceivedSnapshot = false;
-    let isUnsubscribed = false;
+    let timeoutId: NodeJS.Timeout | null = null;
 
-    const setupSubscription = async () => {
-        try {
-            console.log('[Firestore] ========== subscribeToPins START ==========');
-            console.log('[Firestore] Timestamp:', new Date().toISOString());
+    waitForFirestore()
+        .then(() => {
+            console.log('[Firestore] Firestore ready, subscribing to pins...');
 
-            // Wait for Firestore SDK to be ready (required on iOS)
-            console.log('[Firestore] Waiting for Firestore to be ready...');
-            await waitForFirestore();
-            console.log('[Firestore] ✅ Firestore ready');
+            // Set timeout: if no snapshot after 10 seconds, try REST API query fallback
+            timeoutId = setTimeout(async () => {
+                if (!hasReceivedSnapshot) {
+                    console.warn('[Firestore] ⚠️ Pins subscription timeout after 10s, trying REST API query...');
+                    Alert.alert('Debug: Pins Timeout', 'SDK timed out, trying REST...');
+                    try {
+                        // Use REST API to query pins collection
+                        const auth = require('@react-native-firebase/auth').default;
+                        const currentUser = auth().currentUser;
 
-            if (isUnsubscribed) {
-                console.log('[Firestore] Unsubscribed during wait, aborting');
-                return;
-            }
+                        if (currentUser) {
+                            const token = await currentUser.getIdToken(true);
+                            const projectId = 'days-c4ad4';
 
-            // Step 2: Verify authentication before fetching
-            const auth = require('@react-native-firebase/auth').default;
-            const currentUser = auth().currentUser;
-            if (!currentUser) {
-                console.error('[Firestore] ❌ No authenticated user - cannot fetch pins');
-                callback([]);
-                return;
-            }
-            console.log('[Firestore] ✅ User authenticated:', currentUser.uid);
+                            // Firestore REST API structured query
+                            const queryBody = {
+                                structuredQuery: {
+                                    from: [{ collectionId: PINS_COLLECTION }],
+                                    orderBy: [
+                                        {
+                                            field: { fieldPath: 'createdAt' },
+                                            direction: 'DESCENDING'
+                                        }
+                                    ]
+                                }
+                            };
 
-            // Step 3: Fetch initial pins data to populate UI immediately
-            console.log('[Firestore] Fetching initial pins data...');
-            const fetchStartTime = Date.now();
+                            const url = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents:runQuery`;
+                            const response = await fetch(url, {
+                                method: 'POST',
+                                headers: {
+                                    'Authorization': `Bearer ${token}`,
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify(queryBody)
+                            });
 
-            try {
-                const pinsRef = firestore()
-                    .collection(PINS_COLLECTION)
-                    .orderBy('createdAt', 'desc');
+                            if (response.ok) {
+                                const results = await response.json();
+                                console.log('[Firestore] ✅ REST query succeeded, results:', results.length);
+                                Alert.alert('Debug: REST Query', `HTTP 200, ${results.length} results`);
 
-                console.log('[Firestore] Executing pins query...');
-                const snapshot = await Promise.race([
-                    pinsRef.get(),
-                    new Promise<any>((_, reject) =>
-                        setTimeout(() => reject(new Error('Initial fetch timeout')), 8000)
-                    )
-                ]);
+                                // Parse REST API response (array of result objects)
+                                rawPins = [];
+                                rawIds = [];
 
-                const fetchDuration = Date.now() - fetchStartTime;
-                console.log('[Firestore] ✅ Initial fetch completed');
-                console.log('[Firestore] Fetch duration:', fetchDuration + 'ms');
-                console.log('[Firestore] Pins found:', snapshot.docs.length);
+                                for (const result of results) {
+                                    if (result.document) {
+                                        const doc = result.document;
+                                        const pathParts = doc.name.split('/');
+                                        const docId = pathParts[pathParts.length - 1];
+                                        rawIds.push(docId);
 
-                if (isUnsubscribed) {
-                    console.log('[Firestore] Unsubscribed during fetch, aborting');
-                    return;
-                }
+                                        // Parse fields from REST format
+                                        const fields = doc.fields;
+                                        const pinData: any = {};
+                                        for (const key in fields) {
+                                            const value = fields[key];
+                                            if (value.stringValue !== undefined) pinData[key] = value.stringValue;
+                                            else if (value.integerValue !== undefined) pinData[key] = parseInt(value.integerValue, 10);
+                                            else if (value.timestampValue !== undefined) {
+                                                // Convert timestamp to Firestore Timestamp-like object
+                                                pinData[key] = { toMillis: () => new Date(value.timestampValue).getTime() };
+                                            }
+                                            else if (value.geoPointValue !== undefined) {
+                                                pinData[key] = {
+                                                    latitude: value.geoPointValue.latitude,
+                                                    longitude: value.geoPointValue.longitude
+                                                };
+                                            }
+                                        }
+                                        rawPins.push(pinData as FirestorePin);
+                                    }
+                                }
 
-                // Update cache with initial data
-                rawPins = snapshot.docs.map(doc => doc.data() as FirestorePin);
-                rawIds = snapshot.docs.map(doc => doc.id);
-
-                // Process and callback with initial data
-                processPins();
-                hasReceivedSnapshot = true;
-            } catch (fetchError: any) {
-                console.error('[Firestore] ❌ Initial fetch failed:', fetchError.message);
-                console.error('[Firestore] Error code:', fetchError.code);
-                console.error('[Firestore] Error details:', JSON.stringify(fetchError).substring(0, 200));
-                // Continue to subscription anyway - it might work
-                callback([]);
-            }
-
-            // Step 4: Setup real-time subscription
-            // Connection is now verified, so onSnapshot should work immediately
-            console.log('[Firestore] Setting up real-time subscription...');
-            const subscriptionStartTime = Date.now();
-
-            try {
-                const pinsRef = firestore()
-                    .collection(PINS_COLLECTION)
-                    .orderBy('createdAt', 'desc');
-
-                console.log('[Firestore] Creating onSnapshot listener...');
-                unsubscribeSnapshot = pinsRef.onSnapshot(
-                    (snapshot) => {
-                        const subscriptionDuration = Date.now() - subscriptionStartTime;
-                        console.log('[Firestore] 🎉 Pins snapshot callback fired!');
-                        console.log('[Firestore] Subscription established after:', subscriptionDuration + 'ms');
-                        console.log('[Firestore] Pins count:', snapshot.docs.length);
-                        console.log('[Firestore] Snapshot metadata:', {
-                            fromCache: snapshot.metadata.fromCache,
-                            hasPendingWrites: snapshot.metadata.hasPendingWrites
-                        });
-
-                        if (isUnsubscribed) {
-                            console.log('[Firestore] Received snapshot after unsubscribe, ignoring');
-                            return;
+                                processPins();
+                                hasReceivedSnapshot = true;
+                                Alert.alert('Debug: Pins Loaded', `${rawPins.length} pins processed`);
+                            } else {
+                                console.error('[Firestore] ❌ REST query failed:', response.status);
+                                Alert.alert('Debug: REST Fail', `Status: ${response.status}`);
+                                callback([]);
+                            }
+                        } else {
+                            console.error('[Firestore] ❌ No authenticated user for REST fallback');
+                            callback([]);
                         }
+                    } catch (error: any) {
+                        console.error('[Firestore] ❌ REST query failed:', error);
+                        Alert.alert('Debug: REST Error', error.message || 'Unknown error');
+                        callback([]);
+                    }
+                }
+            }, 10000);
 
+            unsubscribeSnapshot = firestore()
+                .collection(PINS_COLLECTION)
+                .orderBy('createdAt', 'desc')
+                .onSnapshot(
+                    (snapshot) => {
+                        console.log('[Firestore] ✅ Pins snapshot received, count:', snapshot.docs.length);
                         hasReceivedSnapshot = true;
-
+                        if (timeoutId) {
+                            clearTimeout(timeoutId);
+                            timeoutId = null;
+                        }
                         // Update cache
                         rawPins = snapshot.docs.map(doc => doc.data() as FirestorePin);
                         rawIds = snapshot.docs.map(doc => doc.id);
@@ -264,57 +269,26 @@ export const subscribeToPins = (
                         console.error('[Firestore] ❌ Pins snapshot error:', error);
                         console.error('[Firestore] Error code:', error.code);
                         console.error('[Firestore] Error message:', error.message);
-                        console.error('[Firestore] Error details:', JSON.stringify(error).substring(0, 300));
-
-                        // Check if it's an authentication error
-                        if (error.code === 'permission-denied' || error.code === 'unauthenticated') {
-                            console.error('[Firestore] ⚠️ Authentication error - user may not be authenticated');
-                            const auth = require('@react-native-firebase/auth').default;
-                            const currentUser = auth().currentUser;
-                            console.error('[Firestore] Current user:', currentUser ? currentUser.uid : 'NULL');
-                        }
-
-                        if (isUnsubscribed) {
-                            return;
-                        }
-
                         // Call callback with empty array on error to prevent hang
                         callback([]);
                     }
                 );
 
-                console.log('[Firestore] ✅ Real-time subscription created');
-                console.log('[Firestore] ============================================');
-
-                // Setup interval to re-check every 30 seconds (in case app stays open)
-                intervalId = setInterval(processPins, 30000);
-            } catch (subscriptionError: any) {
-                console.error('[Firestore] ❌ Failed to create subscription:', subscriptionError);
-                if (!isUnsubscribed) {
-                    callback([]);
-                }
-            }
-        } catch (error: any) {
-            console.error('[Firestore] ❌ Setup subscription failed:', error);
-            if (!isUnsubscribed) {
-                callback([]);
-            }
-        }
-    };
-
-    // Start setup asynchronously
-    setupSubscription();
+            // Setup interval to re-check every 30 seconds (in case app stays open)
+            intervalId = setInterval(processPins, 30000);
+        })
+        .catch((error) => {
+            console.error('[Firestore] ❌ Failed to wait for Firestore:', error);
+            // Call callback with empty array to prevent hang
+            callback([]);
+        });
 
     return () => {
-        console.log('[Firestore] Cleaning up pins subscription');
-        isUnsubscribed = true;
         if (unsubscribeSnapshot) {
             unsubscribeSnapshot();
-            unsubscribeSnapshot = null;
         }
         if (intervalId) {
             clearInterval(intervalId);
-            intervalId = null;
         }
     };
 };

@@ -71,7 +71,7 @@ export async function waitForFirebase(): Promise<void> {
                 } catch (error) {
                     // NativeModules might not be ready yet
                     if (attempts < nativeBridgeCheckAttempts) {
-                        setTimeout(checkFirebase, 50);
+                        setTimeout(checkFirebase, 100);
                         return;
                     }
                 }
@@ -86,7 +86,7 @@ export async function waitForFirebase(): Promise<void> {
                     console.log(`[FirebaseInit] Found ${nativeApps.length} native Firebase app(s)`);
                     if (nativeApps.length === 0 && attempts < 100) {
                         // Native module is ready but no apps yet - wait a bit more
-                        setTimeout(checkFirebase, 50);
+                        setTimeout(checkFirebase, 100);
                         return;
                     }
                 }
@@ -146,7 +146,7 @@ export async function waitForFirebase(): Promise<void> {
                     }
                     // Other error, retry
                     if (attempts < maxAttempts) {
-                        setTimeout(checkFirebase, 50);
+                        setTimeout(checkFirebase, 100);
                         return;
                     } else {
                         console.error('[FirebaseInit] Error getting app:', error);
@@ -187,7 +187,7 @@ export async function waitForFirebase(): Promise<void> {
                     }
                     // For other errors, retry
                     if (attempts < maxAttempts) {
-                        setTimeout(checkFirebase, 50);
+                        setTimeout(checkFirebase, 100);
                         return;
                     } else {
                         console.error('[FirebaseInit] Auth check failed after timeout:', authError);
@@ -203,7 +203,7 @@ export async function waitForFirebase(): Promise<void> {
                     errorMessage.includes('initializeApp')) {
 
                     if (attempts < maxAttempts) {
-                        setTimeout(checkFirebase, 50);
+                        setTimeout(checkFirebase, 100);
                         return;
                     } else {
                         console.error('[FirebaseInit] Firebase initialization timeout:', error);
@@ -214,7 +214,7 @@ export async function waitForFirebase(): Promise<void> {
                 } else {
                     // Unexpected error - retry
                     if (attempts < maxAttempts) {
-                        setTimeout(checkFirebase, 50);
+                        setTimeout(checkFirebase, 100);
                         return;
                     } else {
                         console.error('[FirebaseInit] Unexpected error after timeout:', error);
@@ -237,13 +237,12 @@ export async function waitForFirebase(): Promise<void> {
 /**
  * Wait for Firestore to be initialized and ready
  * Firestore may initialize after Firebase Auth, so we need a separate check
- * 
- * NOTE: We only check SDK availability, not actual network connectivity
- * Network connectivity will be verified when actual queries are made
+ * We verify readiness by checking if the native module is available
  */
 export async function waitForFirestore(): Promise<void> {
-    if (isFirestoreReady) {
-        return;
+    if (!hasAlertedInit) {
+        // Alert.alert('Debug: Init', 'Waiting for Firestore...');
+        hasAlertedInit = true;
     }
 
     // First ensure Firebase is ready
@@ -259,7 +258,7 @@ export async function waitForFirestore(): Promise<void> {
 
     firestoreInitPromise = new Promise((resolve) => {
         let attempts = 0;
-        const maxAttempts = 50; // 5 seconds max (50 * 100ms)
+        const maxAttempts = 50; // 5 seconds max (50 * 100ms) - Firestore should be ready quickly after Firebase
 
         const checkFirestore = async () => {
             attempts++;
@@ -270,12 +269,37 @@ export async function waitForFirestore(): Promise<void> {
                 // when using use_frameworks! (Static Linking), yet the SDK is functional.
                 const firestoreInstance = firestore();
 
-                // If we got an instance, Firestore SDK is ready
-                // Note: We don't test actual network connectivity here as it can block indefinitely
-                // Actual queries will handle connectivity and retries
+                // If we got an instance, we assume it's usable or will queue requests
                 if (firestoreInstance) {
+                    try {
+                        // Critical: Enable Long Polling to avoid gRPC connection hangs
+                        // We enable this on Physical Devices too because standard gRPC seems to be failing
+                        // (likely network/firewall issues causing timeouts)
+                        console.log('[FirebaseInit] Enabling experimentalForceLongPolling for ALL devices...');
+
+                        // API Check: .settings might be a function (Standard) or property (New/Legacy)
+                        console.log('[FirebaseInit] DEBUG: Instance:', firestoreInstance);
+
+                        const settingsProp = (firestoreInstance as any).settings;
+
+                        if (typeof settingsProp === 'function') {
+                            await firestoreInstance.settings({ experimentalForceLongPolling: true });
+                            console.log('[FirebaseInit] ✅ experimentalForceLongPolling enabled (via Method)');
+                        } else {
+                            (firestoreInstance as any).settings = { experimentalForceLongPolling: true };
+                            console.log('[FirebaseInit] ✅ experimentalForceLongPolling enabled (via Assignment)');
+                        }
+                    } catch (e: any) {
+                        console.warn('[FirebaseInit] ⚠️ Failed to configure Firestore settings:', e.message);
+                    }
+
                     isFirestoreReady = true;
-                    console.log(`[FirebaseInit] ✅ Firestore SDK is ready (after ${attempts} attempts)`);
+                    console.log(`[FirebaseInit] ✅ Firestore is ready (after ${attempts} attempts)`);
+
+                    if (!hasAlertedReady) {
+                        // Alert.alert('Debug: Init', 'Firestore Ready!');
+                        hasAlertedReady = true;
+                    }
                     resolve();
                     return;
                 }
@@ -288,7 +312,7 @@ export async function waitForFirestore(): Promise<void> {
                     console.warn('[FirebaseInit] Firestore check timed out, proceeding anyway');
                     isFirestoreReady = true;
                     if (!hasAlertedReady) {
-                        // Alert.alert('Debug: Init', 'Firestore Timed Out (Max Attempts)');
+                        Alert.alert('Debug: Init', 'Firestore Timed Out (Max Attempts)');
                         hasAlertedReady = true;
                     }
                     resolve();
@@ -304,7 +328,7 @@ export async function waitForFirestore(): Promise<void> {
                 } else {
                     isFirestoreReady = true;
                     if (!hasAlertedReady) {
-                        // Alert.alert('Debug: Init', `Init Error: ${error.message}`);
+                        Alert.alert('Debug: Init', `Init Error: ${error.message}`);
                         hasAlertedReady = true;
                     }
                     resolve();
