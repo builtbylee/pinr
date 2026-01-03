@@ -111,12 +111,16 @@
         {
           "android": {
             "kotlinVersion": "1.9.25"
+          },
+          "ios": {
+            "useFrameworks": "static"
           }
         }
       ],
       "expo-font",
       "expo-secure-store",
       "expo-web-browser",
+      "@react-native-firebase/app",
       "@react-native-firebase/crashlytics"
     ],
     "experiments": {

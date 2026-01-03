@@ -25,21 +25,42 @@ export const useDataSubscriptions = (currentUserId: string | null) => {
 
     // 2. Subscribe to Profile
     useEffect(() => {
+        console.log('[useDataSubscriptions] Effect triggered. currentUserId:', currentUserId);
         if (!currentUserId) {
+            console.log('[useDataSubscriptions] No user ID, resetting profile');
             setUserProfile(null);
             setProfileLoaded(false);
             return;
         }
 
-        console.log('[useDataSubscriptions] Subscribing to profile...');
+        console.log('[useDataSubscriptions] Subscribing to profile for:', currentUserId);
         setProfileLoaded(false); // Reset on new user
 
+        // Safety timeout: if profile doesn't load within 15 seconds, unblock the UI anyway
+        let hasLoaded = false;
+        const safetyTimeout = setTimeout(() => {
+            if (!hasLoaded) {
+                console.warn('[useDataSubscriptions] ⚠️ Profile load timeout after 15s, unblocking UI');
+                setProfileLoaded(true);
+                hasLoaded = true;
+            }
+        }, 15000);
+
         const unsubscribe = subscribeToUserProfile(currentUserId, (data) => {
+            console.log('[useDataSubscriptions] Profile update received:', data ? 'Data found' : 'No data');
+            if (!hasLoaded) {
+                clearTimeout(safetyTimeout);
+                hasLoaded = true;
+            }
             setUserProfile(data);
             setProfileLoaded(true); // Firestore has responded (even if null)
         });
 
-        return () => unsubscribe();
+        return () => {
+            console.log('[useDataSubscriptions] Unsubscribing from profile');
+            clearTimeout(safetyTimeout);
+            unsubscribe();
+        }
     }, [currentUserId]);
 
     return { allPins, userProfile, profileLoaded };

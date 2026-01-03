@@ -97,6 +97,12 @@ export default function GameSandbox() {
     const pulseAnim = useRef(new Animated.Value(1)).current;
     const colorAnim = useRef(new Animated.Value(0)).current;
 
+    const getStreakColor = () => {
+        if (state.streak >= 10) return '#F59E0B'; // Amber for high streak
+        if (state.streak >= 5) return '#10B981'; // Green for medium
+        return '#4F46E5'; // Indigo for low
+    };
+
     // PanResponder and tab swipe animations removed for crash resilience
     const panResponder = { panHandlers: {} };
     const tabTranslateX = useRef(new Animated.Value(0)).current;
@@ -424,10 +430,14 @@ export default function GameSandbox() {
         // if (yourTurn.length === 0) yourTurn.push({ id: 'mock1', type: 'play', opponentUsername: 'Sarah' });
 
         return (
-            <View style={{ flex: 1, backgroundColor: '#FAFAFA' }}>
+            <ScrollView
+                style={{ flex: 1, backgroundColor: '#FAFAFA' }}
+                contentContainerStyle={{ paddingBottom: 100 }}
+                showsVerticalScrollIndicator={false}
+            >
 
                 {/* Page Header */}
-                <View style={{ paddingHorizontal: 20, paddingTop: 16, paddingBottom: 8 }}>
+                <View style={{ paddingHorizontal: 20, paddingTop: 8, paddingBottom: 8 }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                         <View>
                             <Text style={{ fontSize: 24, fontWeight: '800', color: '#1F2937' }}>🎮 Games</Text>
@@ -491,102 +501,1270 @@ export default function GameSandbox() {
                         contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 8, gap: 12 }}
                     >
                         {yourTurn.map((item: any) => {
-                            // Simplified map logic for safe mode
-                            return null;
+                            const isInvite = item.type === 'invite';
+                            const isResult = item.type === 'result';
+                            const opponentId = item.challengerId === getCurrentUser()?.uid ? item.opponentId : item.challengerId;
+                            const opponentName = item.challengerId === getCurrentUser()?.uid ? item.opponentUsername : item.challengerUsername;
+                            const opponentAvatar = opponentData[opponentId]?.avatarUrl;
+                            const opponentPinColor = opponentData[opponentId]?.pinColor || '#E5E7EB';
+
+                            // Card styling based on type
+                            const cardBgColor = isInvite ? '#FEF3C7' : 'white';
+                            const actionColor = isInvite ? '#F59E0B' : isResult ? '#10B981' : '#3B82F6';
+                            const actionText = isInvite ? 'ACCEPT' : isResult ? 'VIEW' : 'PLAY';
+                            const statusText = isInvite ? '🎫 New Invite!' : isResult ? '🏁 Game Over' : '🎮 Ready';
+
+                            return (
+                                <TouchableOpacity
+                                    key={item.id || Math.random()}
+                                    style={{
+                                        backgroundColor: cardBgColor,
+                                        borderRadius: 12, // Slightly smaller radius
+                                        padding: 12, // Reduced padding (was 18)
+                                        width: 130, // Reduced width (was 160)
+                                        alignItems: 'center',
+                                        shadowColor: isInvite ? '#F59E0B' : '#000',
+                                        shadowOffset: { width: 0, height: 4 }, // Smaller shadow
+                                        shadowOpacity: isInvite ? 0.25 : 0.08,
+                                        shadowRadius: 8,
+                                        elevation: 4,
+                                        borderWidth: 1,
+                                        borderColor: isInvite ? 'rgba(245,158,11,0.3)' : 'rgba(0,0,0,0.05)',
+                                    }}
+                                    onPress={() => {
+                                        if (isInvite) acceptChallenge(item);
+                                        else checkDeepLinkChallenge(item.id);
+                                    }}
+                                >
+                                    {/* Avatar with pinColor ring */}
+                                    <View style={{
+                                        width: 48, // Reduced (was 68)
+                                        height: 48,
+                                        borderRadius: 24,
+                                        borderWidth: 2, // Thinner border
+                                        borderColor: opponentPinColor,
+                                        backgroundColor: '#F9FAFB',
+                                        justifyContent: 'center',
+                                        alignItems: 'center',
+                                        overflow: 'hidden',
+                                        marginBottom: 8, // Reduced margin
+                                    }}>
+                                        {opponentAvatar ? (
+                                            <Image source={{ uri: opponentAvatar }} style={{ width: '100%', height: '100%' }} contentFit="cover" />
+                                        ) : (
+                                            <Feather name="user" size={24} color="#9CA3AF" />
+                                        )}
+                                    </View>
+
+                                    {/* Opponent Name */}
+                                    <Text style={{ fontSize: 13, fontWeight: '700', color: '#1F2937', marginBottom: 2 }} numberOfLines={1}>
+                                        {opponentName || 'Unknown'}
+                                    </Text>
+
+                                    {/* Status */}
+                                    <Text style={{ fontSize: 10, color: '#6B7280', marginBottom: 8 }} numberOfLines={1}>{statusText}</Text>
+
+                                    {/* Game Type Badge - Frosted Circle (Small) */}
+                                    <View style={{
+                                        position: 'absolute',
+                                        top: 8,
+                                        right: 8,
+                                        width: 24,
+                                        height: 24,
+                                        borderRadius: 12,
+                                        backgroundColor: item.gameType === 'pindrop' ? '#EF4444' : item.gameType === 'travelbattle' ? '#F59E0B' : '#3B82F6',
+                                        justifyContent: 'center',
+                                        alignItems: 'center',
+                                        shadowColor: '#000',
+                                        shadowOpacity: 0.1,
+                                        shadowRadius: 2,
+                                        elevation: 1,
+                                    }}>
+                                        <Feather
+                                            name={item.gameType === 'pindrop' ? 'map-pin' : item.gameType === 'travelbattle' ? 'globe' : 'flag'}
+                                            size={12}
+                                            color="white"
+                                        />
+                                    </View>
+
+                                    <View style={{
+                                        backgroundColor: actionColor,
+                                        paddingHorizontal: 16,
+                                        paddingVertical: 8,
+                                        borderRadius: 8,
+                                        width: '100%',
+                                        alignItems: 'center',
+                                        marginTop: 'auto'
+                                    }}>
+                                        <Text style={{ color: 'white', fontSize: 11, fontWeight: '800' }}>{actionText}</Text>
+                                    </View>
+                                </TouchableOpacity>
+                            );
                         })}
                     </ScrollView>
                 )}
 
 
                 {/* SECTION 2: WAITING */}
-                {/* Simplified logic for safe mode - commented out complex map */}
+                {theirTurn.length > 0 && (
+                    <>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingTop: 16, paddingBottom: 8, gap: 8 }}>
+                            <Text style={{ fontSize: 13, fontWeight: '700', color: '#6B7280', textTransform: 'uppercase', letterSpacing: 0.5 }}>⏳ Waiting</Text>
+                        </View>
+                        <View style={{
+                            backgroundColor: 'white',
+                            borderRadius: 16,
+                            marginHorizontal: 20,
+                            marginBottom: 16,
+                            shadowColor: '#000',
+                            shadowOffset: { width: 0, height: 2 },
+                            shadowOpacity: 0.05,
+                            shadowRadius: 8,
+                            elevation: 2,
+                        }}>
+                            {theirTurn.map((item: any, index: number) => {
+                                const opponentId = item.challengerId === getCurrentUser()?.uid ? item.opponentId : item.challengerId;
+                                const opponentName = item.challengerId === getCurrentUser()?.uid ? item.opponentUsername : item.challengerUsername;
+                                const opponentAvatar = opponentData[opponentId]?.avatarUrl;
+                                const opponentPinColor = opponentData[opponentId]?.pinColor || '#E5E7EB';
+                                return (
+                                    <TouchableOpacity
+                                        key={item.id}
+                                        style={{
+                                            flexDirection: 'row',
+                                            alignItems: 'center',
+                                            padding: 14,
+                                            borderBottomWidth: index < theirTurn.length - 1 ? 1 : 0,
+                                            borderBottomColor: '#F3F4F6',
+                                        }}
+                                        onPress={() => checkDeepLinkChallenge(item.id)}
+                                    >
+                                        {/* Avatar with pinColor ring */}
+                                        <View style={{
+                                            width: 44,
+                                            height: 44,
+                                            borderRadius: 22,
+                                            borderWidth: 2,
+                                            borderColor: opponentPinColor,
+                                            backgroundColor: '#F9FAFB',
+                                            justifyContent: 'center',
+                                            alignItems: 'center',
+                                            overflow: 'hidden',
+                                            marginRight: 12,
+                                        }}>
+                                            {opponentAvatar ? (
+                                                <Image source={{ uri: opponentAvatar }} style={{ width: '100%', height: '100%' }} contentFit="cover" />
+                                            ) : (
+                                                <Feather name="user" size={20} color="#9CA3AF" />
+                                            )}
+                                        </View>
+                                        <View style={{ flex: 1 }}>
+                                            <Text style={{ fontSize: 15, fontWeight: '600', color: '#1F2937' }}>vs {opponentName}</Text>
+                                            <Text style={{ fontSize: 12, color: '#9CA3AF', marginTop: 2 }}>Waiting for opponent...</Text>
+                                        </View>
+                                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                                            <ActivityIndicator size="small" color="#9CA3AF" />
+                                            <Feather name="chevron-right" size={18} color="#D1D5DB" />
+                                        </View>
+                                    </TouchableOpacity>
+                                );
+                            })}
+                        </View>
+                    </>
+                )}
 
 
-                {/* SECTION 3: NEW GAMES */}
-                <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingTop: 16, paddingBottom: 8, gap: 8 }}>
-                    <Text style={{ fontSize: 13, fontWeight: '700', color: '#6B7280', textTransform: 'uppercase', letterSpacing: 0.5 }}>🎲 New Game</Text>
+                {/* SECTION 3: PLAY A GAME */}
+                <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingTop: 8, paddingBottom: 12, gap: 8 }}>
+                    <Feather name="play-circle" size={16} color="#6B7280" />
+                    <Text style={{ fontSize: 13, fontWeight: '700', color: '#6B7280', textTransform: 'uppercase', letterSpacing: 0.5 }}>Play a Game</Text>
                 </View>
 
-                {/* Game Cards (Reduced spacing) */}
-                <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 100, gap: 16 }}>
-
-                    {/* PIN DROP (Primary) */}
+                {/* Game Cards Row - Premium Tiles */}
+                <View style={{ flexDirection: 'row', marginHorizontal: 20, gap: 8, marginBottom: 20 }}>
+                    {/* Flag Dash Card - Blue */}
                     <TouchableOpacity
-                        style={[styles.gameCard, { backgroundColor: '#FFF5F5', borderColor: '#FECACA' }]}
-                        activeOpacity={0.9}
+                        style={{
+                            flex: 1,
+                            aspectRatio: 1,
+                            backgroundColor: '#3B82F6',
+                            borderRadius: 12,
+                            padding: isSmallScreen ? 8 : 10,
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                            shadowColor: '#3B82F6',
+                            shadowOffset: { width: 0, height: 4 },
+                            shadowOpacity: 0.3,
+                            shadowRadius: 8,
+                            elevation: 6,
+                            borderWidth: 1,
+                            borderColor: 'rgba(255,255,255,0.2)',
+                        }}
                         onPress={() => {
-                            setPinDropDifficulty('medium'); // Default
+                            setState(prev => ({ ...prev, difficulty: 'medium' }));
+                            setSelectedGameType('flagdash');
+                        }}
+                    >
+                        {/* Icon Circle */}
+                        <View style={{
+                            width: isSmallScreen ? 36 : 42,
+                            height: isSmallScreen ? 36 : 42,
+                            borderRadius: isSmallScreen ? 18 : 21,
+                            backgroundColor: 'rgba(255,255,255,0.25)',
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                            marginBottom: 8,
+                        }}>
+                            <Feather name="flag" size={isSmallScreen ? 18 : 22} color="white" />
+                        </View>
+                        <Text style={{ color: 'white', fontSize: isSmallScreen ? 10 : 11, fontWeight: '700', textAlign: 'center' }}>Flag Dash</Text>
+                    </TouchableOpacity>
+
+                    {/* Pin Drop Card - Red */}
+                    <TouchableOpacity
+                        style={{
+                            flex: 1,
+                            aspectRatio: 1,
+                            backgroundColor: '#EF4444',
+                            borderRadius: 12,
+                            padding: isSmallScreen ? 8 : 10,
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                            shadowColor: '#EF4444',
+                            shadowOffset: { width: 0, height: 4 },
+                            shadowOpacity: 0.3,
+                            shadowRadius: 8,
+                            elevation: 6,
+                            borderWidth: 1,
+                            borderColor: 'rgba(255,255,255,0.2)',
+                        }}
+                        onPress={() => {
+                            setPinDropDifficulty('medium');
                             setSelectedGameType('pindrop');
                         }}
                     >
-                        <View style={[styles.gameIconContainer, { backgroundColor: '#EF4444' }]}>
-                            <Feather name="map-pin" size={28} color="white" />
+                        {/* Icon Circle */}
+                        <View style={{
+                            width: isSmallScreen ? 36 : 42,
+                            height: isSmallScreen ? 36 : 42,
+                            borderRadius: isSmallScreen ? 18 : 21,
+                            backgroundColor: 'rgba(255,255,255,0.25)',
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                            marginBottom: 8,
+                        }}>
+                            <Feather name="map-pin" size={isSmallScreen ? 18 : 22} color="white" />
                         </View>
-                        <View style={styles.gameInfo}>
-                            <Text style={[styles.gameTitle, { color: '#991B1B' }]}>Pin Drop</Text>
-                            <Text style={styles.gameDescription}>Explore the world and drop pins.</Text>
-                            <View style={styles.badgeRow}>
-                                <View style={[styles.badge, { backgroundColor: '#FEE2E2' }]}>
-                                    <Text style={[styles.badgeText, { color: '#B91C1C' }]}>Single Player</Text>
-                                </View>
-                            </View>
-                        </View>
-                        <Feather name="chevron-right" size={24} color="#F87171" />
+                        <Text style={{ color: 'white', fontSize: isSmallScreen ? 10 : 11, fontWeight: '700', textAlign: 'center' }}>Pin Drop</Text>
                     </TouchableOpacity>
 
-                    {/* FLAG DASH */}
+                    {/* Travel Battle Card - Amber */}
                     <TouchableOpacity
-                        style={[styles.gameCard, { backgroundColor: '#EFF6FF', borderColor: '#BFDBFE' }]}
-                        activeOpacity={0.9}
+                        style={{
+                            flex: 1,
+                            aspectRatio: 1,
+                            backgroundColor: '#F59E0B',
+                            borderRadius: 12,
+                            padding: isSmallScreen ? 8 : 10,
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                            shadowColor: '#F59E0B',
+                            shadowOffset: { width: 0, height: 4 },
+                            shadowOpacity: 0.3,
+                            shadowRadius: 8,
+                            elevation: 6,
+                            borderWidth: 1,
+                            borderColor: 'rgba(255,255,255,0.2)',
+                        }}
                         onPress={() => {
-                            setState(prev => ({ ...prev, difficulty: 'medium' })); // Default
-                            handleStart();
+                            setSelectedDifficulty('medium');
+                            setSelectedGameType('travelbattle');
                         }}
                     >
-                        <View style={[styles.gameIconContainer, { backgroundColor: '#3B82F6' }]}>
-                            <Feather name="flag" size={28} color="white" />
+                        {/* Icon Circle */}
+                        <View style={{
+                            width: isSmallScreen ? 36 : 42,
+                            height: isSmallScreen ? 36 : 42,
+                            borderRadius: isSmallScreen ? 18 : 21,
+                            backgroundColor: 'rgba(255,255,255,0.25)',
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                            marginBottom: 8,
+                        }}>
+                            <Feather name="globe" size={isSmallScreen ? 18 : 22} color="white" />
                         </View>
-                        <View style={styles.gameInfo}>
-                            <Text style={[styles.gameTitle, { color: '#1E40AF' }]}>Flag Dash</Text>
-                            <Text style={styles.gameDescription}>Race against time to identify flags.</Text>
-                            <View style={styles.badgeRow}>
-                                <View style={[styles.badge, { backgroundColor: '#DBEAFE' }]}>
-                                    <Text style={[styles.badgeText, { color: '#1D4ED8' }]}>Fast Paced</Text>
-                                </View>
-                            </View>
-                        </View>
-                        <Feather name="chevron-right" size={24} color="#60A5FA" />
+                        <Text style={{ color: 'white', fontSize: isSmallScreen ? 10 : 11, fontWeight: '700', textAlign: 'center' }}>Travel Battle</Text>
                     </TouchableOpacity>
-                </ScrollView>
-            </View>
+                </View>
+
+                {/* Friend Challenge Button - Premium */}
+                <TouchableOpacity
+                    style={{
+                        flexDirection: 'row',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        gap: 12,
+                        marginBottom: 40,
+                        backgroundColor: '#10B981',
+                        paddingVertical: 10,
+                        paddingHorizontal: 32,
+                        borderRadius: 12,
+                        marginHorizontal: 20,
+                        shadowColor: '#10B981',
+                        shadowOffset: { width: 0, height: 8 },
+                        shadowOpacity: 0.4,
+                        shadowRadius: 12,
+                        elevation: 10,
+                        borderWidth: 1,
+                        borderColor: 'rgba(255,255,255,0.2)',
+                    }}
+                    onPress={loadFriendsForChallenge}
+                >
+                    <View style={{
+                        width: 36,
+                        height: 36,
+                        borderRadius: 18,
+                        backgroundColor: 'rgba(255,255,255,0.25)',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                    }}>
+                        <Feather name="users" size={18} color="white" />
+                    </View>
+                    <Text style={{ fontSize: 17, fontWeight: '700', color: 'white' }}>Challenge a Friend</Text>
+                </TouchableOpacity>
+
+            </ScrollView >
         );
     };
 
     const renderLeaderboardTab = () => {
+        const top3 = leaderboardData.slice(0, 3);
+        const rest = leaderboardData.slice(3);
+
+        const tabs = [
+            { key: 'total' as const, label: 'Total' },
+            { key: 'flagdash' as const, label: 'Flag Dash' },
+            { key: 'pindrop' as const, label: 'Pin Drop' },
+            { key: 'travelbattle' as const, label: 'Travel Battle' },
+        ];
+
+        // Proper metallic colors
+        const GOLD = '#FFD700';
+        const GOLD_DARK = '#DAA520';
+        const SILVER = '#C0C0C0';
+        const SILVER_DARK = '#A8A8A8';
+        const BRONZE = '#CD7F32';
+        const BRONZE_DARK = '#8B4513';
+
+        const handleTabChange = (tab: typeof leaderboardTab) => {
+            setLeaderboardTab(tab);
+            fetchLeaderboard(tab);
+        };
+
         return (
-            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-                <Text>Leaderboard Tab (Stubbed)</Text>
+            <View style={{ flex: 1, backgroundColor: '#FAFAFA' }}>
+                <View style={{ paddingHorizontal: 20, paddingTop: 12, paddingBottom: 8 }}>
+                    <Text style={{ fontSize: 24, fontWeight: '800', color: '#1F2937' }}>🏆 Leaderboard</Text>
+                    <Text style={{ fontSize: 13, color: '#6B7280', marginTop: 0 }}>Compete with friends</Text>
+                </View>
+
+                {/* Game Type Tabs - Pill in Container Style */}
+                <View style={{
+                    backgroundColor: '#E5E7EB',
+                    marginHorizontal: 20,
+                    borderRadius: 20,
+                    padding: 4,
+                    flexDirection: 'row',
+                    marginBottom: 12,
+                }}>
+                    {tabs.map(tab => (
+                        <TouchableOpacity
+                            key={tab.key}
+                            onPress={() => handleTabChange(tab.key)}
+                            style={{
+                                flex: 1,
+                                alignItems: 'center',
+                                paddingVertical: 8,
+                                borderRadius: 16,
+                                backgroundColor: leaderboardTab === tab.key ? '#10B981' : 'transparent',
+                            }}
+                        >
+                            <Text style={{
+                                fontSize: 11,
+                                fontWeight: '600',
+                                color: leaderboardTab === tab.key ? 'white' : '#6B7280'
+                            }}>{tab.label}</Text>
+                        </TouchableOpacity>
+                    ))}
+                </View>
+
+                {/* Content */}
+                {loadingLeaderboard ? (
+                    <View style={styles.loadingContainer}>
+                        <ActivityIndicator size="large" color="#10B981" />
+                        <Text style={styles.loadingText}>Loading scores...</Text>
+                    </View>
+                ) : leaderboardData.length === 0 ? (
+                    <View style={styles.emptyContainer}>
+                        <Feather name="users" size={48} color="#D1D5DB" />
+                        <Text style={styles.emptyText}>No scores yet!</Text>
+                        <Text style={styles.emptyText}>Play a game to get on the leaderboard</Text>
+                    </View>
+                ) : (
+                    <View style={{ flex: 1 }}>
+                        {/* Top 3 Podium (Fixed) */}
+                        <View style={{
+                            flexDirection: 'row',
+                            justifyContent: 'center',
+                            alignItems: 'flex-end',
+                            paddingHorizontal: 20,
+                            paddingVertical: 16,
+                            marginBottom: 8,
+                            flexShrink: 0, // Ensure it doesn't shrink
+                        }}>
+                            {/* #2 - Left (Silver) */}
+                            <View style={{ alignItems: 'center', flex: 1 }}>
+                                {top3[1] ? (
+                                    <>
+                                        <View style={{
+                                            width: isSmallScreen ? 44 : 56,
+                                            height: isSmallScreen ? 44 : 56,
+                                            borderRadius: isSmallScreen ? 22 : 28,
+                                            borderWidth: 3,
+                                            borderColor: SILVER,
+                                            backgroundColor: '#F8F9FA',
+                                            justifyContent: 'center',
+                                            alignItems: 'center',
+                                            overflow: 'hidden',
+                                        }}>
+                                            {leaderboardAvatars[top3[1].odUid]?.avatarUrl ? (
+                                                <Image
+                                                    source={{ uri: leaderboardAvatars[top3[1].odUid].avatarUrl! }}
+                                                    style={{ width: '100%', height: '100%' }}
+                                                    contentFit="cover"
+                                                />
+                                            ) : (
+                                                <Feather name="user" size={24} color={SILVER_DARK} />
+                                            )}
+                                        </View>
+                                        <View style={{
+                                            backgroundColor: SILVER,
+                                            width: 22,
+                                            height: 22,
+                                            borderRadius: 11,
+                                            justifyContent: 'center',
+                                            alignItems: 'center',
+                                            marginTop: -11,
+                                            zIndex: 10,
+                                        }}>
+                                            <Text style={{ color: 'white', fontSize: 11, fontWeight: '700' }}>2</Text>
+                                        </View>
+                                        <Text style={{ fontSize: 12, fontWeight: '600', color: '#374151', marginTop: 6 }} numberOfLines={1}>
+                                            {top3[1].username}
+                                        </Text>
+                                        <Text style={{ fontSize: 15, fontWeight: '800', color: SILVER_DARK }}>
+                                            {top3[1].score}
+                                        </Text>
+                                    </>
+                                ) : <View style={{ width: isSmallScreen ? 44 : 56 }} />}
+                            </View>
+
+                            {/* #1 - Center (Gold, Elevated) */}
+                            <View style={{ alignItems: 'center', flex: 1, marginBottom: 8 }}>
+                                {top3[0] && (
+                                    <>
+                                        {/* Crown */}
+                                        <Text style={{ fontSize: 24, marginBottom: 2 }}>👑</Text>
+                                        <View style={{
+                                            width: isSmallScreen ? 60 : 72,
+                                            height: isSmallScreen ? 60 : 72,
+                                            borderRadius: isSmallScreen ? 30 : 36,
+                                            borderWidth: 4,
+                                            borderColor: GOLD,
+                                            backgroundColor: '#FFFBEB',
+                                            justifyContent: 'center',
+                                            alignItems: 'center',
+                                            overflow: 'hidden',
+                                            shadowColor: GOLD,
+                                            shadowOffset: { width: 0, height: 4 },
+                                            shadowOpacity: 0.4,
+                                            shadowRadius: 8,
+                                            elevation: 4,
+                                        }}>
+                                            {leaderboardAvatars[top3[0].odUid]?.avatarUrl ? (
+                                                <Image
+                                                    source={{ uri: leaderboardAvatars[top3[0].odUid].avatarUrl! }}
+                                                    style={{ width: '100%', height: '100%' }}
+                                                    contentFit="cover"
+                                                />
+                                            ) : (
+                                                <Feather name="user" size={32} color={GOLD_DARK} />
+                                            )}
+                                        </View>
+                                        <View style={{
+                                            backgroundColor: GOLD,
+                                            width: 26,
+                                            height: 26,
+                                            borderRadius: 13,
+                                            justifyContent: 'center',
+                                            alignItems: 'center',
+                                            marginTop: -13,
+                                            zIndex: 10,
+                                        }}>
+                                            <Text style={{ color: '#1F2937', fontSize: 13, fontWeight: '700' }}>1</Text>
+                                        </View>
+                                        <Text style={{ fontSize: 13, fontWeight: '700', color: '#1F2937', marginTop: 6 }} numberOfLines={1}>
+                                            {top3[0].username}
+                                        </Text>
+                                        <Text style={{ fontSize: 18, fontWeight: '800', color: GOLD_DARK }}>
+                                            {top3[0].score}
+                                        </Text>
+                                    </>
+                                )}
+                            </View>
+
+                            {/* #3 - Right (Bronze) */}
+                            <View style={{ alignItems: 'center', flex: 1 }}>
+                                {top3[2] ? (
+                                    <>
+                                        <View style={{
+                                            width: isSmallScreen ? 44 : 56,
+                                            height: isSmallScreen ? 44 : 56,
+                                            borderRadius: isSmallScreen ? 22 : 28,
+                                            borderWidth: 3,
+                                            borderColor: BRONZE,
+                                            backgroundColor: '#FEF7ED',
+                                            justifyContent: 'center',
+                                            alignItems: 'center',
+                                            overflow: 'hidden',
+                                        }}>
+                                            {leaderboardAvatars[top3[2].odUid]?.avatarUrl ? (
+                                                <Image
+                                                    source={{ uri: leaderboardAvatars[top3[2].odUid].avatarUrl! }}
+                                                    style={{ width: '100%', height: '100%' }}
+                                                    contentFit="cover"
+                                                />
+                                            ) : (
+                                                <Feather name="user" size={24} color={BRONZE} />
+                                            )}
+                                        </View>
+                                        <View style={{
+                                            backgroundColor: BRONZE,
+                                            width: 22,
+                                            height: 22,
+                                            borderRadius: 11,
+                                            justifyContent: 'center',
+                                            alignItems: 'center',
+                                            marginTop: -11,
+                                            zIndex: 10,
+                                        }}>
+                                            <Text style={{ color: 'white', fontSize: 11, fontWeight: '700' }}>3</Text>
+                                        </View>
+                                        <Text style={{ fontSize: 12, fontWeight: '600', color: '#374151', marginTop: 6 }} numberOfLines={1}>
+                                            {top3[2].username}
+                                        </Text>
+                                        <Text style={{ fontSize: 15, fontWeight: '800', color: BRONZE_DARK }}>
+                                            {top3[2].score}
+                                        </Text>
+                                    </>
+                                ) : <View style={{ width: isSmallScreen ? 44 : 56 }} />}
+                            </View>
+                        </View>
+
+                        {/* Ranks 4+ List (Scrollable) */}
+                        <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 20 }}>
+                            {rest.length > 0 && (
+                                <View style={{
+                                    backgroundColor: 'white',
+                                    borderRadius: 20,
+                                    marginHorizontal: 16,
+                                    padding: 16,
+                                    shadowColor: '#000',
+                                    shadowOffset: { width: 0, height: 2 },
+                                    shadowOpacity: 0.05,
+                                    shadowRadius: 8,
+                                    elevation: 2,
+                                    minHeight: 200, // Ensure minimum height to prevent collapse
+                                }}>
+                                    {rest.map((entry, index) => {
+                                        const avatarData = leaderboardAvatars[entry.odUid];
+                                        const ringColor = avatarData?.pinColor || '#E5E7EB';
+                                        return (
+                                            <View
+                                                key={`${entry.odUid}_${index}`}
+                                                style={{
+                                                    flexDirection: 'row',
+                                                    alignItems: 'center',
+                                                    paddingVertical: 12,
+                                                    borderBottomWidth: index < rest.length - 1 ? 1 : 0,
+                                                    borderBottomColor: '#F3F4F6',
+                                                }}
+                                            >
+                                                {/* Rank */}
+                                                <View style={{
+                                                    width: 32,
+                                                    height: 32,
+                                                    borderRadius: 16,
+                                                    backgroundColor: '#F3F4F6',
+                                                    justifyContent: 'center',
+                                                    alignItems: 'center',
+                                                    marginRight: 12,
+                                                }}>
+                                                    <Text style={{ fontSize: 14, fontWeight: '700', color: '#6B7280' }}>
+                                                        {index + 4}
+                                                    </Text>
+                                                </View>
+
+                                                {/* Avatar */}
+                                                <View style={{
+                                                    width: 44,
+                                                    height: 44,
+                                                    borderRadius: 22,
+                                                    borderWidth: 2,
+                                                    borderColor: ringColor,
+                                                    backgroundColor: '#F9FAFB',
+                                                    justifyContent: 'center',
+                                                    alignItems: 'center',
+                                                    overflow: 'hidden',
+                                                    marginRight: 12,
+                                                }}>
+                                                    {avatarData?.avatarUrl ? (
+                                                        <Image
+                                                            source={{ uri: avatarData.avatarUrl }}
+                                                            style={{ width: '100%', height: '100%' }}
+                                                            contentFit="cover"
+                                                        />
+                                                    ) : (
+                                                        <Feather name="user" size={22} color="#9CA3AF" />
+                                                    )}
+                                                </View>
+
+                                                {/* Name */}
+                                                <Text style={{ flex: 1, fontSize: 15, fontWeight: '600', color: '#1F2937' }} numberOfLines={1}>
+                                                    {entry.username}
+                                                </Text>
+
+                                                {/* Score */}
+                                                <View style={{ alignItems: 'flex-end' }}>
+                                                    <Text style={{ fontSize: 16, fontWeight: '800', color: '#10B981' }}>
+                                                        {entry.score}
+                                                    </Text>
+                                                    {leaderboardTab !== 'total' && entry.difficulty && (
+                                                        <Text style={{ fontSize: 10, color: '#9CA3AF', textTransform: 'uppercase' }}>
+                                                            {entry.difficulty}
+                                                        </Text>
+                                                    )}
+                                                </View>
+                                            </View>
+                                        );
+                                    })}
+                                </View>
+                            )}
+                        </ScrollView>
+                    </View>
+                )}
             </View>
-        )
+        );
     };
 
-    const renderHeader = () => (
-        <View style={styles.header}>
-            <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-                <Feather name="arrow-left" size={24} color="black" />
+    const renderChallengeResult = () => {
+        if (!activeChallenge || !challengeResult) return null;
+
+        // Custom Error Handling (e.g. Anti-Cheat)
+        if ((challengeResult as any).error) {
+            return (
+                <View style={[styles.resultContainer, styles.resultLost]}>
+                    <Text style={styles.resultTitle}>⚠️ Submission Failed</Text>
+                    <Text style={styles.resultSubtitle}>
+                        {(challengeResult as any).error}
+                    </Text>
+                </View>
+            );
+        }
+
+        if (!challengeResult.completed) {
+            return (
+                <View style={styles.resultContainer}>
+                    <Text style={styles.resultTitle}>Score Submitted!</Text>
+                    <Text style={styles.resultSubtitle}>Waiting for opponent...</Text>
+                    <ActivityIndicator size="small" color="#4F46E5" style={{ marginTop: 12 }} />
+                </View>
+            );
+        }
+
+        const won = challengeResult.won;
+        const myId = getCurrentUser()?.uid;
+        const isChallenger = activeChallenge.challengerId === myId;
+
+        // Use state.score for current user's score (set by checkDeepLinkChallenge)
+        const myScore = state.score;
+        const opponentScore = isChallenger ? activeChallenge.opponentScore : activeChallenge.challengerScore;
+        const opponentName = isChallenger ? activeChallenge.opponentUsername : activeChallenge.challengerUsername;
+        const opponentId = isChallenger ? activeChallenge.opponentId : activeChallenge.challengerId;
+        const opponentAvatar = opponentData[opponentId]?.avatarUrl;
+        const opponentPinColor = opponentData[opponentId]?.pinColor || '#E5E7EB';
+
+        // Get current user's avatar and pinColor from store
+        const myAvatar = useMemoryStore.getState().avatarUri;
+        const myPinColor = useMemoryStore.getState().pinColor || '#10B981';
+
+        const winnerColor = won ? myPinColor : opponentPinColor;
+
+        return (
+            <View style={{
+                flex: 1,
+                backgroundColor: '#FAFAFA',
+                justifyContent: 'center',
+                alignItems: 'center',
+                padding: 24,
+            }}>
+                {/* Trophy/Medal Icon - Frosted */}
+                <View style={{
+                    width: isSmallScreen ? 90 : 110,
+                    height: isSmallScreen ? 90 : 110,
+                    borderRadius: 55,
+                    backgroundColor: won ? '#10B981' : '#F59E0B',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    marginBottom: isSmallScreen ? 16 : 24,
+                    shadowColor: won ? '#10B981' : '#F59E0B',
+                    shadowOffset: { width: 0, height: 12 },
+                    shadowOpacity: 0.4,
+                    shadowRadius: 20,
+                    elevation: 12,
+                    borderWidth: 2,
+                    borderColor: 'rgba(255,255,255,0.3)',
+                }}>
+                    <View style={{
+                        width: 60,
+                        height: 60,
+                        borderRadius: 30,
+                        backgroundColor: 'rgba(255,255,255,0.25)',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                    }}>
+                        <Feather name={won ? 'award' : 'star'} size={isSmallScreen ? 32 : 36} color="white" />
+                    </View>
+                </View>
+
+                {/* Result Title */}
+                <Text style={{
+                    fontSize: isSmallScreen ? 28 : 36,
+                    fontWeight: '800',
+                    color: '#1F2937',
+                    marginBottom: 4,
+                    textAlign: 'center',
+                }}>
+                    {won ? 'YOU WON!' : `${opponentName} won`}
+                </Text>
+                <Text style={{
+                    fontSize: isSmallScreen ? 14 : 16,
+                    color: won ? '#10B981' : '#D97706',
+                    marginBottom: isSmallScreen ? 24 : 32,
+                }}>
+                    {won ? 'Great job, champion!' : 'Better luck next time!'}
+                </Text>
+
+                {/* Score Comparison Card - Premium */}
+                <View style={{
+                    backgroundColor: 'white',
+                    borderRadius: 24,
+                    padding: isSmallScreen ? 24 : 32,
+                    width: '100%',
+                    alignItems: 'center',
+                    shadowColor: '#000',
+                    shadowOffset: { width: 0, height: 8 },
+                    shadowOpacity: 0.12,
+                    shadowRadius: 20,
+                    elevation: 8,
+                    marginBottom: isSmallScreen ? 24 : 32,
+                    borderWidth: 1,
+                    borderColor: 'rgba(0,0,0,0.04)',
+                }}>
+                    <View style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        justifyContent: 'space-evenly',
+                        width: '100%',
+                    }}>
+                        {/* My Score */}
+                        <View style={{ alignItems: 'center', flex: 1 }}>
+                            <View style={{
+                                width: isSmallScreen ? 60 : 72,
+                                height: isSmallScreen ? 60 : 72,
+                                borderRadius: 36,
+                                backgroundColor: '#F3F4F6',
+                                borderWidth: 3,
+                                borderColor: myPinColor,
+                                justifyContent: 'center',
+                                alignItems: 'center',
+                                marginBottom: 8,
+                                overflow: 'hidden',
+                            }}>
+                                {myAvatar ? (
+                                    <Image source={{ uri: myAvatar }} style={{ width: '100%', height: '100%' }} contentFit="cover" />
+                                ) : (
+                                    <Feather name="user" size={isSmallScreen ? 28 : 32} color={won ? 'white' : '#9CA3AF'} />
+                                )}
+                            </View>
+                            <Text style={{ fontSize: 12, color: '#6B7280', marginBottom: 4 }}>You</Text>
+                            <Text style={{
+                                fontSize: isSmallScreen ? 28 : 36,
+                                fontWeight: '800',
+                                color: won ? '#059669' : '#374151',
+                            }}>
+                                {myScore}
+                            </Text>
+                        </View>
+
+                        {/* VS Divider */}
+                        <View style={{ alignItems: 'center', paddingHorizontal: 12 }}>
+                            <View style={{
+                                width: 40,
+                                height: 40,
+                                borderRadius: 20,
+                                backgroundColor: '#F3F4F6',
+                                justifyContent: 'center',
+                                alignItems: 'center',
+                            }}>
+                                <Text style={{ fontSize: 14, fontWeight: '700', color: '#9CA3AF' }}>VS</Text>
+                            </View>
+                        </View>
+
+                        {/* Opponent Score */}
+                        <View style={{ alignItems: 'center', flex: 1 }}>
+                            <View style={{
+                                width: isSmallScreen ? 60 : 72,
+                                height: isSmallScreen ? 60 : 72,
+                                borderRadius: 36,
+                                backgroundColor: '#F3F4F6',
+                                borderWidth: 3,
+                                borderColor: opponentPinColor,
+                                justifyContent: 'center',
+                                alignItems: 'center',
+                                marginBottom: 8,
+                                overflow: 'hidden',
+                            }}>
+                                {opponentAvatar ? (
+                                    <Image source={{ uri: opponentAvatar }} style={{ width: '100%', height: '100%' }} contentFit="cover" />
+                                ) : (
+                                    <Feather name="user" size={isSmallScreen ? 28 : 32} color={!won ? 'white' : '#9CA3AF'} />
+                                )}
+                            </View>
+                            <Text style={{ fontSize: 12, color: '#6B7280', marginBottom: 4 }} numberOfLines={1}>
+                                {opponentName}
+                            </Text>
+                            <Text style={{
+                                fontSize: isSmallScreen ? 28 : 36,
+                                fontWeight: '800',
+                                color: !won ? '#D97706' : '#374151',
+                            }}>
+                                {opponentScore || 0}
+                            </Text>
+                        </View>
+                    </View>
+                </View>
+
+                {/* Game Type Badge - Frosted */}
+                <View style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    backgroundColor: 'white',
+                    paddingHorizontal: 16,
+                    paddingVertical: 10,
+                    borderRadius: 20,
+                    marginBottom: isSmallScreen ? 20 : 28,
+                    shadowColor: '#000',
+                    shadowOffset: { width: 0, height: 2 },
+                    shadowOpacity: 0.06,
+                    shadowRadius: 6,
+                    elevation: 2,
+                    gap: 10,
+                }}>
+                    <View style={{
+                        width: 28,
+                        height: 28,
+                        borderRadius: 14,
+                        backgroundColor: activeChallenge.gameType === 'pindrop' ? '#EF4444' : activeChallenge.gameType === 'travelbattle' ? '#F59E0B' : '#3B82F6',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                    }}>
+                        <Feather
+                            name={activeChallenge.gameType === 'pindrop' ? 'map-pin' : activeChallenge.gameType === 'travelbattle' ? 'globe' : 'flag'}
+                            size={14}
+                            color="white"
+                        />
+                    </View>
+                    <Text style={{
+                        fontSize: 13,
+                        fontWeight: '600',
+                        color: '#6B7280',
+                        textTransform: 'uppercase',
+                        letterSpacing: 0.5,
+                    }}>
+                        {activeChallenge.gameType === 'pindrop' ? 'Pin Drop' :
+                            activeChallenge.gameType === 'travelbattle' ? 'Travel Battle' : 'Flag Dash'} • {activeChallenge.difficulty || 'Medium'}
+                    </Text>
+                </View>
+
+                {/* Side-by-side Buttons - Premium */}
+                <View style={{
+                    flexDirection: 'row',
+                    gap: 14,
+                    width: '100%',
+                }}>
+                    <TouchableOpacity
+                        style={{
+                            flex: 1,
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            backgroundColor: '#10B981',
+                            paddingVertical: isSmallScreen ? 16 : 18,
+                            borderRadius: 20,
+                            gap: 10,
+                            shadowColor: '#10B981',
+                            shadowOffset: { width: 0, height: 6 },
+                            shadowOpacity: 0.35,
+                            shadowRadius: 12,
+                            elevation: 6,
+                            borderWidth: 1,
+                            borderColor: 'rgba(255,255,255,0.2)',
+                        }}
+                        onPress={handleRematch}
+                    >
+                        <View style={{
+                            width: 32,
+                            height: 32,
+                            borderRadius: 16,
+                            backgroundColor: 'rgba(255,255,255,0.2)',
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                        }}>
+                            <Feather name="repeat" size={16} color="white" />
+                        </View>
+                        <Text style={{ color: 'white', fontSize: 16, fontWeight: '700' }}>REMATCH</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                        style={{
+                            flex: 1,
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            backgroundColor: 'white',
+                            paddingVertical: isSmallScreen ? 16 : 18,
+                            borderRadius: 20,
+                            borderWidth: 2,
+                            borderColor: '#E5E7EB',
+                            gap: 10,
+                            shadowColor: '#000',
+                            shadowOffset: { width: 0, height: 2 },
+                            shadowOpacity: 0.05,
+                            shadowRadius: 6,
+                            elevation: 2,
+                        }}
+                        onPress={() => {
+                            setActiveChallenge(null);
+                            setActiveGameId(null);
+                            setChallengeResult(null);
+                            setState(prev => ({ ...prev, gameOver: false, isPlaying: false }));
+                            setSelectedGameType(null);
+                        }}
+                    >
+                        <View style={{
+                            width: 32,
+                            height: 32,
+                            borderRadius: 16,
+                            backgroundColor: '#F3F4F6',
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                        }}>
+                            <Feather name="x" size={16} color="#6B7280" />
+                        </View>
+                        <Text style={{ color: '#6B7280', fontSize: 16, fontWeight: '700' }}>EXIT</Text>
+                    </TouchableOpacity>
+                </View>
+            </View>
+        );
+    };
+
+    const renderGameOver = () => {
+        // For challenges, use the full-screen challenge result (includes everything)
+        if (activeChallenge && challengeResult) {
+            return renderChallengeResult();
+        }
+
+        // Standard game over for non-challenge games
+        return (
+            <View style={{
+                flex: 1,
+                backgroundColor: '#FAFAFA',
+                justifyContent: 'center',
+                alignItems: 'center',
+                padding: 24,
+            }}>
+                {/* Result Icon - Compact */}
+                <View style={{
+                    width: isSmallScreen ? 60 : 110,
+                    height: isSmallScreen ? 60 : 110,
+                    borderRadius: isSmallScreen ? 30 : 55,
+                    backgroundColor: state.isNewHighScore ? '#F59E0B' : '#EF4444',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    marginBottom: isSmallScreen ? 8 : 28,
+                    shadowColor: state.isNewHighScore ? '#F59E0B' : '#EF4444',
+                    shadowOffset: { width: 0, height: 12 },
+                    shadowOpacity: 0.4,
+                    shadowRadius: 20,
+                    elevation: 12,
+                    borderWidth: 2,
+                    borderColor: 'rgba(255,255,255,0.3)',
+                }}>
+                    <View style={{
+                        width: isSmallScreen ? 40 : 60,
+                        height: isSmallScreen ? 40 : 60,
+                        borderRadius: isSmallScreen ? 20 : 30,
+                        backgroundColor: 'rgba(255,255,255,0.25)',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                    }}>
+                        <Feather
+                            name={state.isNewHighScore ? 'award' : 'clock'}
+                            size={isSmallScreen ? 24 : 36}
+                            color="white"
+                        />
+                    </View>
+                </View>
+
+                {/* Result Title */}
+                <Text style={{
+                    fontSize: isSmallScreen ? 24 : 36,
+                    fontWeight: '800',
+                    color: '#1F2937',
+                    marginBottom: isSmallScreen ? 2 : 4,
+                    textAlign: 'center',
+                }}>
+                    {state.isNewHighScore ? 'NEW HIGH SCORE!' : "Time's Up!"}
+                </Text>
+                <Text style={{
+                    fontSize: isSmallScreen ? 13 : 16,
+                    color: state.isNewHighScore ? '#D97706' : '#6B7280',
+                    marginBottom: isSmallScreen ? 16 : 32,
+                }}>
+                    {state.isNewHighScore ? 'Amazing performance!' : 'Great effort!'}
+                </Text>
+
+                {/* Points Card with Difficulty Badge */}
+                <View style={{
+                    backgroundColor: 'white',
+                    borderRadius: isSmallScreen ? 20 : 24,
+                    padding: isSmallScreen ? 20 : 32,
+                    width: '100%',
+                    maxWidth: 280,
+                    alignItems: 'center',
+                    shadowColor: '#000',
+                    shadowOffset: { width: 0, height: 8 },
+                    shadowOpacity: 0.12,
+                    shadowRadius: 20,
+                    elevation: 8,
+                    marginBottom: isSmallScreen ? 16 : 28,
+                    borderWidth: 1,
+                    borderColor: 'rgba(0,0,0,0.04)',
+                }}>
+                    <Text style={{ fontSize: isSmallScreen ? 48 : 56, fontWeight: '800', color: state.isNewHighScore ? '#D97706' : '#1F2937', marginBottom: 4 }}>
+                        {state.score}
+                    </Text>
+                    <Text style={{ fontSize: isSmallScreen ? 12 : 14, fontWeight: '600', color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 }}>
+                        Points
+                    </Text>
+
+                    {/* Difficulty Badge */}
+                    <View style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        backgroundColor: state.difficulty === 'easy' ? '#D1FAE5' : state.difficulty === 'hard' ? '#FEE2E2' : '#FEF3C7',
+                        paddingHorizontal: 12,
+                        paddingVertical: 6,
+                        borderRadius: 12,
+                        gap: 6,
+                    }}>
+                        <View style={{
+                            width: 18,
+                            height: 18,
+                            borderRadius: 9,
+                            backgroundColor: state.difficulty === 'easy' ? '#10B981' : state.difficulty === 'hard' ? '#EF4444' : '#F59E0B',
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                        }}>
+                            <Feather name="zap" size={10} color="white" />
+                        </View>
+                        <Text style={{
+                            fontSize: 11,
+                            fontWeight: '700',
+                            color: state.difficulty === 'easy' ? '#065F46' : state.difficulty === 'hard' ? '#991B1B' : '#92400E',
+                            textTransform: 'uppercase',
+                            letterSpacing: 0.5,
+                        }}>
+                            {state.difficulty}
+                        </Text>
+                    </View>
+                </View>
+
+                {/* Action Buttons - Compact */}
+                <View style={{ width: '100%', gap: isSmallScreen ? 8 : 12 }}>
+                    <TouchableOpacity
+                        style={{
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            backgroundColor: '#10B981',
+                            paddingVertical: isSmallScreen ? 10 : 14,
+                            borderRadius: 20,
+                            gap: 10,
+                            shadowColor: '#10B981',
+                            shadowOffset: { width: 0, height: 6 },
+                            shadowOpacity: 0.35,
+                            shadowRadius: 12,
+                            elevation: 6,
+                            borderWidth: 1,
+                            borderColor: 'rgba(255,255,255,0.2)',
+                        }}
+                        onPress={handleStart}
+                    >
+                        <View style={{
+                            width: 32,
+                            height: 32,
+                            borderRadius: 16,
+                            backgroundColor: 'rgba(255,255,255,0.2)',
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                        }}>
+                            <Feather name="refresh-cw" size={16} color="white" />
+                        </View>
+                        <Text style={{ color: 'white', fontSize: 16, fontWeight: '700' }}>PLAY AGAIN</Text>
+                    </TouchableOpacity>
+                    {renderGameOverNav()}
+                </View>
+            </View>
+        );
+    };
+
+    const renderGameOverNav = () => (
+        <View style={{ flexDirection: 'row', gap: 12, marginTop: 4 }}>
+            <TouchableOpacity
+                style={{
+                    flex: 1,
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    backgroundColor: 'white',
+                    paddingVertical: 12,
+                    borderRadius: 16,
+                    gap: 8,
+                    shadowColor: '#000',
+                    shadowOffset: { width: 0, height: 2 },
+                    shadowOpacity: 0.05,
+                    shadowRadius: 6,
+                    elevation: 2,
+                    borderWidth: 1,
+                    borderColor: 'rgba(0,0,0,0.05)',
+                }}
+                onPress={() => {
+                    gameService.stopGame();
+                    setState(prev => ({ ...prev, gameOver: false, isPlaying: false }));
+                    setSelectedGameType(null);
+                }}
+            >
+                <View style={{
+                    width: 28,
+                    height: 28,
+                    borderRadius: 14,
+                    backgroundColor: '#F3F4F6',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                }}>
+                    <Feather name="home" size={14} color="#6B7280" />
+                </View>
+                <Text style={{ color: '#6B7280', fontSize: 14, fontWeight: '600' }}>Menu</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+                style={{
+                    flex: 1,
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    backgroundColor: 'white',
+                    paddingVertical: 12,
+                    borderRadius: 16,
+                    gap: 8,
+                    shadowColor: '#000',
+                    shadowOffset: { width: 0, height: 2 },
+                    shadowOpacity: 0.05,
+                    shadowRadius: 6,
+                    elevation: 2,
+                    borderWidth: 1,
+                    borderColor: 'rgba(0,0,0,0.05)',
+                }}
+                onPress={() => {
+                    gameService.stopGame();
+                    setState(prev => ({ ...prev, gameOver: false, isPlaying: false }));
+                    setSelectedGameType(null);
+                    setTimeout(() => router.push('/' as any), 50);
+                }}
+            >
+                <View style={{
+                    width: 28,
+                    height: 28,
+                    borderRadius: 14,
+                    backgroundColor: '#F3F4F6',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                }}>
+                    <Feather name="x" size={14} color="#6B7280" />
+                </View>
+                <Text style={{ color: '#6B7280', fontSize: 14, fontWeight: '600' }}>Exit</Text>
             </TouchableOpacity>
         </View>
     );
 
-    const renderQuitConfirmationModal = () => {
-        // Stubbed
-        return null;
-    };
+    const renderQuitConfirmationModal = () => (
+        <Modal
+            visible={showQuitConfirmation}
+            transparent={true}
+            animationType="fade"
+            onRequestClose={cancelQuit}
+        >
+            <View style={styles.modalOverlay}>
+                <View style={styles.modalContent}>
+                    <View style={{ padding: 24, alignItems: 'center' }}>
+                        <Text style={[styles.modalTitle, { fontSize: 24, marginBottom: 8 }]}>Quit Game?</Text>
+                        <Text style={[styles.modalSubtitle, { fontSize: 16 }]}>Current progress will be lost.</Text>
+                    </View>
 
+                    <View style={styles.modalActions}>
+                        <TouchableOpacity
+                            style={[styles.modalButton, styles.secondaryButton]}
+                            onPress={cancelQuit}
+                        >
+                            <Text style={styles.secondaryButtonText}>Back</Text>
+                        </TouchableOpacity>
 
-    // Main Render
+                        <TouchableOpacity
+                            style={[styles.modalButton, styles.primaryButton]}
+                            onPress={confirmQuit}
+                        >
+                            <Text style={styles.primaryButtonText}>Quit</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </View>
+        </Modal>
+    );
+
     return (
-        <View style={[styles.container, { paddingTop: insets.top }]}>
+        <View style={styles.container}>
             {/* Pin Drop Challenge Result - show when viewing completed challenge */}
             {selectedGameType === 'pindrop' && state.gameOver && activeChallenge && challengeResult && (
                 <>
@@ -663,30 +1841,27 @@ export default function GameSandbox() {
             )}
 
             {!selectedGameType && (
-                <>
-                    {renderHeader()}
-                    <View style={{ flex: 1 }}>
+                <View style={{ flex: 1 }}>
 
-                        {/* Simplified Tab Render - No Animations */}
-                        <View
-                            style={{
-                                flex: 1,
-                                flexDirection: 'row',
-                                width: width * 2,
-                                transform: [{ translateX: activeTab === 'leaderboard' ? -width : 0 }],
-                            }}
-                        >
-                            <View style={{ width }}>
-                                {renderStartScreen()}
-                            </View>
-                            <View style={{ width }}>
-                                {renderLeaderboardTab()}
-                            </View>
+                    {/* Simplified Tab Render - No Animations */}
+                    <View
+                        style={{
+                            flex: 1,
+                            flexDirection: 'row',
+                            width: width * 2,
+                            transform: [{ translateX: activeTab === 'leaderboard' ? -width : 0 }],
+                        }}
+                    >
+                        <View style={{ width }}>
+                            {renderStartScreen()}
                         </View>
-
-                        {renderBottomNav()}
+                        <View style={{ width }}>
+                            {renderLeaderboardTab()}
+                        </View>
                     </View>
-                </>
+
+                    {renderBottomNav()}
+                </View>
             )}
         </View>
     );
@@ -696,6 +1871,37 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#FAFAFA',
+    },
+    centerContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: '#FAFAFA',
+    },
+    loadingContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 40,
+    },
+    loadingText: {
+        marginTop: 12,
+        fontSize: 14,
+        color: '#6B7280',
+        fontWeight: '600',
+    },
+    emptyContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 40,
+        gap: 12,
+    },
+    emptyText: {
+        fontSize: 15,
+        color: '#9CA3AF',
+        textAlign: 'center',
+        fontWeight: '500',
     },
     header: {
         flexDirection: 'row',
@@ -848,5 +2054,81 @@ const styles = StyleSheet.create({
     badgeText: {
         fontSize: 10,
         fontWeight: '700',
+    },
+    // Challenge Result
+    resultContainer: {
+        alignItems: 'center',
+        padding: 24,
+        borderRadius: 20,
+        backgroundColor: '#F3F4F6',
+        marginVertical: 20,
+        width: '100%',
+    },
+    resultWon: {
+        backgroundColor: '#D1FAE5', // Light Green
+    },
+    resultLost: {
+        backgroundColor: '#FEE2E2', // Light Red
+    },
+    resultTitle: {
+        fontSize: 24,
+        fontWeight: '900',
+        color: '#111827',
+        marginBottom: 8,
+    },
+    resultSubtitle: {
+        fontSize: 14,
+        color: '#6B7280',
+        textAlign: 'center',
+    },
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    modalContent: {
+        backgroundColor: 'white',
+        borderRadius: 24,
+        width: '85%',
+        overflow: 'hidden',
+    },
+    modalTitle: {
+        fontWeight: '900',
+        color: '#111827',
+        textAlign: 'center',
+    },
+    modalSubtitle: {
+        color: '#6B7280',
+        textAlign: 'center',
+    },
+    modalActions: {
+        flexDirection: 'row',
+        padding: 16,
+        gap: 12,
+        backgroundColor: '#F9FAFB',
+    },
+    modalButton: {
+        flex: 1,
+        paddingVertical: 14,
+        borderRadius: 16,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    secondaryButton: {
+        backgroundColor: '#F3F4F6',
+    },
+    secondaryButtonText: {
+        fontSize: 16,
+        fontWeight: '700',
+        color: '#374151',
+    },
+    primaryButton: {
+        backgroundColor: '#EF4444',
+    },
+    primaryButtonText: {
+        fontSize: 16,
+        fontWeight: '700',
+        color: 'white',
     },
 });

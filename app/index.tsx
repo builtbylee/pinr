@@ -1,4 +1,8 @@
+// CRITICAL: Import Firestore config first to set cache settings before any Firestore operations
+import '@/src/config/firestore';
 import { Link, useRouter } from 'expo-router';
+import auth from '@react-native-firebase/auth';
+
 import { CreationModal } from '@/src/components/CreationModal';
 import { DestinationCard } from '@/src/components/DestinationCard';
 import { FabMenu } from '@/src/components/FabMenu';
@@ -71,7 +75,7 @@ const DAY_STYLE = {
 export default function App() {
     const { memories, setMemories, selectedMemoryId, selectMemory, addMemory, addPhotoToMemory, username, setUsername, avatarUri, setAvatarUri, pinColor, setPinColor, currentUserId, friends, setFriends, hiddenFriendIds, setHiddenFriendIds, hiddenPinIds, toggleHiddenPin: toggleHiddenPinLocal, toggleHiddenFriend: toggleHiddenFriendLocal, setHiddenPinIds } = useMemoryStore();
     const router = useRouter();
-    console.log('[App] Rendering Index');
+    console.log('[DEBUG-App] Rendering Index. currentUserId:', currentUserId);
     const [isCreationModalVisible, setIsCreationModalVisible] = useState(false);
     const [editingMemory, setEditingMemory] = useState<Memory | null>(null); // Track memory being edited
     const [contextMenuPinId, setContextMenuPinId] = useState<string | null>(null); // Pin ID for context menu
@@ -1141,6 +1145,21 @@ export default function App() {
             <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
                 <ActivityIndicator size="large" color="#1a1a1a" />
                 <Text style={{ marginTop: 20, color: '#1a1a1a', fontSize: 16 }}>Preparing your journey...</Text>
+
+                {/* Emergency logout button for stuck sessions */}
+                <TouchableOpacity
+                    onPress={async () => {
+                        try {
+                            await auth().signOut();
+                            console.log('[App] Emergency sign out completed');
+                        } catch (e) {
+                            console.error('[App] Sign out failed:', e);
+                        }
+                    }}
+                    style={{ marginTop: 40, padding: 12, backgroundColor: 'rgba(0,0,0,0.1)', borderRadius: 8 }}
+                >
+                    <Text style={{ color: '#666', fontSize: 14 }}>Sign Out & Start Fresh</Text>
+                </TouchableOpacity>
             </View>
         );
     }

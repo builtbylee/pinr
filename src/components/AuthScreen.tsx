@@ -72,14 +72,28 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthenticated }) => {
                 if (creds) {
                     setIsLoading(true);
                     // Auto-fill and login
-                    await signInEmailPassword(creds.email, creds.pass);
-                    // Fetch username to pass back
+                    const userId = await signInEmailPassword(creds.email, creds.pass);
+                    console.log('[AuthScreen] ✅ Biometric login succeeded, user ID:', userId);
+
+                    // Fetch username to pass back (with timeout to prevent hang)
                     const { getUserProfile } = require('../services/userService');
                     const user = require('../services/authService').getCurrentUser();
-                    if (user) {
-                        const profile = await getUserProfile(user.uid);
-                        onAuthenticated(profile?.username);
+                    if (user && user.uid === userId) {
+                        try {
+                            // Add timeout to prevent hang if Firestore is not responding
+                            const profilePromise = getUserProfile(user.uid);
+                            const timeoutPromise = new Promise((_, reject) =>
+                                setTimeout(() => reject(new Error('Profile fetch timeout')), 15000)
+                            );
+                            const profile = await Promise.race([profilePromise, timeoutPromise]) as any;
+                            onAuthenticated(profile?.username);
+                        } catch (profileError: any) {
+                            console.warn('[AuthScreen] Failed to fetch profile (non-blocking):', profileError.message);
+                            // Continue without username - it's not critical for login
+                            onAuthenticated();
+                        }
                     } else {
+                        console.warn('[AuthScreen] User not available after biometric login');
                         onAuthenticated();
                     }
                 }
@@ -95,38 +109,104 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthenticated }) => {
 
 
     const handleLogin = async () => {
+        console.log('[AuthScreen] ========== LOGIN ATTEMPT START ==========');
+        console.log('[AuthScreen] Email/Username:', emailOrUsername ? emailOrUsername.trim() : 'EMPTY');
+        console.log('[AuthScreen] Password length:', password ? password.length : 0);
+
         if (!emailOrUsername || !password) {
+            console.error('[AuthScreen] ❌ Missing email or password');
             setError('Please enter email and password');
             return;
         }
+
         setIsLoading(true);
         setError(null);
         try {
             const loginEmail = emailOrUsername.trim();
+            console.log('[AuthScreen] Trimmed email:', loginEmail);
 
             // Require valid email format
             if (!loginEmail.includes('@')) {
+                console.error('[AuthScreen] ❌ Invalid email format (no @)');
                 throw new Error('Please enter a valid email address.');
             }
 
-            await signInEmailPassword(loginEmail, password);
+            console.log('[AuthScreen] 📧 Calling signInEmailPassword...');
+            const startTime = Date.now();
+            const userId = await signInEmailPassword(loginEmail, password);
+            const duration = Date.now() - startTime;
+            console.log('[AuthScreen] ✅ Email/password sign-in succeeded');
+            console.log('[AuthScreen] User ID:', userId);
+            console.log('[AuthScreen] Sign-in duration:', duration + 'ms');
 
-            // Fetch username to pass back
-            const { getUserProfile } = require('../services/userService');
-            const user = require('../services/authService').getCurrentUser();
-            let loggedInUsername = '';
-            if (user) {
-                const profile = await getUserProfile(user.uid);
-                loggedInUsername = profile?.username;
+            // Verify user is actually signed in
+            console.log('[AuthScreen] 🔍 Verifying user is signed in...');
+            const { getCurrentUser } = require('../services/authService');
+            let user = getCurrentUser();
+            console.log('[AuthScreen] Initial user check:', user ? `Found user ${user.uid}` : 'NO USER');
+
+            // If user is not immediately available, wait a bit for auth state to propagate
+            if (!user) {
+                console.log('[AuthScreen] ⏳ User not immediately available, waiting 300ms for auth state...');
+                await new Promise(resolve => setTimeout(resolve, 300));
+                user = getCurrentUser();
+                console.log('[AuthScreen] After wait, user:', user ? `Found user ${user.uid}` : 'STILL NO USER');
             }
+
+            if (!user || user.uid !== userId) {
+                console.error('[AuthScreen] ❌ Sign-in succeeded but user verification failed');
+                console.error('[AuthScreen] Expected user ID:', userId);
+                console.error('[AuthScreen] Got user:', user ? user.uid : 'null');
+                console.error('[AuthScreen] User match:', user?.uid === userId ? 'YES' : 'NO');
+                throw new Error('Sign-in failed. Please try again.');
+            }
+            console.log('[AuthScreen] ✅ User verified after sign-in:', user.uid);
+
+            // Fetch username to pass back (with timeout to prevent hang)
+            console.log('[AuthScreen] 📋 Fetching user profile...');
+            const { getUserProfile } = require('../services/userService');
+            let loggedInUsername = '';
+            try {
+                const profileStartTime = Date.now();
+                // Add timeout to prevent hang if Firestore is not responding
+                const profilePromise = getUserProfile(user.uid);
+                const timeoutPromise = new Promise((_, reject) =>
+                    setTimeout(() => reject(new Error('Profile fetch timeout')), 15000)
+                );
+                const profile = await Promise.race([profilePromise, timeoutPromise]) as any;
+                const profileDuration = Date.now() - profileStartTime;
+                loggedInUsername = profile?.username || '';
+                console.log('[AuthScreen] ✅ Profile fetched successfully');
+                console.log('[AuthScreen] Profile duration:', profileDuration + 'ms');
+                console.log('[AuthScreen] Username:', loggedInUsername || 'NONE');
+                console.log('[AuthScreen] Profile exists:', profile ? 'YES' : 'NO');
+            } catch (profileError: any) {
+                console.warn('[AuthScreen] ⚠️ Failed to fetch profile (non-blocking)');
+                console.warn('[AuthScreen] Profile error:', profileError.message);
+                console.warn('[AuthScreen] Profile error code:', profileError.code);
+                // Continue without username - it's not critical for login
+                loggedInUsername = '';
+            }
+
+            console.log('[AuthScreen] ✅ Login flow complete');
+            console.log('[AuthScreen] Username to pass:', loggedInUsername || 'NONE');
+            console.log('[AuthScreen] Biometric available:', biometricAvailable);
+            console.log('[AuthScreen] Has saved credentials:', hasSavedCredentials);
+            console.log('[AuthScreen] 📞 Calling onAuthenticated...');
 
             // Offer to save credentials for biometric login
             if (biometricAvailable && !hasSavedCredentials) {
+                console.log('[AuthScreen] Showing biometric prompt...');
                 Alert.alert(
                     `Enable ${biometricType}?`,
                     `Would you like to use ${biometricType} for faster sign-in next time?`,
                     [
-                        { text: 'Not Now', style: 'cancel', onPress: () => onAuthenticated(loggedInUsername) },
+                        {
+                            text: 'Not Now', style: 'cancel', onPress: () => {
+                                console.log('[AuthScreen] User declined biometric, calling onAuthenticated');
+                                onAuthenticated(loggedInUsername);
+                            }
+                        },
                         {
                             text: 'Enable',
                             onPress: async () => {
@@ -148,11 +228,21 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthenticated }) => {
                 await biometricService.saveCredentials(loginEmail, password);
             }
 
+            // No biometric prompt - proceed directly
+            console.log('[AuthScreen] No biometric prompt, calling onAuthenticated directly');
             onAuthenticated(loggedInUsername);
+            console.log('[AuthScreen] ✅ onAuthenticated called, waiting for navigation...');
+            console.log('[AuthScreen] ========== LOGIN ATTEMPT END ==========');
 
         } catch (e: any) {
+            console.error('[AuthScreen] ❌ LOGIN ERROR');
+            console.error('[AuthScreen] Error message:', e.message);
+            console.error('[AuthScreen] Error code:', e.code);
+            console.error('[AuthScreen] Error stack:', e.stack);
+            console.error('[AuthScreen] ========== LOGIN ATTEMPT FAILED ==========');
             setError(e.message);
         } finally {
+            console.log('[AuthScreen] Setting isLoading to false');
             setIsLoading(false);
         }
     };
@@ -202,13 +292,27 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthenticated }) => {
 
 
     const handleGoogleSignIn = async () => {
+        console.log('[AuthScreen] ========== GOOGLE SIGN-IN ATTEMPT START ==========');
         setIsLoading(true);
         setError(null);
         try {
+            console.log('[AuthScreen] 📱 Calling signInWithGoogle...');
+            const startTime = Date.now();
             const result = await signInWithGoogle();
+            const duration = Date.now() - startTime;
+            console.log('[AuthScreen] ✅ Google sign-in succeeded');
+            console.log('[AuthScreen] Sign-in duration:', duration + 'ms');
+            console.log('[AuthScreen] User ID:', result.uid);
+            console.log('[AuthScreen] Email:', result.email);
+            console.log('[AuthScreen] Display name:', result.displayName);
+            console.log('[AuthScreen] Is new user:', result.isNewUser);
             const { saveUserProfile, isUsernameTaken, getUserProfile } = require('../services/userService');
 
+            console.log('[AuthScreen] Processing Google sign-in result...');
+            console.log('[AuthScreen] Is new user:', result.isNewUser);
+
             if (result.isNewUser) {
+                console.log('[AuthScreen] 🆕 New user - creating profile...');
                 // New user - ALWAYS create a profile with a username
                 let baseUsername: string;
 
@@ -230,26 +334,69 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthenticated }) => {
                     attempts++;
                 }
 
+                console.log('[AuthScreen] Saving profile for new user...');
                 await saveUserProfile(result.uid, finalUsername, result.email || undefined);
+                console.log('[AuthScreen] ✅ Profile saved, username:', finalUsername);
+                console.log('[AuthScreen] 📞 Calling onAuthenticated for new user...');
                 onAuthenticated(finalUsername);
+                console.log('[AuthScreen] ✅ onAuthenticated called for new user');
             } else {
-                // Existing user - fetch their profile
-                const profile = await getUserProfile(result.uid);
+                console.log('[AuthScreen] 👤 Existing user - fetching profile...');
+                // Existing user - fetch their profile (with timeout to prevent hang)
+                try {
+                    const profileStartTime = Date.now();
+                    const profilePromise = getUserProfile(result.uid);
+                    const timeoutPromise = new Promise((_, reject) =>
+                        setTimeout(() => reject(new Error('Profile fetch timeout')), 15000)
+                    );
+                    const profile = await Promise.race([profilePromise, timeoutPromise]) as any;
+                    const profileDuration = Date.now() - profileStartTime;
+                    console.log('[AuthScreen] ✅ Profile fetched for existing user');
+                    console.log('[AuthScreen] Profile duration:', profileDuration + 'ms');
+                    console.log('[AuthScreen] Profile exists:', profile ? 'YES' : 'NO');
+                    console.log('[AuthScreen] Username:', profile?.username || 'NONE');
 
-                if (profile?.username) {
-                    onAuthenticated(profile.username);
-                } else {
-                    // Edge case: existing user but no profile/username - create one now
-                    const fallbackUsername = 'user' + Math.floor(Math.random() * 100000);
-                    await saveUserProfile(result.uid, fallbackUsername, result.email || undefined);
-                    onAuthenticated(fallbackUsername);
+                    if (profile?.username) {
+                        console.log('[AuthScreen] 📞 Calling onAuthenticated for existing user...');
+                        onAuthenticated(profile.username);
+                        console.log('[AuthScreen] ✅ onAuthenticated called for existing user');
+                    } else {
+                        console.warn('[AuthScreen] ⚠️ Existing user has no username - creating fallback...');
+                        // Edge case: existing user but no profile/username - create one now
+                        const fallbackUsername = 'user' + Math.floor(Math.random() * 100000);
+                        try {
+                            await saveUserProfile(result.uid, fallbackUsername, result.email || undefined);
+                        } catch (saveError) {
+                            console.warn('[AuthScreen] Failed to save profile (non-blocking):', saveError);
+                        }
+                        console.log('[AuthScreen] 📞 Calling onAuthenticated with fallback username...');
+                        onAuthenticated(fallbackUsername);
+                        console.log('[AuthScreen] ✅ onAuthenticated called with fallback');
+                    }
+                } catch (profileError: any) {
+                    const { Alert } = require('react-native');
+                    Alert.alert('Debug: AuthScreen Error', profileError.message);
+                    console.warn('[AuthScreen] ⚠️ Failed to fetch profile (non-blocking)');
+                    console.warn('[AuthScreen] Profile error:', profileError.message);
+                    console.warn('[AuthScreen] Profile error code:', profileError.code);
+                    // Continue without username - user can set it later
+                    console.log('[AuthScreen] 📞 Calling onAuthenticated without username...');
+                    onAuthenticated();
+                    console.log('[AuthScreen] ✅ onAuthenticated called without username');
                 }
             }
+            console.log('[AuthScreen] ========== GOOGLE SIGN-IN ATTEMPT END ==========');
         } catch (e: any) {
+            console.error('[AuthScreen] ❌ GOOGLE SIGN-IN ERROR');
+            console.error('[AuthScreen] Error message:', e.message);
+            console.error('[AuthScreen] Error code:', e.code);
+            console.error('[AuthScreen] Error stack:', e.stack);
+            console.error('[AuthScreen] ========== GOOGLE SIGN-IN ATTEMPT FAILED ==========');
             if (e.message !== 'Sign-in was cancelled') {
                 setError(e.message);
             }
         } finally {
+            console.log('[AuthScreen] Setting isLoading to false (Google Sign-In)');
             setIsLoading(false);
         }
     };

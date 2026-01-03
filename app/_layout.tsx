@@ -1,7 +1,8 @@
+import '@/src/config/firestore'; // CRITICAL: Must be first import to configure Long Polling
 import Mapbox from '@rnmapbox/maps';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { View, StyleSheet, LogBox, ActivityIndicator, Text } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated';
@@ -9,14 +10,23 @@ import { Image } from 'expo-image';
 import * as SplashScreen from 'expo-splash-screen';
 
 import { MAPBOX_TOKEN } from '@/src/constants/Config';
-import { onAuthStateChanged } from '@/src/services/authService';
+import { onAuthStateChanged, getCurrentUser } from '@/src/services/authService';
 import { useMemoryStore } from '@/src/store/useMemoryStore';
 import { AuthScreen } from '@/src/components/AuthScreen';
 import { initializeAppCheck } from '@/src/services/appCheckService';
 import { useBanCheck } from '@/src/hooks/useBanCheck';
+import { waitForFirebase } from '@/src/services/firebaseInitService';
+import { getUserProfile } from '@/src/services/userService';
+import auth from '@react-native-firebase/auth';
 
-// Initialize App Check early (before any Firebase calls)
-initializeAppCheck();
+// Initialize App Check early (Firebase auto-initializes from config files)
+// TEMPORARILY DISABLED FOR TESTING - App Check may be blocking Firestore requests
+// TODO: Re-enable after verifying App Check debug token is registered in Firebase Console
+// initializeAppCheck().catch((error) => {
+//     console.warn('[Layout] AppCheck initialization failed (non-critical):', error);
+//     // App Check is optional - app will work without it, just without verification
+// });
+console.log('[Layout] ⚠️ App Check is TEMPORARILY DISABLED for testing Firestore subscriptions');
 
 // Safe font loading import with fallback
 let useFonts: any;
@@ -55,6 +65,8 @@ OneSignal.Notifications.requestPermission(true);
 export default function RootLayout() {
   const [isInitializing, setIsInitializing] = useState(true);
   const [session, setSession] = useState<string | null>(null);
+  const [profileValidated, setProfileValidated] = useState(false); // Track if profile loaded successfully
+  const profileValidationRef = useRef<boolean>(false); // Ref to track validation status for timeout closure
 
   // Safe font loading with fallback if useFonts is unavailable
   const [fontsLoaded] = useFonts
@@ -68,17 +80,140 @@ export default function RootLayout() {
 
   useEffect(() => {
     // Listen for auth state changes
-    const unsubscribe = onAuthStateChanged((userId) => {
-      console.log('[Auth] State changed:', userId);
-      if (!userId) {
-        useMemoryStore.getState().resetUser();
-      }
-      setSession(userId); // Local state for immediate render decision
-      setCurrentUserId(userId); // Sync store
-      setIsInitializing(false);
-    });
+    let unsubscribe: (() => void) | null = null;
+    let isComplete = false;
 
-    return () => unsubscribe();
+    // Safety timeout: force initialization to complete after 5 seconds
+    const safetyTimeout = setTimeout(() => {
+      if (!isComplete) {
+        console.warn('[Layout] Auth initialization timeout, proceeding with no session');
+        isComplete = true;
+        setIsInitializing(false);
+        setSession(null);
+      }
+    }, 5000);
+
+    const setupAuthListener = async () => {
+      try {
+        // Subscribe to authorization state changes (will wait for Firebase internally)
+        unsubscribe = await onAuthStateChanged(async (userId) => {
+          console.log('[Layout] ========== AUTH STATE CHANGED ==========');
+          console.log('[Layout] User ID:', userId || 'NULL (signed out)');
+          console.log('[Layout] Timestamp:', new Date().toISOString());
+
+          // Clear timeout so it doesn't fire if we got a response
+          clearTimeout(safetyTimeout);
+          isComplete = true;
+
+          if (!userId) {
+            console.log('[Layout] 👋 User signed out - resetting state');
+            useMemoryStore.getState().resetUser();
+            setSession(null);
+            setProfileValidated(false);
+            setCurrentUserId(null);
+            setIsInitializing(false);
+            console.log('[Layout] ========== AUTH STATE CHANGE END (SIGNED OUT) ==========');
+            return;
+          }
+
+          // User is authenticated - set session immediately to allow navigation
+          console.log('[Layout] ✅ User authenticated');
+          console.log('[Layout] Setting session to:', userId);
+          console.log('[Layout] Current session state before:', session);
+          setSession(userId);
+          setCurrentUserId(userId);
+          setIsInitializing(false);
+          // Set profileValidated to true immediately to allow navigation
+          // Profile validation will happen in background but won't block
+          setProfileValidated(true);
+          profileValidationRef.current = true;
+          console.log('[Layout] Session state updated');
+          console.log('[Layout] isInitializing set to false');
+          console.log('[Layout] profileValidated set to true (optimistic - allowing navigation)');
+
+          // Validate profile in background (non-blocking - just for logging/debugging)
+          console.log('[Layout] 🔍 Starting background profile validation for user:', userId);
+
+          // Helper function to validate profile with timeout
+          const validateProfileWithTimeout = async (timeoutMs: number) => {
+            const profilePromise = getUserProfile(userId);
+            const timeoutPromise = new Promise<null>((resolve) =>
+              setTimeout(() => resolve(null), timeoutMs)
+            );
+
+            try {
+              const profile = await Promise.race([profilePromise, timeoutPromise]);
+              return profile;
+            } catch (error) {
+              console.error('[Layout] Profile validation error:', error);
+              return null;
+            }
+          };
+
+          // Try immediate validation (5 second timeout)
+          const validationStartTime = Date.now();
+          validateProfileWithTimeout(5000)
+            .then((profile) => {
+              const validationDuration = Date.now() - validationStartTime;
+              console.log('[Layout] Profile validation completed');
+              console.log('[Layout] Validation duration:', validationDuration + 'ms');
+              console.log('[Layout] Profile exists:', profile ? 'YES' : 'NO');
+              console.log('[Layout] Username:', profile?.username || 'NONE');
+
+              if (!profile || !profile.username || profile.username === 'Unknown') {
+                console.warn('[Layout] ⚠️ Profile validation failed - profile is null, missing username, or Unknown');
+                console.warn('[Layout] Allowing navigation anyway - user can fix profile later');
+                // Don't sign out - allow user to navigate and fix profile
+                profileValidationRef.current = true;
+                setProfileValidated(true);
+                console.log('[Layout] ✅ Profile validation set to true (failed but allowing navigation)');
+              } else {
+                console.log('[Layout] ✅ Profile validated successfully');
+                console.log('[Layout] Validated username:', profile.username);
+                profileValidationRef.current = true;
+                setProfileValidated(true);
+                console.log('[Layout] ✅ Profile validation set to true (success)');
+              }
+              console.log('[Layout] ========== AUTH STATE CHANGE END (AUTHENTICATED) ==========');
+            })
+            .catch((error) => {
+              console.error('[Layout] ❌ Profile validation promise rejected');
+              console.error('[Layout] Validation error:', error);
+              profileValidationRef.current = true;
+              setProfileValidated(true);
+              console.log('[Layout] ✅ Profile validation set to true (error but allowing navigation)');
+            });
+
+          // Fallback: if profile still not validated after 20 seconds, allow navigation anyway
+          const profileValidationTimeout = setTimeout(() => {
+            if (!profileValidationRef.current) {
+              console.warn('[Layout] ⚠️ Profile validation timeout after 20s - allowing navigation anyway');
+              // Don't sign out - allow user to navigate and fix profile later
+              profileValidationRef.current = true;
+              setProfileValidated(true);
+            }
+          }, 20000);
+        });
+      } catch (error) {
+        if (isComplete) return; // Already handled by timeout
+        console.error('[Layout] Failed to setup auth listener:', error);
+        isComplete = true;
+        clearTimeout(safetyTimeout);
+        // Set initializing to false so app can still render
+        setIsInitializing(false);
+        setSession(null);
+        setProfileValidated(false);
+      }
+    };
+
+    setupAuthListener();
+
+    return () => {
+      clearTimeout(safetyTimeout);
+      if (unsubscribe && typeof unsubscribe === 'function') {
+        unsubscribe();
+      }
+    };
   }, []);
 
   // Safety fallback: Force hide splash screen after 8 seconds if it hasn't hidden yet
@@ -95,24 +230,101 @@ export default function RootLayout() {
   // Note: We delegate SplashScreen.hideAsync() to the child components (index.tsx / AuthScreen)
   // to ensure the splash stays visible until the actual screen is ready to render.
 
-  if (isInitializing || !fontsLoaded || isBanCheckLoading) {
-    return null;
+  // Debug logging
+  console.log('[Layout] ========== RENDER CHECK ==========');
+  console.log('[Layout] isInitializing:', isInitializing);
+  console.log('[Layout] fontsLoaded:', fontsLoaded);
+  console.log('[Layout] isBanCheckLoading:', isBanCheckLoading);
+  console.log('[Layout] isBanned:', isBanned);
+  console.log('[Layout] session:', session || 'NULL');
+  console.log('[Layout] profileValidated:', profileValidated);
+  console.log('[Layout] profileValidationRef.current:', profileValidationRef.current);
+  console.log('[Layout] Will show AuthScreen:', !session || (session && !profileValidated));
+  console.log('[Layout] Will show Main App:', session && profileValidated);
+  console.log('[Layout] =================================');
+
+  // Show loading screen only for fonts, not for Firebase/auth
+  // Firebase will initialize in the background
+  if (!fontsLoaded) {
+    console.log('[Layout] Fonts not loaded, showing loading screen');
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#fff' }}>
+        <ActivityIndicator size="large" />
+        <Text style={{ marginTop: 10 }}>Loading...</Text>
+      </View>
+    );
+  }
+
+  // If still initializing auth, show AuthScreen (it will handle Firebase initialization)
+  // Don't block the UI - let AuthScreen show and handle Firebase errors
+  if (isInitializing) {
+    console.log('[Layout] Still initializing auth, showing AuthScreen');
+    // Show AuthScreen - it can handle Firebase not being ready
+    return (
+      <AuthScreen
+        onAuthenticated={(username) => {
+          console.log('[Layout] onAuthenticated called (during init) with username:', username || 'none');
+          if (username) {
+            console.log('[Layout] Pre-setting username:', username);
+            useMemoryStore.getState().setUsername(username);
+          }
+          // Don't set session here - let onAuthStateChanged handle navigation
+          // This avoids timing issues where currentUser isn't available yet
+          console.log('[Layout] Username set, waiting for onAuthStateChanged to handle navigation');
+        }}
+      />
+    );
+  }
+
+  // If ban check is still loading, proceed anyway (it will check in background)
+  if (isBanCheckLoading) {
+    console.log('[Layout] Ban check still loading, proceeding anyway');
   }
 
   // If user is banned, they'll be shown an alert and signed out via useBanCheck hook
   if (isBanned) {
+    console.log('[Layout] User is banned, not rendering');
     return null;
   }
 
   // Mandatory Auth: Show AuthScreen if no user is signed in
+  // Note: profileValidated is now set optimistically, so it won't block navigation
   if (!session) {
     return (
       <AuthScreen
-        onAuthenticated={(username) => {
+        onAuthenticated={async (username) => {
+          console.log('[Layout] ========== onAuthenticated CALLED ==========');
+          console.log('[Layout] Username received:', username || 'NONE');
+
           if (username) {
-            console.log('[Auth] Pre-setting username:', username);
+            console.log('[Layout] Setting username in store:', username);
             useMemoryStore.getState().setUsername(username);
+            console.log('[Layout] ✅ Username set in store');
           }
+
+          // Force check auth state immediately and set session if user is signed in
+          // This handles cases where onAuthStateChanged hasn't fired yet
+          const { getCurrentUser } = require('@/src/services/authService');
+          let currentUser = getCurrentUser();
+
+          // Wait a moment for auth state to propagate
+          if (!currentUser) {
+            console.log('[Layout] User not immediately available, waiting 500ms...');
+            await new Promise(resolve => setTimeout(resolve, 500));
+            currentUser = getCurrentUser();
+          }
+
+          if (currentUser) {
+            console.log('[Layout] ✅ User found, setting session immediately:', currentUser.uid);
+            setSession(currentUser.uid);
+            setCurrentUserId(currentUser.uid);
+            setProfileValidated(true);
+            setIsInitializing(false);
+            console.log('[Layout] ✅ Session set, navigation should occur');
+          } else {
+            console.log('[Layout] ⏳ User not found yet, waiting for onAuthStateChanged...');
+          }
+          console.log('[Layout] ============================================');
         }}
       />
     );

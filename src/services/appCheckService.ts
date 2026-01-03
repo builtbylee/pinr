@@ -14,6 +14,7 @@ let isInitialized = false;
 /**
  * Initialize Firebase App Check
  * Should be called once when the app starts.
+ * Waits for Firebase to be ready before initializing.
  */
 export async function initializeAppCheck(): Promise<void> {
     if (isInitialized) {
@@ -22,6 +23,11 @@ export async function initializeAppCheck(): Promise<void> {
     }
 
     try {
+        // Wait for Firebase to be ready before initializing App Check
+        const { waitForFirebase } = require('./firebaseInitService');
+        await waitForFirebase();
+        console.log('[AppCheck] Firebase is ready, initializing App Check...');
+        
         // Configure App Check with default providers:
         // - Android: Play Integrity API
         // - iOS: Device Check (automatically falls back to Debug provider in dev)

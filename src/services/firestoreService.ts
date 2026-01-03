@@ -101,6 +101,8 @@ export const subscribeToPins = (
     // Store raw data to allow local re-filtering without new snapshot
     let rawPins: FirestorePin[] = [];
     let rawIds: string[] = [];
+    let unsubscribeSnapshot: (() => void) | null = null;
+    let intervalId: NodeJS.Timeout | null = null;
 
     const processPins = () => {
         const now = Date.now();
@@ -140,28 +142,79 @@ export const subscribeToPins = (
         callback(memories);
     };
 
-    const unsubscribeSnapshot = firestore()
-        .collection(PINS_COLLECTION)
-        .orderBy('createdAt', 'desc')
-        .onSnapshot(
-            (snapshot) => {
-                // Update cache
-                rawPins = snapshot.docs.map(doc => doc.data() as FirestorePin);
-                rawIds = snapshot.docs.map(doc => doc.id);
+    // Wait for Firestore to be ready before subscribing
+    const { waitForFirestore } = require('./firebaseInitService');
+    let hasReceivedSnapshot = false;
+    let timeoutId: NodeJS.Timeout | null = null;
 
-                // Process immediately
-                processPins();
-            },
-            (error) => {
-                console.error('[Firestore] Snapshot error:', error);
-            }
-        );
+    waitForFirestore()
+        .then(() =\u003e {
+            console.log('[Firestore] Firestore ready, subscribing to pins...');
 
-    // Setup interval to re-check every 30 seconds (in case app stays open)
-    const intervalId = setInterval(processPins, 30000);
+            // Set timeout: if no snapshot after 10 seconds, try one-time get()
+            timeoutId = setTimeout(async () => {
+                if (!hasReceivedSnapshot) {
+                    console.warn('[Firestore] ⚠️ Pins subscription timeout after 10s, trying one-time get()...');
+                    try {
+                        const snapshot = await firestore()
+                            .collection(PINS_COLLECTION)
+                            .orderBy('createdAt', 'desc')
+                            .get();
+
+                        console.log('[Firestore] ✅ One-time get() succeeded, count:', snapshot.docs.length);
+                        rawPins = snapshot.docs.map(doc => doc.data() as FirestorePin);
+                        rawIds = snapshot.docs.map(doc => doc.id);
+                        processPins();
+                        hasReceivedSnapshot = true;
+                    } catch (error) {
+                        console.error('[Firestore] ❌ One-time get() also failed:', error);
+                        callback([]);
+                    }
+                }
+            }, 10000);
+
+            unsubscribeSnapshot = firestore()
+                .collection(PINS_COLLECTION)
+                .orderBy('createdAt', 'desc')
+                .onSnapshot(
+                    (snapshot) => {
+                        console.log('[Firestore] ✅ Pins snapshot received, count:', snapshot.docs.length);
+                        hasReceivedSnapshot = true;
+                        if (timeoutId) {
+                            clearTimeout(timeoutId);
+                            timeoutId = null;
+                        }
+                        // Update cache
+                        rawPins = snapshot.docs.map(doc => doc.data() as FirestorePin);
+                        rawIds = snapshot.docs.map(doc => doc.id);
+
+                        // Process immediately
+                        processPins();
+                    },
+                    (error) => {
+                        console.error('[Firestore] ❌ Pins snapshot error:', error);
+                        console.error('[Firestore] Error code:', error.code);
+                        console.error('[Firestore] Error message:', error.message);
+                        // Call callback with empty array on error to prevent hang
+                        callback([]);
+                    }
+                );
+
+            // Setup interval to re-check every 30 seconds (in case app stays open)
+            intervalId = setInterval(processPins, 30000);
+        })
+        .catch((error) => {
+            console.error('[Firestore] ❌ Failed to wait for Firestore:', error);
+            // Call callback with empty array to prevent hang
+            callback([]);
+        });
 
     return () => {
-        unsubscribeSnapshot();
-        clearInterval(intervalId);
+        if (unsubscribeSnapshot) {
+            unsubscribeSnapshot();
+        }
+        if (intervalId) {
+            clearInterval(intervalId);
+        }
     };
 };

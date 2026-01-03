@@ -31,10 +31,6 @@ target 'Pinr' do
 
   config = use_native_modules!(config_command)
 
-  # Enable modular headers for ALL pods to fix Firebase Swift pods + static frameworks
-  # This is REQUIRED for FirebaseAuth-Swift.h generation
-  use_modular_headers!
-  
   use_frameworks! :linkage => podfile_properties['ios.useFrameworks'].to_sym if podfile_properties['ios.useFrameworks']
   use_frameworks! :linkage => ENV['USE_FRAMEWORKS'].to_sym if ENV['USE_FRAMEWORKS']
 
@@ -75,73 +71,26 @@ target 'Pinr' do
       end
     end
 
-    # We add a build phase to gRPC-C++ to ensure the modulemap exists at build time
-    # This bypasses CocoaPods 'Headers' cleanup issues
-    installer.pods_project.targets.each do |target|
-      if target.name == 'gRPC-C++'
-        # Robustly remove any existing phase with the same name to prevent duplicates
-        target.build_phases.reject! { |bp| bp.respond_to?(:name) && bp.name == 'Fix gRPC Modulemap' }
-        
-        puts "[Pinr] Adding gRPC modulemap fix script to gRPC-C++ target"
-        phase = target.new_shell_script_build_phase('Fix gRPC Modulemap')
-        phase.shell_script = <<-SCRIPT
-          mkdir -p "${PODS_ROOT}/Headers/Private/grpc"
-          if [ ! -f "${PODS_ROOT}/Headers/Private/grpc/gRPC-Core.modulemap" ]; then
-            cp "${PODS_ROOT}/Target Support Files/gRPC-Core/gRPC-Core.modulemap" "${PODS_ROOT}/Headers/Private/grpc/gRPC-Core.modulemap"
-          fi
-        SCRIPT
-        # Move to top (and ensure existing one is gone)
-        target.build_phases.delete(phase) # Remove the one added by new_shell_script_build_phase (at end)
-        target.build_phases.unshift(phase) # Add at beginning
-      end
-    end
+    # ====================================================================================
+    # FIREBASE FIRESTORE iOS FIX: Patch RNFBFirestoreCommon to use safe default settings
+    # ====================================================================================
+    firestore_common_path = File.join(Dir.pwd, '..', 'node_modules', '@react-native-firebase', 'firestore', 'ios', 'RNFBFirestore', 'RNFBFirestoreCommon.m')
     
-    # Explicitly resolve DEFINES_MODULE conflicts properties
-    # This ensures valid xcconfig generation for all targets
-    installer.pods_project.targets.each do |target|
-      # Only enforce DEFINES_MODULE for gRPC and Firebase to fix static framework issues
-      # fastlane/issues/1 and firebase-ios-sdk/issues/1000
-      if target.name.include?('gRPC') || target.name.include?('Firebase') || target.name.include?('leveldb')
-        target.build_configurations.each do |config|
-          config.build_settings['DEFINES_MODULE'] = 'YES'
-          config.build_settings['SWIFT_INSTALL_OBJC_HEADER'] = 'YES'
-        end
-      end
+    if File.exist?(firestore_common_path)
+      content = File.read(firestore_common_path)
       
-      # Disable modules for React Native targets that conflict with system modules
-      # This is necessary when using global use_modular_headers! with static frameworks
-      react_targets_needing_no_modules = [
-        'React-RuntimeHermes',
-        'React-RCTAppDelegate',
-        'React-RuntimeCore',
-        'React-Core',
-        'React-Fabric',
-        'React-FabricComponents',
-        'React-RCTFabric',
-        'ReactCommon'
-      ]
-      if react_targets_needing_no_modules.any? { |name| target.name.include?(name) }
-        target.build_configurations.each do |config|
-          config.build_settings['CLANG_ENABLE_MODULES'] = 'NO'
-        end
-      end
-    end
-
-    # Fix React-jsitooling modulemap: Rename module to avoid conflict with React-RuntimeCore
-    # Both define 'module react_runtime' which causes redefinition errors
-    jsitooling_modulemap = "#{installer.sandbox.root}/Target Support Files/React-jsitooling/React-jsitooling.modulemap"
-    if File.exist?(jsitooling_modulemap)
-      content = File.read(jsitooling_modulemap)
-      # Rename the module to avoid conflict
-      new_content = content.gsub('module react_runtime', 'module React_jsitooling')
-      # Also remove the problematic submodule export if present (it shouldn't be with the rename, but good for safety)
-      new_content = new_content.gsub(/module \* \{ export \* \}/, '')
+      # Patch 1: When size is 0, use 100MB instead of firestore.settings.cacheSizeBytes (which may be invalid)
+      content.gsub!(
+        /firestoreSettings\.cacheSizeBytes = firestore\.settings\.cacheSizeBytes;/,
+        'firestoreSettings.cacheSizeBytes = 100 * 1024 * 1024; // Default to 100MB (iOS fix)'
+      )
       
-      if content != new_content
-        File.write(jsitooling_modulemap, new_content)
-        puts "[Pinr] Patched React-jsitooling.modulemap: Renamed module to React_jsitooling"
-      end
+      File.write(firestore_common_path, content)
+      puts "✅ [Podfile] Patched RNFBFirestoreCommon.m with safe Firestore defaults (Cache only)"
+    else
+      puts "⚠️  [Podfile] Warning: RNFBFirestoreCommon.m not found at: #{firestore_common_path}"
     end
+    # ====================================================================================
   end
 end
 

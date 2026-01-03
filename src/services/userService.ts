@@ -1,6 +1,8 @@
 // User Profile Service
 import firestore from '@react-native-firebase/firestore';
 import storage from '@react-native-firebase/storage';
+import { Alert } from 'react-native';
+import auth from '@react-native-firebase/auth';
 // import functions from '@react-native-firebase/functions'; // Reverting to client-side
 
 
@@ -546,20 +548,107 @@ export const getUserProfile = async (uid: string, skipCache = false): Promise<Us
             }
         }
 
-        // Fetch from Firestore
-        const doc = await firestore().collection(USERS_COLLECTION).doc(uid).get();
-        if (doc.exists()) {
-            const profile = doc.data() as UserProfile;
+        // Wait for Firestore to be ready before fetching
+        // Initialize fallback mechanism
+        let profile: UserProfile | null = null;
+        let useRestFallback = false;
+
+        // Try Firestore SDK with aggressive timeout
+        try {
+            const timeoutPromise = new Promise((_, reject) =>
+                setTimeout(() => reject(new Error('SDK Timeout')), 2000)
+            );
+
+            const sdkPromise = firestore().collection(USERS_COLLECTION).doc(uid).get();
+            // Force cast to any to handle Promise.race type inference
+            const doc = await Promise.race([sdkPromise, timeoutPromise]) as any;
+
+            if (doc.exists) {
+                profile = doc.data() as UserProfile;
+                // Alert for successful fetch (TEMPORARY DEBUG)
+                // Alert.alert('Debug: Profile Found', `Loaded: ${profile.username}`);
+            } else {
+                console.log('[UserService] Profile not found in SDK');
+                // Don't alert missing here, might check REST
+            }
+        } catch (sdkError) {
+            console.warn('[UserService] SDK Fetch failed/timed out:', sdkError);
+            useRestFallback = true;
+        }
+
+        // REST Fallback logic
+        if (!profile || useRestFallback) {
+            console.log('[UserService] Attempting REST Fallback...');
+            try {
+                const currentUser = auth().currentUser;
+                if (currentUser) {
+                    const token = await currentUser.getIdToken(true);
+                    const projectId = 'days-c4ad4'; // Correct Firebase project ID
+                    const url = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/users/${uid}`;
+
+                    const response = await fetch(url, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+
+                    if (response.ok) {
+                        const data = await response.json();
+                        // Parse Firestore JSON format
+                        if (data && data.fields) {
+                            profile = parseFirestoreProfile(data.fields);
+                            console.log('[UserService] REST Fetch Success:', profile?.username);
+                            Alert.alert('Debug: REST Success', `Loaded: ${profile?.username}`);
+                        }
+                    } else {
+                        console.warn('[UserService] REST Fallback Failed:', response.status);
+                        Alert.alert('Debug: REST Fail', `Status: ${response.status}`);
+                    }
+                }
+            } catch (restError: any) {
+                console.error('[UserService] REST Error:', restError);
+                Alert.alert('Debug: REST Error', restError.message);
+            }
+        }
+
+        if (profile) {
             // Update cache
             profileCache.set(uid, { profile, timestamp: Date.now() });
             return profile;
+        } else {
+            Alert.alert('Debug: Profile Missing', `Doc ID: ${uid} could not be loaded.`);
         }
+
         return null;
-    } catch (error) {
+    } catch (error: any) {
+        const { Alert } = require('react-native');
+        Alert.alert('Debug: Fetch Error', `Error: ${error.message}`);
         console.error('[UserService] Get profile failed:', error);
         return null;
     }
 };
+
+// Helper: Parse Firestore REST JSON to UserProfile
+function parseFirestoreProfile(fields: any): UserProfile {
+    // Basic parser for string/number/boolean fields
+    // Firestore REST API returns values wrapped in type keys (stringValue, integerValue, etc.)
+    const profile: any = {};
+    for (const key in fields) {
+        const value = fields[key];
+        if (value.stringValue !== undefined) profile[key] = value.stringValue;
+        else if (value.integerValue !== undefined) profile[key] = parseInt(value.integerValue, 10);
+        else if (value.doubleValue !== undefined) profile[key] = parseFloat(value.doubleValue);
+        else if (value.booleanValue !== undefined) profile[key] = value.booleanValue;
+
+        // Handle Map values (e.g. notificationSettings, privacySettings, streak)
+        else if (value.mapValue && value.mapValue.fields) {
+            profile[key] = parseFirestoreProfile(value.mapValue.fields);
+        }
+        // Handle Array values (e.g. friends, hiddenPinIds) - Simplified: arrays of strings only
+        else if (value.arrayValue && value.arrayValue.values) {
+            profile[key] = value.arrayValue.values.map((v: any) => v.stringValue).filter((v: any) => v !== undefined);
+        }
+    }
+    return profile as UserProfile;
+}
 
 /**
  * Get full user profile by username (Exact Match)
@@ -584,23 +673,208 @@ export const getUserByUsername = async (username: string): Promise<UserProfileWi
 
 /**
  * Subscribe to User Profile changes (Real-time)
+ * Waits for Firestore to be ready before subscribing and includes timeout handling
  */
 export const subscribeToUserProfile = (uid: string, onUpdate: (profile: UserProfile | null) => void): (() => void) => {
-    return firestore()
-        .collection(USERS_COLLECTION)
-        .doc(uid)
-        .onSnapshot(
-            (doc) => {
-                if ((doc as any).exists) {
-                    onUpdate(doc.data() as UserProfile);
+    let unsubscribe: (() => void) | null = null;
+    let timeoutId: NodeJS.Timeout | null = null;
+    let hasReceivedCallback = false;
+
+    // Set timeout IMMEDIATELY: if no callback after 15 seconds total, fall back to REST
+    // This ensures the UI unblocks even if waitForFirestore() takes too long
+    timeoutId = setTimeout(async () => {
+        if (!hasReceivedCallback) {
+            console.error('[UserService] ⚠️ Profile subscription timeout after 15s - no callback received');
+            console.error('[UserService] Attempting REST fallback via getUserProfile...');
+
+            // Try to fetch profile via REST as fallback
+            try {
+                const profile = await getUserProfile(uid, true); // Skip cache
+                if (profile) {
+                    console.log('[UserService] ✅ REST Fallback successful in subscription:', profile.username);
+                    onUpdate(profile);
                 } else {
+                    console.error('[UserService] ❌ REST Fallback returned null');
                     onUpdate(null);
                 }
-            },
-            (error) => {
-                console.error('[UserService] Profile subscription error:', error);
+            } catch (error) {
+                console.error('[UserService] ❌ REST Fallback failed:', error);
+                onUpdate(null);
             }
-        );
+            hasReceivedCallback = true;
+        }
+    }, 15000);
+
+    // Wait for Firestore to be ready before subscribing
+    const { waitForFirestore } = require('./firebaseInitService');
+
+    console.log('[UserService] ========== subscribeToUserProfile START ==========');
+    console.log('[UserService] User ID:', uid);
+    console.log('[UserService] Timestamp:', new Date().toISOString());
+    console.log('[UserService] Calling waitForFirestore()...');
+
+    const waitStartTime = Date.now();
+    waitForFirestore()
+        .then(() => {
+            const waitDuration = Date.now() - waitStartTime;
+            console.log('[UserService] ✅ waitForFirestore() completed');
+            console.log('[UserService] Wait duration:', waitDuration + 'ms');
+            console.log('[UserService] Firestore ready, subscribing to profile for:', uid);
+
+            // First, try a simple get() to verify Firestore connectivity
+            const testRef = firestore().collection(USERS_COLLECTION).doc(uid);
+            console.log('[UserService] 🔍 Testing Firestore connectivity with get()...');
+            console.log('[UserService] Collection:', USERS_COLLECTION);
+            console.log('[UserService] Document ID:', uid);
+
+            const getStartTime = Date.now();
+            testRef.get()
+                .then((testDoc) => {
+                    const getDuration = Date.now() - getStartTime;
+                    console.log('[UserService] ✅ Firestore get() succeeded');
+                    console.log('[UserService] Get duration:', getDuration + 'ms');
+                    console.log('[UserService] Document exists:', testDoc.exists);
+                    if (testDoc.exists) {
+                        console.log('[UserService] Document data keys:', Object.keys(testDoc.data() || {}));
+                    }
+                    console.log('[UserService] 📡 Now creating onSnapshot subscription...');
+
+                    try {
+                        console.log('[UserService] Creating document reference...');
+                        const docRef = firestore().collection(USERS_COLLECTION).doc(uid);
+                        console.log('[UserService] ✅ Document reference created');
+                        console.log('[UserService] Calling onSnapshot()...');
+                        const snapshotStartTime = Date.now();
+
+                        unsubscribe = docRef.onSnapshot(
+                            (doc) => {
+                                const snapshotDuration = Date.now() - snapshotStartTime;
+                                console.log('[UserService] 🎉 onSnapshot SUCCESS callback fired!');
+                                console.log('[UserService] Snapshot received after:', snapshotDuration + 'ms');
+                                console.log('[UserService] Document exists:', doc.exists);
+                                hasReceivedCallback = true;
+                                if (timeoutId) {
+                                    clearTimeout(timeoutId);
+                                    timeoutId = null;
+                                }
+
+                                console.log('[UserService] ✅ Snapshot received for:', uid, 'Exists:', doc.exists);
+                                if (doc.exists) {
+                                    onUpdate(doc.data() as UserProfile);
+                                } else {
+                                    console.log('[UserService] Profile document does not exist for:', uid);
+                                    onUpdate(null);
+                                }
+                            },
+                            (error) => {
+                                hasReceivedCallback = true;
+                                if (timeoutId) {
+                                    clearTimeout(timeoutId);
+                                    timeoutId = null;
+                                }
+
+                                console.error('[UserService] ❌ Profile subscription error:', error);
+                                console.error('[UserService] Error code:', error.code);
+                                console.error('[UserService] Error message:', error.message);
+
+                                // If it's a permission error, call onUpdate(null) to unblock UI
+                                if (error.code === 'permission-denied' || error.code === 'unauthenticated') {
+                                    console.error('[UserService] Permission denied - user may not be authenticated or security rules blocking');
+                                    onUpdate(null);
+                                } else {
+                                    // For other errors, still call onUpdate(null) to prevent hang
+                                    onUpdate(null);
+                                }
+                            }
+                        );
+                    } catch (error: any) {
+                        hasReceivedCallback = true;
+                        if (timeoutId) {
+                            clearTimeout(timeoutId);
+                            timeoutId = null;
+                        }
+                        console.error('[UserService] ❌ Failed to create subscription:', error);
+                        onUpdate(null);
+                    }
+                })
+                .catch((getError: any) => {
+                    console.error('[UserService] ❌ Firestore get() failed:', getError);
+                    console.error('[UserService] Error code:', getError.code);
+                    console.error('[UserService] Error message:', getError.message);
+
+                    // Even if get() fails, try onSnapshot anyway - it might work
+                    console.log('[UserService] ⚠️ get() failed, but attempting onSnapshot anyway...');
+                    try {
+                        console.log('[UserService] Creating onSnapshot subscription (fallback path)...');
+                        const docRef = firestore().collection(USERS_COLLECTION).doc(uid);
+                        unsubscribe = docRef.onSnapshot(
+                            (doc) => {
+                                console.log('[UserService] 🎉 onSnapshot SUCCESS callback fired (fallback)!');
+                                hasReceivedCallback = true;
+                                if (timeoutId) {
+                                    clearTimeout(timeoutId);
+                                    timeoutId = null;
+                                }
+
+                                console.log('[UserService] ✅ Snapshot received for:', uid, 'Exists:', doc.exists);
+                                if (doc.exists) {
+                                    onUpdate(doc.data() as UserProfile);
+                                } else {
+                                    console.log('[UserService] Profile document does not exist for:', uid);
+                                    onUpdate(null);
+                                }
+                            },
+                            (error) => {
+                                console.log('[UserService] 🚨 onSnapshot ERROR callback fired (fallback)!');
+                                hasReceivedCallback = true;
+                                if (timeoutId) {
+                                    clearTimeout(timeoutId);
+                                    timeoutId = null;
+                                }
+
+                                console.error('[UserService] ❌ Profile subscription error:', error);
+                                console.error('[UserService] Error code:', error.code);
+                                console.error('[UserService] Error message:', error.message);
+
+                                // If it's a permission error, call onUpdate(null) to unblock UI
+                                if (error.code === 'permission-denied' || error.code === 'unauthenticated') {
+                                    console.error('[UserService] Permission denied - user may not be authenticated or security rules blocking');
+                                    onUpdate(null);
+                                } else {
+                                    // For other errors, still call onUpdate(null) to prevent hang
+                                    onUpdate(null);
+                                }
+                            }
+                        );
+                        console.log('[UserService] ✅ onSnapshot() call completed (fallback), subscription created');
+                    } catch (error: any) {
+                        hasReceivedCallback = true;
+                        if (timeoutId) {
+                            clearTimeout(timeoutId);
+                            timeoutId = null;
+                        }
+                        console.error('[UserService] ❌ Failed to create subscription after get() error:', error);
+                        onUpdate(null);
+                    }
+                });
+        })
+        .catch((error) => {
+            console.error('[UserService] ❌ Failed to wait for Firestore:', error);
+            console.error('[UserService] Error details:', error);
+            // Still call onUpdate(null) to unblock the UI
+            onUpdate(null);
+        });
+
+    // Return unsubscribe function
+    return () => {
+        if (timeoutId) {
+            clearTimeout(timeoutId);
+            timeoutId = null;
+        }
+        if (unsubscribe) {
+            unsubscribe();
+        }
+    };
 };
 
 /**
@@ -959,7 +1233,7 @@ export const deleteUserData = async (uid: string) => {
         throw error;
     }
 };
-
+ 
 /**
  * Add an item to the Bucket List
  */

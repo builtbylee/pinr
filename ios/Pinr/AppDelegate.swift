@@ -1,4 +1,5 @@
 import Expo
+import FirebaseCore
 import React
 import ReactAppDependencyProvider
 
@@ -23,6 +24,11 @@ public class AppDelegate: ExpoAppDelegate {
 
 #if os(iOS) || os(tvOS)
     window = UIWindow(frame: UIScreen.main.bounds)
+// @generated begin @react-native-firebase/app-didFinishLaunchingWithOptions - expo prebuild (DO NOT MODIFY) sync-10e8520570672fd76b2403b7e1e27f5198a6349a
+// Firebase is configured in FirebaseEarlyConfig.m's +load method (before this runs)
+// Removed duplicate FirebaseApp.configure() to prevent "already configured" crash
+// @generated end @react-native-firebase/app-didFinishLaunchingWithOptions
+
     factory.startReactNative(
       withModuleName: "main",
       in: window,
@@ -61,10 +67,12 @@ class ReactNativeDelegate: ExpoReactNativeFactoryDelegate {
   }
 
   override func bundleURL() -> URL? {
-#if DEBUG
+// #if DEBUG
+    // FORCE METRO LOGGING even in Release to debug physical device issue
+    // return NSURL(string: "http://192.168.86.29:8081/index.bundle?platform=ios&dev=true&minify=false")! as URL
     return RCTBundleURLProvider.sharedSettings().jsBundleURL(forBundleRoot: ".expo/.virtual-metro-entry")
-#else
-    return Bundle.main.url(forResource: "main", withExtension: "jsbundle")
-#endif
+// #else
+//    return Bundle.main.url(forResource: "main", withExtension: "jsbundle")
+// #endif
   }
 }

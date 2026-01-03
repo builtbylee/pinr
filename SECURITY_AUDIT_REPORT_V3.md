@@ -311,3 +311,9 @@ The application now follows security best practices:
 *This audit assumes attackers have full access to client-side code, as is standard for mobile applications.*
 
 
+
+
+
+
+
+

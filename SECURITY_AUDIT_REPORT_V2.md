@@ -443,3 +443,9 @@ const maxPossibleScore = this.correctAnswersCount * 100; // Can be bypassed
 *This audit assumes attackers have full access to client-side code, as is standard for mobile applications.*
 
 
+
+
+
+
+
+
