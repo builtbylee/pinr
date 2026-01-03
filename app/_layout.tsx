@@ -126,7 +126,7 @@ export default function RootLayout() {
           console.log('[Layout] ✅ User authenticated');
           console.log('[Layout] Setting session to:', userId);
           console.log('[Layout] Current session state before:', session);
-          
+
           // Check if user is anonymous - if so, sign them out immediately
           if (isAnonymous()) {
             console.warn('[Layout] ⚠️ Anonymous user detected - signing out to prevent auto-login');
@@ -147,7 +147,7 @@ export default function RootLayout() {
             });
             return; // Don't proceed with navigation
           }
-          
+
           // Not anonymous - proceed with normal flow
           // Set session immediately - user is authenticated
           // Profile validation is for data loading, not authentication
@@ -189,21 +189,21 @@ export default function RootLayout() {
               // Set session immediately - user is authenticated
               // Profile validation is for data loading, not authentication
               setSession(userId);
-              
+
               if (!profile || !profile.username || profile.username === 'Unknown') {
                 console.warn('[Layout] ⚠️ Profile validation failed - profile is null, missing username, or Unknown');
-                console.warn('[Layout] This may be due to Firestore connectivity issues on iOS');
-                console.warn('[Layout] Allowing navigation anyway - profile will load via subscription');
-                
-                // Allow navigation - profile will load via subscription once Firestore connects
-                setProfileValidated(true);
-                profileValidationRef.current = true;
-                console.log('[Layout] ✅ Profile validation set to true (allowing navigation despite missing profile)');
-                console.log('[Layout] ✅ Session set, navigation allowed (profile will load via subscription)');
+                console.warn('[Layout] This may indicate an orphaned auth session or Firestore issue');
+                console.warn('[Layout] Will sign out after timeout to prevent Unknown profile login');
+
+                // DO NOT set profileValidationRef.current = true here!
+                // This allows the 20s timeout to fire and sign out the user
+                // The user should re-authenticate properly
+                setProfileValidated(false);
+                console.log('[Layout] profileValidated set to false - waiting for timeout to sign out');
               } else {
                 console.log('[Layout] ✅ Profile validated successfully');
                 console.log('[Layout] Validated username:', profile.username);
-                
+
                 // Profile is valid - allow navigation
                 profileValidationRef.current = true;
                 setProfileValidated(true);
@@ -215,9 +215,9 @@ export default function RootLayout() {
             .catch((error) => {
               console.error('[Layout] ❌ Profile validation promise rejected');
               console.error('[Layout] Validation error:', error);
-              profileValidationRef.current = true;
-              setProfileValidated(true);
-              console.log('[Layout] ✅ Profile validation set to true (error but allowing navigation)');
+              // On error, don't set profileValidationRef - let timeout handle it
+              setProfileValidated(false);
+              console.log('[Layout] profileValidated set to false due to error - waiting for timeout');
             });
 
           // Fallback: if profile still not validated after 20 seconds, sign out to prevent Unknown login
