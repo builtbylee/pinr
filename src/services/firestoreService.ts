@@ -151,8 +151,9 @@ export const subscribeToPins = (
         callback(memories);
     };
 
-    // PERFORMANCE: Removed waitForFirestore() - SDK handles connection internally
-    // The wait was adding 300-500ms delay per call, even when already connected
+    // Wait for Firestore to be ready before subscribing
+    // This is REQUIRED on iOS to ensure the SDK socket is connected
+    const { waitForFirestore } = require('./firebaseInitService');
     let hasReceivedSnapshot = false;
     let isUnsubscribed = false;
 
@@ -161,8 +162,13 @@ export const subscribeToPins = (
             console.log('[Firestore] ========== subscribeToPins START ==========');
             console.log('[Firestore] Timestamp:', new Date().toISOString());
 
+            // Wait for Firestore SDK to be ready (required on iOS)
+            console.log('[Firestore] Waiting for Firestore to be ready...');
+            await waitForFirestore();
+            console.log('[Firestore] ✅ Firestore ready');
+
             if (isUnsubscribed) {
-                console.log('[Firestore] Unsubscribed before setup, aborting');
+                console.log('[Firestore] Unsubscribed during wait, aborting');
                 return;
             }
 
@@ -189,7 +195,7 @@ export const subscribeToPins = (
                 const snapshot = await Promise.race([
                     pinsRef.get(),
                     new Promise<any>((_, reject) =>
-                        setTimeout(() => reject(new Error('Initial fetch timeout')), 3000)
+                        setTimeout(() => reject(new Error('Initial fetch timeout')), 8000)
                     )
                 ]);
 

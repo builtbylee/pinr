@@ -548,17 +548,24 @@ export const getUserProfile = async (uid: string, skipCache = false): Promise<Us
             }
         }
 
-        // PERFORMANCE: Removed waitForFirestore() - SDK handles connection internally
-        // The wait was adding 300-500ms delay per call, even when already connected
+        // Wait for Firestore to be ready (required on iOS)
+        const { waitForFirestore } = require('./firebaseInitService');
+        console.log('[UserService] getUserProfile: Waiting for Firestore...');
+        try {
+            await waitForFirestore();
+            console.log('[UserService] getUserProfile: Firestore ready');
+        } catch (waitError: any) {
+            console.warn('[UserService] getUserProfile: waitForFirestore failed, proceeding anyway:', waitError.message);
+        }
 
         // Initialize fallback mechanism
         let profile: UserProfile | null = null;
         let useRestFallback = false;
 
-        // Try Firestore SDK with timeout (reduced for faster fallback)
+        // Try Firestore SDK with timeout (balanced for iOS)
         try {
             const timeoutPromise = new Promise((_, reject) =>
-                setTimeout(() => reject(new Error('SDK Timeout')), 3000)
+                setTimeout(() => reject(new Error('SDK Timeout')), 8000)
             );
 
             console.log('[UserService] getUserProfile: Fetching profile from Firestore...');
@@ -717,11 +724,14 @@ export const subscribeToUserProfile = (uid: string, onUpdate: (profile: UserProf
             console.log('[UserService] User ID:', uid);
             console.log('[UserService] Timestamp:', new Date().toISOString());
 
-            // PERFORMANCE: Removed waitForFirestore() - SDK handles connection internally
-            // The wait was adding 300-500ms delay per call, even when already connected
+            // Wait for Firestore SDK to be ready (required on iOS)
+            const { waitForFirestore } = require('./firebaseInitService');
+            console.log('[UserService] Waiting for Firestore...');
+            await waitForFirestore();
+            console.log('[UserService] ✅ Firestore ready');
 
             if (isUnsubscribed) {
-                console.log('[UserService] Unsubscribed before setup, aborting');
+                console.log('[UserService] Unsubscribed during wait, aborting');
                 return;
             }
 
@@ -735,7 +745,7 @@ export const subscribeToUserProfile = (uid: string, onUpdate: (profile: UserProf
                 const doc = await Promise.race([
                     userRef.get(),
                     new Promise<any>((_, reject) =>
-                        setTimeout(() => reject(new Error('Initial fetch timeout')), 3000)
+                        setTimeout(() => reject(new Error('Initial fetch timeout')), 8000)
                     )
                 ]);
 
