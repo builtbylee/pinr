@@ -1186,11 +1186,12 @@ const styles = StyleSheet.create({
         zIndex: 10,
     },
     gridCardTitleContainer: {
-        backgroundColor: 'white',
+        backgroundColor: 'rgba(0,0,0,0.7)', // Dark translucent
         paddingHorizontal: 12,
         paddingVertical: 6,
         borderRadius: 12,
         maxWidth: '90%',
+        // Shadows might be less visible on dark translucent, but keeping for depth
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.15,
@@ -1198,13 +1199,13 @@ const styles = StyleSheet.create({
         elevation: 3,
     },
     gridCardTitle: {
-        color: '#1a1a1a', // Dark text
+        color: 'white', // White text
         fontWeight: 'bold',
         fontSize: 12,
         textAlign: 'center',
     },
     gridCardSubtitle: {
-        color: '#666',
+        color: '#ccc', // Light grey for subtitle
         fontSize: 10,
         marginTop: 2,
         textAlign: 'center',
