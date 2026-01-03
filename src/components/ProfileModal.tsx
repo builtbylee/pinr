@@ -1,6 +1,6 @@
 import { Feather } from '@expo/vector-icons';
 import { Image } from 'expo-image';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { Dimensions, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
@@ -91,6 +91,23 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
 
     // Tab state for Android tabbed layout
     const [activeTab, setActiveTab] = useState<'pins' | 'journeys' | 'bucketlist'>('pins');
+    const tabScrollViewRef = useRef<ScrollView>(null);
+    const modalContentWidth = width * 0.90; // Width of the card container
+
+    const handleTabPress = (tab: 'pins' | 'journeys' | 'bucketlist') => {
+        setActiveTab(tab);
+        const index = tab === 'pins' ? 0 : tab === 'journeys' ? 1 : 2;
+        tabScrollViewRef.current?.scrollTo({ x: index * modalContentWidth, animated: true });
+    };
+
+    const handleTabScroll = (event: any) => {
+        const x = event.nativeEvent.contentOffset.x;
+        const index = Math.round(x / modalContentWidth);
+        const newTab = index === 0 ? 'pins' : index === 1 ? 'journeys' : 'bucketlist';
+        if (newTab !== activeTab) {
+            setActiveTab(newTab);
+        }
+    };
 
     // Fetch profile data
     useEffect(() => {
@@ -347,32 +364,35 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                             <View style={styles.tabBar}>
                                 <TouchableOpacity
                                     style={[styles.tab, activeTab === 'pins' && styles.activeTab]}
-                                    onPress={() => setActiveTab('pins')}
+                                    onPress={() => handleTabPress('pins')}
                                 >
                                     <Text style={[styles.tabText, activeTab === 'pins' && styles.activeTabText]}>Pins</Text>
                                 </TouchableOpacity>
                                 <TouchableOpacity
                                     style={[styles.tab, activeTab === 'journeys' && styles.activeTab]}
-                                    onPress={() => setActiveTab('journeys')}
+                                    onPress={() => handleTabPress('journeys')}
                                 >
                                     <Text style={[styles.tabText, activeTab === 'journeys' && styles.activeTabText]}>Journeys</Text>
                                 </TouchableOpacity>
                                 <TouchableOpacity
                                     style={[styles.tab, activeTab === 'bucketlist' && styles.activeTab]}
-                                    onPress={() => setActiveTab('bucketlist')}
+                                    onPress={() => handleTabPress('bucketlist')}
                                 >
                                     <Text style={[styles.tabText, activeTab === 'bucketlist' && styles.activeTabText]}>Bucket List</Text>
                                 </TouchableOpacity>
                             </View>
 
-                            {/* Tab Content - Vertical Scrolling Grid */}
+                            {/* Tab Content - Swipeable Horizontal Pager */}
                             <ScrollView
+                                ref={tabScrollViewRef}
+                                horizontal
+                                pagingEnabled
+                                showsHorizontalScrollIndicator={false}
+                                onMomentumScrollEnd={handleTabScroll}
                                 style={{ flex: 1, width: '100%' }}
-                                contentContainerStyle={styles.tabContent}
-                                showsVerticalScrollIndicator={false}
                             >
                                 {/* PINS TAB */}
-                                {activeTab === 'pins' && (
+                                <ScrollView style={{ width: modalContentWidth }} contentContainerStyle={styles.tabContent} showsVerticalScrollIndicator={false}>
                                     <View style={styles.gridContainer}>
                                         {userPins.length > 0 ? (
                                             userPins.map((pin, index) => (
@@ -403,10 +423,10 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                                             </View>
                                         )}
                                     </View>
-                                )}
+                                </ScrollView>
 
                                 {/* JOURNEYS TAB */}
-                                {activeTab === 'journeys' && (
+                                <ScrollView style={{ width: modalContentWidth }} contentContainerStyle={styles.tabContent} showsVerticalScrollIndicator={false}>
                                     <View style={styles.gridContainer}>
                                         {stories.length > 0 ? (
                                             stories.map(story => {
@@ -446,51 +466,53 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                                             </View>
                                         )}
                                     </View>
-                                )}
+                                </ScrollView>
 
                                 {/* BUCKET LIST TAB */}
-                                {activeTab === 'bucketlist' && (
+                                <ScrollView style={{ width: modalContentWidth }} contentContainerStyle={styles.tabContent} showsVerticalScrollIndicator={false}>
                                     <View style={styles.gridContainer}>
                                         {bucketList.length > 0 ? (
-                                            bucketList.map((item, index) => (
+                                            bucketList.map(item => (
                                                 <TouchableOpacity
-                                                    key={`bucket-${index}`}
+                                                    key={item.id}
                                                     style={styles.gridCard}
-                                                    onPress={() => setSelectedBucketItem(item)}
+                                                    onPress={() => handleViewBucketItem(item)}
                                                 >
-                                                    {item.imageUrl ? (
-                                                        <Image source={{ uri: item.imageUrl }} style={styles.gridCardImage} contentFit="cover" />
-                                                    ) : (
-                                                        <View style={[styles.gridCardImage, { backgroundColor: '#eee', justifyContent: 'center', alignItems: 'center' }]}>
-                                                            <Feather name="map-pin" size={24} color="#ccc" />
+                                                    <Image
+                                                        source={{ uri: item.imageUrl || 'https://via.placeholder.com/150' }}
+                                                        style={styles.gridCardImage}
+                                                        contentFit="cover"
+                                                    />
+                                                    <View style={styles.gridCardOverlay}>
+                                                        <Text style={styles.gridCardTitle} numberOfLines={2}>{item.title}</Text>
+                                                    </View>
+                                                    {/* Status Badge */}
+                                                    {item.status === 'visited' && (
+                                                        <View style={[styles.statusPill, styles.pillVisited]}>
+                                                            <Text style={[styles.statusPillText, { color: 'white' }]}>VISITED</Text>
                                                         </View>
                                                     )}
-                                                    <View style={[
-                                                        styles.statusPill,
-                                                        item.status === 'booked' ? styles.pillBooked :
-                                                            item.status === 'visited' ? styles.pillVisited : styles.pillWishlist
-                                                    ]}>
-                                                        <Text style={[
-                                                            styles.statusPillText,
-                                                            (item.status === 'booked' || item.status === 'visited') ? { color: 'white' } : { color: '#1F2937' }
-                                                        ]}>
-                                                            {item.status === 'visited' ? 'Visited' : item.status === 'booked' ? 'Booked' : 'Wishlist'}
-                                                        </Text>
-                                                    </View>
-                                                    <View style={styles.gridCardOverlay}>
-                                                        <Text style={styles.gridCardTitle} numberOfLines={2}>{item.locationName}</Text>
-                                                    </View>
+                                                    {item.status === 'booked' && (
+                                                        <View style={[styles.statusPill, styles.pillBooked]}>
+                                                            <Text style={[styles.statusPillText, { color: 'white' }]}>BOOKED</Text>
+                                                        </View>
+                                                    )}
+                                                    {item.status === 'wishlist' && (
+                                                        <View style={[styles.statusPill, styles.pillWishlist]}>
+                                                            <Text style={[styles.statusPillText, { color: '#666' }]}>WISHLIST</Text>
+                                                        </View>
+                                                    )}
                                                 </TouchableOpacity>
                                             ))
                                         ) : (
                                             <View style={styles.emptyTabState}>
-                                                <Feather name="star" size={32} color="#ccc" />
-                                                <Text style={styles.emptyTabText}>Bucket list empty</Text>
-                                                <Text style={styles.emptyTabSubtext}>Add dream destinations!</Text>
+                                                <Feather name="flag" size={32} color="#ccc" />
+                                                <Text style={styles.emptyTabText}>Empty Bucket List</Text>
+                                                <Text style={styles.emptyTabSubtext}>Add places you want to visit!</Text>
                                             </View>
                                         )}
                                     </View>
-                                )}
+                                </ScrollView>
                             </ScrollView>
                         </>
                     ) : (
@@ -1151,6 +1173,8 @@ const styles = StyleSheet.create({
         left: 0,
         right: 0,
         padding: 10,
+        height: 55, // Fixed height for consistency across all tile types
+        justifyContent: 'center', // Center text vertically
         backgroundColor: 'rgba(0,0,0,0.6)',
     },
     gridCardTitle: {
