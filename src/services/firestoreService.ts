@@ -192,7 +192,6 @@ export const subscribeToPins = (
                             if (response.ok) {
                                 const results = await response.json();
                                 console.log('[Firestore] ✅ REST query succeeded, results:', results.length);
-                                Alert.alert('Debug: REST Query', `HTTP 200, ${results.length} results`);
 
                                 // Parse REST API response (array of result objects)
                                 rawPins = [];
@@ -229,10 +228,8 @@ export const subscribeToPins = (
 
                                 processPins();
                                 hasReceivedSnapshot = true;
-                                Alert.alert('Debug: Pins Loaded', `${rawPins.length} pins processed`);
                             } else {
                                 console.error('[Firestore] ❌ REST query failed:', response.status);
-                                Alert.alert('Debug: REST Fail', `Status: ${response.status}`);
                                 callback([]);
                             }
                         } else {
@@ -241,7 +238,6 @@ export const subscribeToPins = (
                         }
                     } catch (error: any) {
                         console.error('[Firestore] ❌ REST query failed:', error);
-                        Alert.alert('Debug: REST Error', error.message || 'Unknown error');
                         callback([]);
                     }
                 }

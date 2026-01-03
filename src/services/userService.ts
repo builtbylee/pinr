@@ -596,16 +596,13 @@ export const getUserProfile = async (uid: string, skipCache = false): Promise<Us
                         if (data && data.fields) {
                             profile = parseFirestoreProfile(data.fields);
                             console.log('[UserService] REST Fetch Success:', profile?.username);
-                            Alert.alert('Debug: REST Success', `Loaded: ${profile?.username}`);
                         }
                     } else {
                         console.warn('[UserService] REST Fallback Failed:', response.status);
-                        Alert.alert('Debug: REST Fail', `Status: ${response.status}`);
                     }
                 }
             } catch (restError: any) {
                 console.error('[UserService] REST Error:', restError);
-                Alert.alert('Debug: REST Error', restError.message);
             }
         }
 
