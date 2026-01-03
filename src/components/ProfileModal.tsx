@@ -469,7 +469,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                                                                 <Feather name="x" size={12} color="white" />
                                                             </TouchableOpacity>
                                                         )}
-                                                    </TouchableOpacity>
+                                                    </Pressable>
                                                 );
                                             })
                                         ) : (
