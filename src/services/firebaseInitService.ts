@@ -41,8 +41,8 @@ export async function waitForFirebase(): Promise<void> {
 
     initPromise = new Promise((resolve) => {
         let attempts = 0;
-        const maxAttempts = 50; // 2.5 seconds max (50 * 50ms) - reduced from 20s
-        const nativeBridgeCheckAttempts = 10; // First 0.5 seconds: check native bridge
+        const maxAttempts = 200; // 20 seconds max (200 * 100ms)
+        const nativeBridgeCheckAttempts = 30; // First 3 seconds: check native bridge
 
         const checkFirebase = async () => {
             attempts++;
@@ -56,7 +56,7 @@ export async function waitForFirebase(): Promise<void> {
                     if (!rnfbAppModule) {
                         // Native module not loaded yet, wait a bit more
                         if (attempts < nativeBridgeCheckAttempts) {
-                            setTimeout(checkFirebase, 50);
+                            setTimeout(checkFirebase, 100);
                             return;
                         } else {
                             console.warn('[FirebaseInit] Native bridge check timeout, proceeding to Firebase check');
@@ -64,7 +64,7 @@ export async function waitForFirebase(): Promise<void> {
                     } else {
                         // Native module is loaded, give it a moment to initialize
                         if (attempts < nativeBridgeCheckAttempts) {
-                            setTimeout(checkFirebase, 50);
+                            setTimeout(checkFirebase, 100);
                             return;
                         }
                     }
@@ -132,7 +132,7 @@ export async function waitForFirebase(): Promise<void> {
                         }
 
                         if (attempts < maxAttempts) {
-                            setTimeout(checkFirebase, 50);
+                            setTimeout(checkFirebase, 100);
                             return;
                         } else {
                             // Timeout - this is a critical error
@@ -174,7 +174,7 @@ export async function waitForFirebase(): Promise<void> {
                         errorMessage.includes('initializeApp')) {
 
                         if (attempts < maxAttempts) {
-                            setTimeout(checkFirebase, 50);
+                            setTimeout(checkFirebase, 100);
                             return;
                         } else {
                             // Timeout - critical error
@@ -259,7 +259,7 @@ export async function waitForFirestore(): Promise<void> {
 
     firestoreInitPromise = new Promise((resolve) => {
         let attempts = 0;
-        const maxAttempts = 20; // 1 second max (20 * 50ms) - reduced from 5s
+        const maxAttempts = 50; // 5 seconds max (50 * 100ms)
 
         const checkFirestore = async () => {
             attempts++;
@@ -282,7 +282,7 @@ export async function waitForFirestore(): Promise<void> {
 
                 // Retry if no instance returned (unlikely for RNFB, but safe)
                 if (attempts < maxAttempts) {
-                    setTimeout(checkFirestore, 50);
+                    setTimeout(checkFirestore, 100);
                     return;
                 } else {
                     console.warn('[FirebaseInit] Firestore check timed out, proceeding anyway');
@@ -299,7 +299,7 @@ export async function waitForFirestore(): Promise<void> {
 
                 // For critical errors, retry a few times then give up
                 if (attempts < maxAttempts) {
-                    setTimeout(checkFirestore, 50);
+                    setTimeout(checkFirestore, 100);
                     return;
                 } else {
                     isFirestoreReady = true;
