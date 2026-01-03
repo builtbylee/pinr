@@ -1133,8 +1133,8 @@ const styles = StyleSheet.create({
         gap: 12,
     },
     gridCard: {
-        width: (width - 32 - 12) / 2, // 2 column grid
-        height: ((width - 32 - 12) / 2) * 1.5, // 2:3 aspect ratio
+        width: (width * 0.90 - 32 - 12) / 2, // 2 column grid within 90% width container
+        height: ((width * 0.90 - 32 - 12) / 2) * 1.5, // 2:3 aspect ratio
         borderRadius: 16,
         backgroundColor: '#eee',
         overflow: 'hidden',
