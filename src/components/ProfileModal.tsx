@@ -2,7 +2,7 @@ import { Feather } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { BlurView } from 'expo-blur';
 import React, { useEffect, useMemo, useState, useRef } from 'react';
-import { Dimensions, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Dimensions, Platform, StyleSheet, Text, TouchableOpacity, View, Pressable } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import { useMemoryStore } from '../store/useMemoryStore';
@@ -398,9 +398,13 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                                     <View style={styles.gridContainer}>
                                         {userPins.length > 0 ? (
                                             userPins.map((pin, index) => (
-                                                <TouchableOpacity
+                                                <Pressable
                                                     key={`pin-${pin.id || index}`}
-                                                    style={styles.gridCard}
+                                                    style={({ pressed }) => [
+                                                        styles.gridCard,
+                                                        Platform.OS === 'ios' && pressed && { opacity: 0.7 }
+                                                    ]}
+                                                    android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
                                                     onPress={() => {
                                                         handleFilter();
                                                     }}
@@ -437,9 +441,13 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                                             stories.map(story => {
                                                 const coverPin = userPins.find(p => p.id === story.coverPinId) || userPins.find(p => p.id === story.pinIds[0]);
                                                 return (
-                                                    <TouchableOpacity
+                                                    <Pressable
                                                         key={story.id}
-                                                        style={styles.gridCard}
+                                                        style={({ pressed }) => [
+                                                            styles.gridCard,
+                                                            Platform.OS === 'ios' && pressed && { opacity: 0.7 }
+                                                        ]}
+                                                        android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
                                                         onPress={() => handlePlay(story)}
                                                         onLongPress={() => isMe && handleEditStory(story)}
                                                     >
@@ -479,9 +487,13 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                                     <View style={styles.gridContainer}>
                                         {bucketList.length > 0 ? (
                                             bucketList.map(item => (
-                                                <TouchableOpacity
+                                                <Pressable
                                                     key={item.id}
-                                                    style={styles.gridCard}
+                                                    style={({ pressed }) => [
+                                                        styles.gridCard,
+                                                        Platform.OS === 'ios' && pressed && { opacity: 0.7 }
+                                                    ]}
+                                                    android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
                                                     onPress={() => handleViewBucketItem(item)}
                                                 >
                                                     <Image
