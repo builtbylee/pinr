@@ -148,7 +148,7 @@ export const subscribeToPins = (
     let timeoutId: NodeJS.Timeout | null = null;
 
     waitForFirestore()
-        .then(() =\u003e {
+        .then(() => {
             console.log('[Firestore] Firestore ready, subscribing to pins...');
 
             // Set timeout: if no snapshot after 10 seconds, try one-time get()
