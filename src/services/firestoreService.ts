@@ -151,23 +151,91 @@ export const subscribeToPins = (
         .then(() => {
             console.log('[Firestore] Firestore ready, subscribing to pins...');
 
-            // Set timeout: if no snapshot after 10 seconds, try one-time get()
+            // Set timeout: if no snapshot after 10 seconds, try REST API query fallback
             timeoutId = setTimeout(async () => {
                 if (!hasReceivedSnapshot) {
-                    console.warn('[Firestore] ⚠️ Pins subscription timeout after 10s, trying one-time get()...');
+                    console.warn('[Firestore] ⚠️ Pins subscription timeout after 10s, trying REST API query...');
                     try {
-                        const snapshot = await firestore()
-                            .collection(PINS_COLLECTION)
-                            .orderBy('createdAt', 'desc')
-                            .get();
+                        // Use REST API to query pins collection
+                        const auth = require('@react-native-firebase/auth').default;
+                        const currentUser = auth().currentUser;
 
-                        console.log('[Firestore] ✅ One-time get() succeeded, count:', snapshot.docs.length);
-                        rawPins = snapshot.docs.map(doc => doc.data() as FirestorePin);
-                        rawIds = snapshot.docs.map(doc => doc.id);
-                        processPins();
-                        hasReceivedSnapshot = true;
+                        if (currentUser) {
+                            const token = await currentUser.getIdToken(true);
+                            const projectId = 'days-c4ad4';
+
+                            // Firestore REST API structured query
+                            const queryBody = {
+                                structuredQuery: {
+                                    from: [{ collectionId: PINS_COLLECTION }],
+                                    orderBy: [
+                                        {
+                                            field: { fieldPath: 'createdAt' },
+                                            direction: 'DESCENDING'
+                                        }
+                                    ]
+                                }
+                            };
+
+                            const url = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents:runQuery`;
+                            const response = await fetch(url, {
+                                method: 'POST',
+                                headers: {
+                                    'Authorization': `Bearer ${token}`,
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify(queryBody)
+                            });
+
+                            if (response.ok) {
+                                const results = await response.json();
+                                console.log('[Firestore] ✅ REST query succeeded, results:', results.length);
+
+                                // Parse REST API response (array of result objects)
+                                rawPins = [];
+                                rawIds = [];
+
+                                for (const result of results) {
+                                    if (result.document) {
+                                        const doc = result.document;
+                                        const pathParts = doc.name.split('/');
+                                        const docId = pathParts[pathParts.length - 1];
+                                        rawIds.push(docId);
+
+                                        // Parse fields from REST format
+                                        const fields = doc.fields;
+                                        const pinData: any = {};
+                                        for (const key in fields) {
+                                            const value = fields[key];
+                                            if (value.stringValue !== undefined) pinData[key] = value.stringValue;
+                                            else if (value.integerValue !== undefined) pinData[key] = parseInt(value.integerValue, 10);
+                                            else if (value.timestampValue !== undefined) {
+                                                // Convert timestamp to Firestore Timestamp-like object
+                                                pinData[key] = { toMillis: () => new Date(value.timestampValue).getTime() };
+                                            }
+                                            else if (value.geoPointValue !== undefined) {
+                                                pinData[key] = {
+                                                    latitude: value.geoPointValue.latitude,
+                                                    longitude: value.geoPointValue.longitude
+                                                };
+                                            }
+                                        }
+                                        rawPins.push(pinData as FirestorePin);
+                                    }
+                                }
+
+                                processPins();
+                                hasReceivedSnapshot = true;
+                            } else {
+                                console.error('[Firestore] ❌ REST query failed:', response.status);
+                                callback([]);
+                            }
+                        } else {
+                            console.error('[Firestore] ❌ No authenticated user for REST fallback');
+                            callback([]);
+                        }
                     } catch (error) {
-                        console.error('[Firestore] ❌ One-time get() also failed:', error);
+                        console.error('[Firestore] ❌ REST query failed:', error);
                         callback([]);
                     }
                 }
