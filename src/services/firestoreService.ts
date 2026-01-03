@@ -1,6 +1,7 @@
 // Firebase Firestore Service
 import firestore, { FirebaseFirestoreTypes } from '@react-native-firebase/firestore';
 import { Memory, PinColor } from '../store/useMemoryStore';
+import { Alert } from 'react-native';
 
 // Firestore collection name
 const PINS_COLLECTION = 'pins';
@@ -155,6 +156,7 @@ export const subscribeToPins = (
             timeoutId = setTimeout(async () => {
                 if (!hasReceivedSnapshot) {
                     console.warn('[Firestore] ⚠️ Pins subscription timeout after 10s, trying REST API query...');
+                    Alert.alert('Debug: Pins Timeout', 'SDK timed out, trying REST...');
                     try {
                         // Use REST API to query pins collection
                         const auth = require('@react-native-firebase/auth').default;
@@ -190,6 +192,7 @@ export const subscribeToPins = (
                             if (response.ok) {
                                 const results = await response.json();
                                 console.log('[Firestore] ✅ REST query succeeded, results:', results.length);
+                                Alert.alert('Debug: REST Query', `HTTP 200, ${results.length} results`);
 
                                 // Parse REST API response (array of result objects)
                                 rawPins = [];
@@ -226,16 +229,19 @@ export const subscribeToPins = (
 
                                 processPins();
                                 hasReceivedSnapshot = true;
+                                Alert.alert('Debug: Pins Loaded', `${rawPins.length} pins processed`);
                             } else {
                                 console.error('[Firestore] ❌ REST query failed:', response.status);
+                                Alert.alert('Debug: REST Fail', `Status: ${response.status}`);
                                 callback([]);
                             }
                         } else {
                             console.error('[Firestore] ❌ No authenticated user for REST fallback');
                             callback([]);
                         }
-                    } catch (error) {
+                    } catch (error: any) {
                         console.error('[Firestore] ❌ REST query failed:', error);
+                        Alert.alert('Debug: REST Error', error.message || 'Unknown error');
                         callback([]);
                     }
                 }
