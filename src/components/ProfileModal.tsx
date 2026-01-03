@@ -422,7 +422,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                                                             <Text style={styles.gridCardTitle} numberOfLines={2}>{pin.title || pin.locationName}</Text>
                                                         </BlurView>
                                                     </View>
-                                                </TouchableOpacity>
+                                                </Pressable>
                                             ))
                                         ) : (
                                             <View style={styles.emptyTabState}>
@@ -522,7 +522,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                                                             <Text style={[styles.statusPillText, { color: '#666' }]}>WISHLIST</Text>
                                                         </View>
                                                     )}
-                                                </TouchableOpacity>
+                                                </Pressable>
                                             ))
                                         ) : (
                                             <View style={styles.emptyTabState}>
