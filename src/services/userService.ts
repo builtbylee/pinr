@@ -611,7 +611,7 @@ export const getUserProfile = async (uid: string, skipCache = false): Promise<Us
             profileCache.set(uid, { profile, timestamp: Date.now() });
             return profile;
         } else {
-            Alert.alert('Debug: Profile Missing', `Doc ID: ${uid} could not be loaded.`);
+            console.warn('[UserService] Profile missing for doc:', uid);
         }
 
         return null;

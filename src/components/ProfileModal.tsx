@@ -262,7 +262,16 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                 <Animated.View style={[styles.backdrop, { opacity: animation }]} />
             </TouchableOpacity>
 
-            <Animated.View style={[styles.cardContainer, animatedStyle, { marginTop: insets.top + 10, maxHeight: height - insets.top - insets.bottom - 40 }]}>
+            <Animated.View style={[
+                styles.cardContainer,
+                animatedStyle,
+                {
+                    marginTop: insets.top + 10,
+                    // On Android, we need a fixed height for the flex:1 children to expand
+                    height: Platform.OS === 'android' ? height - insets.top - insets.bottom - 40 : undefined,
+                    maxHeight: height - insets.top - insets.bottom - 40
+                }
+            ]}>
                 {/* Fixed Header Buttons - Outside ScrollView */}
                 <View style={{ position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10, flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 24, paddingTop: 20 }}>
                     {isMe ? (
@@ -751,8 +760,10 @@ const styles = StyleSheet.create({
         elevation: 10,
     },
     glassCard: {
+        flex: 1, // Ensure it fills the card container
         width: '100%',
-        paddingVertical: 30,
+        paddingTop: 30, // Changed from paddingVertical to paddingTop/Bottom to allow flex children
+        paddingBottom: 16,
         paddingHorizontal: 16,
         alignItems: 'center',
         backgroundColor: 'rgba(255,255,255, 0.95)', // Solid card
