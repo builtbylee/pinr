@@ -92,7 +92,8 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
     // Tab state for Android tabbed layout
     const [activeTab, setActiveTab] = useState<'pins' | 'journeys' | 'bucketlist'>('pins');
     const tabScrollViewRef = useRef<ScrollView>(null);
-    const modalContentWidth = width * 0.90; // Width of the card container
+    // Calculated width of the tab content area: Card Width (90%) - GlassCard Padding (32)
+    const modalContentWidth = width * 0.90 - 32;
 
     const handleTabPress = (tab: 'pins' | 'journeys' | 'bucketlist') => {
         setActiveTab(tab);
