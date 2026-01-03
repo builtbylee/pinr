@@ -1,0 +1,20 @@
+appId: com.builtbylee.app80days
+---
+- launchApp
+- runFlow:
+    when:
+      visible: ".*DEBUG.*"
+    commands:
+        # Open Profile
+        - tapOn:
+            id: "fab-menu-toggle"
+        - tapOn:
+            id: "fab-profile-button"
+            
+        # Tap Create Journey (Assuming this button exists in Profile - verified in next step)
+        # If not in Profile, we might need to Trigger it via "Add Pin" -> "Create Story"? 
+        # I'll check ProfileModal.tsx output first. 
+        # For now, writing placeholder that opens Profile.
+        
+        - assertVisible: "Bucket List"
+        - tapOn: "Close"

@@ -1,0 +1,67 @@
+appId: com.builtbylee.app80days
+---
+- launchApp
+- runFlow: smoke_test.yaml
+
+# 1. Enroll Biometrics skipped (Manual Prereq)
+
+# 2. Logout (if logged in)
+- runFlow:
+    when:
+       visible: ".*DEBUG.*"
+    commands:
+        - tapOn:
+            id: "fab-menu-toggle"
+        - tapOn:
+            id: "fab-profile-button"
+        - tapOn:
+            id: "profile-settings-button"
+        - scrollUntilVisible:
+            element:
+               id: "settings-logout-button"
+            direction: DOWN
+        - tapOn:
+            id: "settings-logout-button"
+        - tapOn: "Confirm"
+
+# 3. Login Manually
+- tapOn:
+    id: "auth-email-input"
+- inputText: "biotest@example.com"
+- tapOn:
+    id: "auth-password-input"
+- inputText: "password123"
+- hideKeyboard
+- tapOn:
+    id: "auth-submit-button"
+
+# 4. Handle "Enable Biometrics?"
+- tapOn: "Enable"
+
+# 5. Verify Login
+- assertVisible: ".*DEBUG.*"
+
+# 6. Logout Again
+- tapOn:
+    id: "fab-menu-toggle"
+- tapOn:
+    id: "fab-profile-button"
+- assertVisible: "Bucket List" # Ensure Profile Modal is open
+- tapOn:
+    id: "profile-settings-button"
+- scrollUntilVisible:
+    element:
+        id: "settings-logout-button"
+    direction: DOWN
+- tapOn:
+    id: "settings-logout-button"
+- tapOn: "Confirm"
+
+# 7. Test Biometric Button
+- assertVisible:
+    id: "auth-biometric-button"
+- tapOn:
+    id: "auth-biometric-button"
+
+# 8. Verify Re-Login
+- assertVisible: ".*DEBUG.*"

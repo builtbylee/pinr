@@ -48,7 +48,7 @@ export const DestinationCard: React.FC<DestinationCardProps> = ({ memory, onClos
     };
 
     useEffect(() => {
-        if (memory.imageUris.length > 0) {
+        if (memory.imageUris && memory.imageUris.length > 0) {
             // Get original image size
             import('react-native').then(({ Image: RNImage }) => {
                 RNImage.getSize(memory.imageUris[0], (w, h) => {

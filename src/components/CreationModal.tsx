@@ -2,7 +2,7 @@ import { Feather } from '@expo/vector-icons';
 import ImageCropPicker from 'react-native-image-crop-picker';
 import * as Location from 'expo-location';
 import React, { useEffect, useState, useCallback } from 'react';
-import { Dimensions, Image, KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, FlatList } from 'react-native';
+import { Dimensions, Image, KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, FlatList, Pressable } from 'react-native';
 import { Memory } from '../store/useMemoryStore';
 import { MAPBOX_TOKEN } from '../constants/Config';
 import { searchPlaces, GeocodingResult } from '../services/geocodingService';
@@ -284,6 +284,16 @@ export const CreationModal: React.FC<CreationModalProps> = ({ visible, onClose, 
         setTempPickerMonth(monthIndex);
     };
 
+    const handlePrevMonth = () => {
+        const newDate = dayjs(currentDate).subtract(1, 'month').format('YYYY-MM-DD');
+        setCurrentDate(newDate);
+    };
+
+    const handleNextMonth = () => {
+        const newDate = dayjs(currentDate).add(1, 'month').format('YYYY-MM-DD');
+        setCurrentDate(newDate);
+    };
+
     // Confirm selection and close the picker
     const confirmYearMonthSelection = () => {
         const newDate = dayjs().year(tempPickerYear).month(tempPickerMonth).date(1).format('YYYY-MM-DD');
@@ -293,6 +303,7 @@ export const CreationModal: React.FC<CreationModalProps> = ({ visible, onClose, 
 
     // Initialize temp picker state when opening
     const openYearPicker = () => {
+        console.log('[CreationModal] Opening Year Picker');
         setTempPickerYear(dayjs(currentDate).year());
         setTempPickerMonth(dayjs(currentDate).month());
         setShowYearPicker(true);
@@ -490,23 +501,36 @@ export const CreationModal: React.FC<CreationModalProps> = ({ visible, onClose, 
                                 </TouchableOpacity>
                             </View>
 
+                            {/* External Custom Header for Navigation */}
+                            <View style={styles.externalNavigationHeader}>
+                                <Text style={{ position: 'absolute', top: -20, color: 'red', fontWeight: 'bold' }}>DEBUG MODE ACTIVE</Text>
+                                <TouchableOpacity onPress={handlePrevMonth} style={styles.navArrow}>
+                                    <Feather name="chevron-left" size={24} color="#1a1a1a" />
+                                </TouchableOpacity>
+
+                                <TouchableOpacity
+                                    onPress={openYearPicker}
+                                    style={styles.customHeader}
+                                >
+                                    <Text style={styles.customHeaderText}>
+                                        {dayjs(currentDate).format('MMMM YYYY')}
+                                    </Text>
+                                    <Feather name="chevron-down" size={18} color="#000000" />
+                                </TouchableOpacity>
+
+                                <TouchableOpacity onPress={handleNextMonth} style={styles.navArrow}>
+                                    <Feather name="chevron-right" size={24} color="#1a1a1a" />
+                                </TouchableOpacity>
+                            </View>
+
                             <Calendar
                                 key={currentDate}
                                 current={currentDate}
                                 onDayPress={onDayPress}
                                 markingType={startDate && endDate ? 'period' : 'custom'}
                                 markedDates={getMarkedDates()}
-                                renderHeader={(date) => (
-                                    <TouchableOpacity
-                                        onPress={() => openYearPicker()}
-                                        style={styles.customHeader}
-                                    >
-                                        <Text style={styles.customHeaderText}>
-                                            {dayjs(date).format('MMMM YYYY')}
-                                        </Text>
-                                        <Feather name="chevron-down" size={18} color="#000000" />
-                                    </TouchableOpacity>
-                                )}
+                                hideArrows={true}
+                                renderHeader={() => null}
                                 onMonthChange={(month) => setCurrentDate(month.dateString)}
                                 theme={{
                                     arrowColor: '#000000',
@@ -877,6 +901,21 @@ const styles = StyleSheet.create({
         paddingHorizontal: 16,
         backgroundColor: '#F3F4F6',
         borderRadius: 12,
+    },
+    externalNavigationHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 10,
+        paddingHorizontal: 10,
+        backgroundColor: 'red', // Debug: SOLID RED (Undeniable)
+        zIndex: 9999, // Force top
+        elevation: 10,
+        elevation: 10,
+        height: 60, // Force height
+    },
+    navArrow: {
+        padding: 8,
     },
     customHeaderText: {
         fontSize: 18,

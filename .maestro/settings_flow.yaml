@@ -1,0 +1,36 @@
+appId: com.builtbylee.app80days
+---
+- launchApp
+- runFlow:
+    when:
+      visible: ".*DEBUG.*"
+    commands:
+        # Navigate to Settings
+        - tapOn:
+            id: "fab-menu-toggle"
+        - tapOn:
+            id: "fab-profile-button"
+        - tapOn: "Settings"
+        
+        # Verify Settings Screen
+        - assertVisible: "Notifications"
+        - assertVisible: "Push Notifications"
+        
+        # Toggle a Switch (Push Notifications)
+        - tapOn: "Push Notifications"
+        
+        # Verify Privacy Section
+        - scrollUntilVisible:
+            element: "Privacy Policy"
+            direction: DOWN
+        
+        # Verify Visibility Modal
+        - tapOn: "Manage Visibility"
+        - assertVisible: "Search friends"
+        - tapOn: "Close"
+        
+        # Close Settings
+        - tapOn: "Close"
+        
+        # Close Profile (Return to Map)
+        - tapOn: "Close"

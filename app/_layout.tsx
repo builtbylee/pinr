@@ -10,7 +10,7 @@ import { Image } from 'expo-image';
 import * as SplashScreen from 'expo-splash-screen';
 
 import { MAPBOX_TOKEN } from '@/src/constants/Config';
-import { onAuthStateChanged, getCurrentUser } from '@/src/services/authService';
+import { onAuthStateChanged, getCurrentUser, signOut, isAnonymous } from '@/src/services/authService';
 import { useMemoryStore } from '@/src/store/useMemoryStore';
 import { AuthScreen } from '@/src/components/AuthScreen';
 import { initializeAppCheck } from '@/src/services/appCheckService';
@@ -48,6 +48,12 @@ LogBox.ignoreLogs([
 
 // Set your Mapbox access token here
 Mapbox.setAccessToken(MAPBOX_TOKEN);
+// Debug: Check if token is loaded
+if (!MAPBOX_TOKEN) {
+  console.warn('[Layout] Mapbox token is EMPTY - globe will not load');
+} else {
+  console.log('[Layout] Mapbox token configured, length:', MAPBOX_TOKEN.length);
+}
 
 // Keep the splash screen visible while we fetch resources
 SplashScreen.preventAutoHideAsync();
@@ -116,23 +122,43 @@ export default function RootLayout() {
             return;
           }
 
-          // User is authenticated - set session immediately to allow navigation
+          // User is authenticated - check if anonymous or Unknown profile first
           console.log('[Layout] ✅ User authenticated');
           console.log('[Layout] Setting session to:', userId);
           console.log('[Layout] Current session state before:', session);
+          
+          // Check if user is anonymous - if so, sign them out immediately
+          if (isAnonymous()) {
+            console.warn('[Layout] ⚠️ Anonymous user detected - signing out to prevent auto-login');
+            signOut().then(() => {
+              console.log('[Layout] ✅ Signed out anonymous user');
+              setSession(null);
+              setProfileValidated(false);
+              profileValidationRef.current = false;
+              setCurrentUserId(null);
+              setIsInitializing(false);
+            }).catch((signOutError: any) => {
+              console.error('[Layout] ❌ Failed to sign out anonymous user:', signOutError);
+              setSession(null);
+              setProfileValidated(false);
+              profileValidationRef.current = false;
+              setCurrentUserId(null);
+              setIsInitializing(false);
+            });
+            return; // Don't proceed with navigation
+          }
+          
+          // Not anonymous - proceed with normal flow
+          // Set session immediately - user is authenticated
+          // Profile validation is for data loading, not authentication
           setSession(userId);
           setCurrentUserId(userId);
           setIsInitializing(false);
-          // Set profileValidated to true immediately to allow navigation
-          // Profile validation will happen in background but won't block
-          setProfileValidated(true);
-          profileValidationRef.current = true;
-          console.log('[Layout] Session state updated');
+          console.log('[Layout] ✅ User authenticated - session set');
           console.log('[Layout] isInitializing set to false');
-          console.log('[Layout] profileValidated set to true (optimistic - allowing navigation)');
 
-          // Validate profile in background (non-blocking - just for logging/debugging)
-          console.log('[Layout] 🔍 Starting background profile validation for user:', userId);
+          // Validate profile BEFORE allowing navigation
+          console.log('[Layout] 🔍 Starting profile validation for user:', userId);
 
           // Helper function to validate profile with timeout
           const validateProfileWithTimeout = async (timeoutMs: number) => {
@@ -150,9 +176,9 @@ export default function RootLayout() {
             }
           };
 
-          // Try immediate validation (5 second timeout)
+          // Try immediate validation (12 second timeout to match getUserProfile timeout + buffer)
           const validationStartTime = Date.now();
-          validateProfileWithTimeout(5000)
+          validateProfileWithTimeout(12000)
             .then((profile) => {
               const validationDuration = Date.now() - validationStartTime;
               console.log('[Layout] Profile validation completed');
@@ -160,19 +186,29 @@ export default function RootLayout() {
               console.log('[Layout] Profile exists:', profile ? 'YES' : 'NO');
               console.log('[Layout] Username:', profile?.username || 'NONE');
 
+              // Set session immediately - user is authenticated
+              // Profile validation is for data loading, not authentication
+              setSession(userId);
+              
               if (!profile || !profile.username || profile.username === 'Unknown') {
                 console.warn('[Layout] ⚠️ Profile validation failed - profile is null, missing username, or Unknown');
-                console.warn('[Layout] Allowing navigation anyway - user can fix profile later');
-                // Don't sign out - allow user to navigate and fix profile
-                profileValidationRef.current = true;
+                console.warn('[Layout] This may be due to Firestore connectivity issues on iOS');
+                console.warn('[Layout] Allowing navigation anyway - profile will load via subscription');
+                
+                // Allow navigation - profile will load via subscription once Firestore connects
                 setProfileValidated(true);
-                console.log('[Layout] ✅ Profile validation set to true (failed but allowing navigation)');
+                profileValidationRef.current = true;
+                console.log('[Layout] ✅ Profile validation set to true (allowing navigation despite missing profile)');
+                console.log('[Layout] ✅ Session set, navigation allowed (profile will load via subscription)');
               } else {
                 console.log('[Layout] ✅ Profile validated successfully');
                 console.log('[Layout] Validated username:', profile.username);
+                
+                // Profile is valid - allow navigation
                 profileValidationRef.current = true;
                 setProfileValidated(true);
                 console.log('[Layout] ✅ Profile validation set to true (success)');
+                console.log('[Layout] ✅ Session set, navigation allowed');
               }
               console.log('[Layout] ========== AUTH STATE CHANGE END (AUTHENTICATED) ==========');
             })
@@ -184,13 +220,23 @@ export default function RootLayout() {
               console.log('[Layout] ✅ Profile validation set to true (error but allowing navigation)');
             });
 
-          // Fallback: if profile still not validated after 20 seconds, allow navigation anyway
+          // Fallback: if profile still not validated after 20 seconds, sign out to prevent Unknown login
           const profileValidationTimeout = setTimeout(() => {
             if (!profileValidationRef.current) {
-              console.warn('[Layout] ⚠️ Profile validation timeout after 20s - allowing navigation anyway');
-              // Don't sign out - allow user to navigate and fix profile later
-              profileValidationRef.current = true;
-              setProfileValidated(true);
+              console.warn('[Layout] ⚠️ Profile validation timeout after 20s - signing out to prevent Unknown login');
+              signOut().then(() => {
+                console.log('[Layout] ✅ Signed out user after validation timeout');
+                setSession(null);
+                setProfileValidated(false);
+                profileValidationRef.current = false;
+                setCurrentUserId(null);
+              }).catch((signOutError: any) => {
+                console.error('[Layout] ❌ Failed to sign out after timeout:', signOutError);
+                setSession(null);
+                setProfileValidated(false);
+                profileValidationRef.current = false;
+                setCurrentUserId(null);
+              });
             }
           }, 20000);
         });

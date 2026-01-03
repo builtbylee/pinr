@@ -484,7 +484,18 @@ export const StoryCreationFlow: React.FC<StoryCreationFlowProps> = ({
     };
 
     const calendarCurrentYear = dayjs(calendarCurrentDate).year();
+
     const calendarCurrentMonthIndex = dayjs(calendarCurrentDate).month();
+
+    const handlePrevMonth = () => {
+        const newDate = dayjs(calendarCurrentDate).subtract(1, 'month').format('YYYY-MM-DD');
+        setCalendarCurrentDate(newDate);
+    };
+
+    const handleNextMonth = () => {
+        const newDate = dayjs(calendarCurrentDate).add(1, 'month').format('YYYY-MM-DD');
+        setCalendarCurrentDate(newDate);
+    };
 
     // Step 3: Reorder & Submit
     const movePin = (fromIndex: number, toIndex: number) => {
@@ -582,10 +593,11 @@ export const StoryCreationFlow: React.FC<StoryCreationFlowProps> = ({
             )}
 
             <View style={styles.bottomActions}>
-                <TouchableOpacity style={styles.cancelBtn} onPress={handleClose}>
+                <TouchableOpacity testID="story-cancel-button" style={styles.cancelBtn} onPress={handleClose}>
                     <Text style={styles.cancelBtnText}>Cancel</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
+                    testID="story-next-button"
                     style={[styles.nextBtn, selectedPhotos.length === 0 && styles.disabledBtn]}
                     onPress={proceedToDetails}
                     disabled={selectedPhotos.length === 0}
@@ -877,24 +889,36 @@ export const StoryCreationFlow: React.FC<StoryCreationFlowProps> = ({
                             </TouchableOpacity>
                         </View>
 
+                        {/* External Custom Header for Navigation */}
+                        <View style={styles.externalNavigationHeader}>
+                            <Text style={{ position: 'absolute', top: -20, color: 'red', fontWeight: 'bold' }}>DEBUG MODE ACTIVE (STORY)</Text>
+                            <TouchableOpacity onPress={handlePrevMonth} style={styles.navArrow}>
+                                <Feather name="chevron-left" size={24} color="#1a1a1a" />
+                            </TouchableOpacity>
+
+                            <TouchableOpacity
+                                onPress={openYearPicker}
+                                style={styles.customHeader}
+                            >
+                                <Text style={styles.customHeaderText}>
+                                    {dayjs(calendarCurrentDate).format('MMMM YYYY')}
+                                </Text>
+                                <Feather name="chevron-down" size={18} color="#000000" />
+                            </TouchableOpacity>
+
+                            <TouchableOpacity onPress={handleNextMonth} style={styles.navArrow}>
+                                <Feather name="chevron-right" size={24} color="#1a1a1a" />
+                            </TouchableOpacity>
+                        </View>
+
                         <Calendar
                             key={calendarCurrentDate}
                             current={calendarCurrentDate}
                             onDayPress={onDayPress}
-                            markingType={tempStartDate && tempEndDate ? 'period' : 'custom'}
+                            markingType={'period'}
                             markedDates={getMarkedDates()}
-                            renderHeader={(date) => (
-                                <TouchableOpacity
-                                    onPress={openYearPicker}
-                                    style={styles.customHeader}
-                                >
-                                    <Text style={styles.customHeaderText}>
-                                        {dayjs(date).format('MMMM YYYY')}
-                                    </Text>
-                                    <Feather name="chevron-down" size={18} color="#000000" />
-                                </TouchableOpacity>
-                            )}
-                            onMonthChange={(month) => setCalendarCurrentDate(month.dateString)}
+                            hideArrows={true}
+                            renderHeader={() => null}
                             theme={{
                                 arrowColor: '#000000',
                                 todayTextColor: '#000000',
@@ -1488,6 +1512,20 @@ const styles = StyleSheet.create({
         paddingHorizontal: 16,
         backgroundColor: '#F3F4F6',
         borderRadius: 12,
+    },
+    externalNavigationHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 10,
+        paddingHorizontal: 10,
+        backgroundColor: 'red', // Debug: SOLID RED
+        zIndex: 9999,
+        elevation: 10,
+        height: 60,
+    },
+    navArrow: {
+        padding: 8,
     },
     customHeaderText: {
         fontSize: 18,

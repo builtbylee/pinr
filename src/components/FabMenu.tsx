@@ -159,6 +159,7 @@ export const ProfileMenu: React.FC<ProfileMenuProps> = ({
             >
                 {/* Add Pin */}
                 <TouchableOpacity
+                    testID="fab-add-pin"
                     style={[styles.pillIcon, { width: circleSize, height: circleSize }]}
                     onPress={() => handleMenuPress(onPressAddPin)}
                 >
@@ -167,6 +168,7 @@ export const ProfileMenu: React.FC<ProfileMenuProps> = ({
 
                 {/* Friends */}
                 <TouchableOpacity
+                    testID="fab-friends-button"
                     style={[styles.pillIcon, { width: circleSize, height: circleSize }]}
                     onPress={() => handleMenuPress(onPressFriends)}
                 >

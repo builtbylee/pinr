@@ -65,7 +65,7 @@ const PIN_COLOR_MAP: Record<string, string> = {
 const { width, height } = Dimensions.get('window');
 
 export const FriendsModal: React.FC<FriendsModalProps> = ({ visible, onClose, onSelectUser }) => {
-    const { currentUserId, username, avatarUri, pinColor, hiddenFriendIds, toggleHiddenFriend: toggleHiddenFriendLocal } = useMemoryStore();
+    const { currentUserId, username, avatarUri, pinColor, hiddenFriendIds, toggleHiddenFriend: toggleHiddenFriendLocal, friends: globalFriends } = useMemoryStore();
     const [activeTab, setActiveTab] = useState<Tab>('list');
 
     // Search / List State
@@ -93,29 +93,33 @@ export const FriendsModal: React.FC<FriendsModalProps> = ({ visible, onClose, on
             setScanned(false);
             setIsProcessingScan(false);
         }
-    }, [visible, currentUserId]);
+    }, [visible, currentUserId, globalFriends]);
 
     const loadFriendData = async () => {
         if (!currentUserId) return;
-        try {
-            // Get friend requests
-            const requestsData = await getFriendRequests(currentUserId);
-            setFriendRequests(requestsData);
 
-            // Get friends using new Request-Based logic
-            const friendIds = await getFriends(currentUserId);
+        // 1. Load Friends (Priority)
+        try {
+            // Get friends from Global Store if available, else fetch
+            const friendIds = globalFriends.length > 0 ? globalFriends : await getFriends(currentUserId);
 
             if (friendIds.length > 0) {
                 const friendsList: Friend[] = [];
-                await Promise.all(friendIds.map(async (friendUid) => {
-                    const friendProfile = await getUserProfile(friendUid);
-                    friendsList.push({
-                        uid: friendUid,
-                        username: friendProfile?.username || 'Unknown',
-                        avatarUrl: friendProfile?.avatarUrl,
-                        pinColor: friendProfile?.pinColor || 'orange',
-                    });
-                }));
+                for (const friendUid of friendIds) {
+                    try {
+                        const friendProfile = await getUserProfile(friendUid);
+                        if (friendProfile) {
+                            friendsList.push({
+                                uid: friendUid,
+                                username: friendProfile.username || 'Unknown',
+                                avatarUrl: friendProfile.avatarUrl,
+                                pinColor: friendProfile.pinColor || 'orange',
+                            });
+                        }
+                    } catch (e) {
+                        console.warn('Error fetching profile for:', friendUid, e);
+                    }
+                }
                 // Sort alphabetically
                 friendsList.sort((a, b) => a.username.localeCompare(b.username));
                 setFriends(friendsList);
@@ -123,7 +127,16 @@ export const FriendsModal: React.FC<FriendsModalProps> = ({ visible, onClose, on
                 setFriends([]);
             }
         } catch (error) {
-            console.error('Error loading friends:', error);
+            console.error('Error loading friends list:', error);
+            // Don't throw, continue to requests
+        }
+
+        // 2. Load Requests (Secondary)
+        try {
+            const requestsData = await getFriendRequests(currentUserId);
+            setFriendRequests(requestsData);
+        } catch (error) {
+            console.error('Error loading friend requests:', error);
         }
     };
 
@@ -285,7 +298,7 @@ export const FriendsModal: React.FC<FriendsModalProps> = ({ visible, onClose, on
                         <Feather name="users" size={24} color="#1a1a1a" style={{ marginRight: 10 }} />
                         <Text style={styles.headerTitle}>Friends</Text>
                     </View>
-                    <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+                    <TouchableOpacity testID="friends-close-button" onPress={onClose} style={styles.closeButton}>
                         <Feather name="x" size={28} color="#1a1a1a" />
                     </TouchableOpacity>
                 </View>
@@ -300,6 +313,7 @@ export const FriendsModal: React.FC<FriendsModalProps> = ({ visible, onClose, on
                         <Text style={[styles.tabText, activeTab === 'list' && styles.activeTabText]}>List</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
+                        testID="tab-add-friend"
                         style={[styles.tab, activeTab === 'add' && styles.activeTab]}
                         onPress={() => setActiveTab('add')}
                     >
@@ -440,6 +454,7 @@ export const FriendsModal: React.FC<FriendsModalProps> = ({ visible, onClose, on
                                 <Text style={styles.sectionTitle}>Find People</Text>
                                 <View style={styles.searchRow}>
                                     <TextInput
+                                        testID="friend-search-input"
                                         style={styles.searchInput}
                                         placeholder="Search by username..."
                                         placeholderTextColor="rgba(0,0,0,0.4)"
@@ -449,7 +464,7 @@ export const FriendsModal: React.FC<FriendsModalProps> = ({ visible, onClose, on
                                         returnKeyType="search"
                                         onSubmitEditing={handleSearch}
                                     />
-                                    <TouchableOpacity style={styles.searchButton} onPress={handleSearch}>
+                                    <TouchableOpacity testID="friend-search-button" style={styles.searchButton} onPress={handleSearch}>
                                         <Feather name="search" size={20} color="white" />
                                     </TouchableOpacity>
                                 </View>

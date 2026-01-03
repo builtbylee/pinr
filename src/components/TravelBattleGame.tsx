@@ -421,9 +421,10 @@ export const TravelBattleGame: React.FC<TravelBattleGameProps> = ({ difficulty, 
 
             {/* Options Grid - Vertical Stack */}
             <View style={styles.optionsGrid}>
-                {state.currentQuestion.options.map((option) => (
+                {state.currentQuestion.options.map((option, index) => (
                     <OptionButton
                         key={option.id}
+                        testID={`game-option-${index}`} // 0, 1, 2, 3
                         option={option}
                         selectedOptionId={selectedOptionId}
                         lastAnswerCorrect={state.lastAnswerCorrect}
@@ -437,7 +438,7 @@ export const TravelBattleGame: React.FC<TravelBattleGameProps> = ({ difficulty, 
 };
 
 // Animated Option Button Component
-const OptionButton = ({ option, selectedOptionId, lastAnswerCorrect, correctOptionId, onPress }: any) => {
+const OptionButton = ({ testID, option, selectedOptionId, lastAnswerCorrect, correctOptionId, onPress }: any) => {
     const fadeAnim = React.useRef(new Animated.Value(0)).current;
 
     const isSelected = selectedOptionId === option.id;
@@ -475,6 +476,7 @@ const OptionButton = ({ option, selectedOptionId, lastAnswerCorrect, correctOpti
 
     return (
         <TouchableOpacity
+            testID={testID}
             activeOpacity={0.9}
             style={{
                 width: '100%',

@@ -8,8 +8,8 @@ const configureFirestore = () => {
     try {
         const settings = {
             cacheSizeBytes: 100 * 1024 * 1024, // 100MB cache
-            experimentalForceLongPolling: true, // CRITICAL: Fix for physical device hangs
-            persistence: false, // Ensure persistence is disabled for now
+            // Note: experimentalForceLongPolling is not a valid setting in React Native Firebase
+            // Long polling is configured via the Podfile patch instead
         };
 
         firestore().settings(settings);

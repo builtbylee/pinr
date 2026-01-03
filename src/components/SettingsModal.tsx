@@ -26,6 +26,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     visible,
     onClose
 }) => {
+    const { friends: globalFriends } = useMemoryStore();
     const [userEmail, setUserEmail] = useState<string | null>(null);
 
     // Animation state
@@ -81,7 +82,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         } else {
             animation.value = 0;
         }
-    }, [visible]);
+    }, [visible, globalFriends]); // Re-run when visible OR friends list updates
 
     // Handle Hardware Back Button for nested modals
     useEffect(() => {
@@ -135,28 +136,31 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 setHidePinsFrom(profile.hidePinsFrom || []);
                 setAllowSharing(profile.privacySettings?.allowSharing ?? true);
 
-                // Load Friends
-                // SECURE: Use getFriends() to ensure we list verified friends
-                const friendIds = await getFriends(user.uid);
+                // Load Friends from Global Store (Reactive)
+                // If global store has friends, use them. Otherwise try fetch (fallback).
+                const friendIds = globalFriends.length > 0 ? globalFriends : await getFriends(user.uid);
 
                 if (friendIds && friendIds.length > 0) {
                     const friendList = [];
                     for (const friendUid of friendIds) {
-                        const fProfile = await getUserProfile(friendUid);
-                        if (fProfile) {
-                            friendList.push({
-                                uid: friendUid,
-                                username: fProfile.username,
-                                avatarUrl: fProfile.avatarUrl,
-                                pinColor: fProfile.pinColor
-                            });
+                        try {
+                            const fProfile = await getUserProfile(friendUid);
+                            if (fProfile) {
+                                friendList.push({
+                                    uid: friendUid,
+                                    username: fProfile.username,
+                                    avatarUrl: fProfile.avatarUrl,
+                                    pinColor: fProfile.pinColor
+                                });
+                            }
+                        } catch (e) {
+                            console.warn('[Settings] Profile Fetch Error:', e);
                         }
                     }
                     setFriends(friendList);
                 } else {
                     setFriends([]);
                 }
-
                 // Load Requests
                 const requests = await getFriendRequests(user.uid);
                 setFriendRequests(requests);
@@ -611,9 +615,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     showsVerticalScrollIndicator={false}
                     nestedScrollEnabled={true}
                 >
-                    {/* (Profile Section Removed) */}
-
-
                     {/* Notifications Section */}
                     <View style={styles.section}>
                         <Text style={styles.sectionTitle}>Notifications</Text>
@@ -878,6 +879,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     <View style={styles.section}>
                         <TouchableOpacity
                             style={[styles.settingRow, styles.signOutRow]}
+                            testID="settings-logout-button"
                             onPress={async () => {
                                 const auth = require('@react-native-firebase/auth').default;
                                 clearProfileCache(); // Clear cached profiles on logout

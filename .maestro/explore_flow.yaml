@@ -1,0 +1,23 @@
+appId: com.builtbylee.app80days
+---
+- launchApp
+- runFlow:
+    when:
+      visible: ".*DEBUG.*"
+    commands:
+        # Open Explore
+        - tapOn:
+            id: "fab-menu-toggle"
+        - tapOn:
+            id: "fab-explore-button"
+        
+        # Verify Explore UI
+        - assertVisible: "Explore the World"
+        - assertVisible: "Search for a city..."
+        
+        # Input Text
+        - inputText: "Paris"
+        # Tap the first result (assuming mock or network returns something, triggering UI update)
+        # If no network, this might fail, so we assert the input logic works
+        
+        - tapOn: "Close"

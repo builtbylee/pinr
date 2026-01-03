@@ -54,23 +54,26 @@ import { ReportModal } from '@/src/components/ReportModal';
 
 // Style JSON wrapper to set lightPreset config
 // Static Day Style with unique ID to force cache refresh
-const DAY_STYLE = {
+const MAP_STYLE_NO_LABELS = {
     version: 8,
-    name: 'Standard-Day-Static',
-    sources: {},
-    layers: [],
+    name: 'Standard-Day-NoLabels',
     imports: [
         {
-            id: 'basemap-static-day', // Changed ID to bust cache
+            id: 'basemap-static-day',
             url: 'mapbox://styles/mapbox/standard',
             config: {
                 lightPreset: 'day',
                 showPlaceLabels: false,
                 showRoadLabels: false,
+                showPointOfInterestLabels: false,
+                showTransitLabels: false,
             }
         }
     ]
 };
+
+// ...
+
 
 export default function App() {
     const { memories, setMemories, selectedMemoryId, selectMemory, addMemory, addPhotoToMemory, username, setUsername, avatarUri, setAvatarUri, pinColor, setPinColor, currentUserId, friends, setFriends, hiddenFriendIds, setHiddenFriendIds, hiddenPinIds, toggleHiddenPin: toggleHiddenPinLocal, toggleHiddenFriend: toggleHiddenFriendLocal, setHiddenPinIds } = useMemoryStore();
@@ -661,7 +664,9 @@ export default function App() {
 
     // Sync Pins & Detect New Pins
     useEffect(() => {
+        console.log('[App] allPins changed:', allPins.length, 'pins');
         if (allPins) {
+            console.log('[App] Setting memories with', allPins.length, 'pins');
             // Check for added pins (Comparison logic)
             if (allPinsRef.current.length > 0 && allPins.length > allPinsRef.current.length) {
                 const prevIds = new Set(allPinsRef.current.map(p => p.id));
@@ -696,7 +701,11 @@ export default function App() {
             }
 
             allPinsRef.current = allPins;
+            console.log('[App] Calling setMemories with', allPins.length, 'pins');
             setMemories(allPins);
+            console.log('[App] setMemories called, memories should now be:', allPins.length);
+        } else {
+            console.log('[App] allPins is null/undefined, not setting memories');
         }
     }, [allPins, friends, hiddenFriendIds, currentUserId]);
 
@@ -781,6 +790,9 @@ export default function App() {
                     try {
                         const secureFriends = await getFriends(currentUserId);
                         console.log('[App] Hydrated secure friends:', secureFriends.length);
+
+                        // Friends list loaded successfully
+
                         setFriends(secureFriends);
 
                         // Toast Logic for New Friends
@@ -813,6 +825,8 @@ export default function App() {
         console.log(`[Map] Style loaded. Mode: DAY`);
         SplashScreen.hideAsync();
     };
+
+
 
     // Handle avatar change
     const handleEditAvatar = async () => {
@@ -1140,13 +1154,14 @@ export default function App() {
     };
 
     // Prevent rendering until profile is loaded to avoid white screens/race conditions
+    // DISABLED: User prefers immediate access. Profile will load in background.
+    /*
     if (!profileLoaded) {
         return (
             <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
                 <ActivityIndicator size="large" color="#1a1a1a" />
                 <Text style={{ marginTop: 20, color: '#1a1a1a', fontSize: 16 }}>Preparing your journey...</Text>
 
-                {/* Emergency logout button for stuck sessions */}
                 <TouchableOpacity
                     onPress={async () => {
                         try {
@@ -1163,6 +1178,7 @@ export default function App() {
             </View>
         );
     }
+    */
 
     return (
         <View style={[styles.container, { backgroundColor: '#B8DEE8' }]}>
@@ -1174,8 +1190,9 @@ export default function App() {
                 key="day"
                 ref={mapRef}
                 style={styles.map}
+                styleJSON={Platform.OS === 'android' ? JSON.stringify(MAP_STYLE_NO_LABELS) : undefined}
+                styleURL={Platform.OS === 'ios' ? 'mapbox://styles/hackneymanlee/cmje13rl5003301sb5r4n8qpo' : undefined}
                 projection="globe"
-                styleJSON={JSON.stringify(DAY_STYLE)}
                 logoEnabled={false}
                 attributionEnabled={false}
                 scaleBarEnabled={false}
@@ -1342,7 +1359,7 @@ export default function App() {
                                             colorMap[
                                             (memory.creatorId === currentUserId
                                                 ? pinColor
-                                                : (authorColors[memory.creatorId] || memory.pinColor))?.toLowerCase() || 'orange'
+                                                : (authorColors[memory.creatorId] || memory.pinColor || 'orange'))?.toLowerCase() || 'orange'
                                             ] || '#FF8C00'
                                         }
                                         isPulsing={memory.id === pulsingPinId}
@@ -1366,6 +1383,11 @@ export default function App() {
                 {/* 3. CLUSTER LIST MODAL (To be implemented) */}
 
             </Mapbox.MapView >
+
+            {/* DEBUG VERSION OVERLAY */}
+            <View style={{ position: 'absolute', top: 60, left: 20, backgroundColor: 'red', padding: 10, borderRadius: 8, zIndex: 9999 }}>
+                <Text style={{ color: 'white', fontWeight: 'bold' }}>DEBUG: v35 (Check)</Text>
+            </View>
 
             {/* Explore UI Overlays - Rendering AFTER map forces correct Android Elevation/Touch handling */}
             <ExploreSearchBar

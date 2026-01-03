@@ -374,13 +374,12 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthenticated }) => {
                         console.log('[AuthScreen] ✅ onAuthenticated called with fallback');
                     }
                 } catch (profileError: any) {
-                    const { Alert } = require('react-native');
-                    Alert.alert('Debug: AuthScreen Error', profileError.message);
                     console.warn('[AuthScreen] ⚠️ Failed to fetch profile (non-blocking)');
                     console.warn('[AuthScreen] Profile error:', profileError.message);
                     console.warn('[AuthScreen] Profile error code:', profileError.code);
-                    // Continue without username - user can set it later
-                    console.log('[AuthScreen] 📞 Calling onAuthenticated without username...');
+                    // Continue without username - profile will load via subscription once in app
+                    // Don't show alert as it's blocking - just log and proceed
+                    console.log('[AuthScreen] 📞 Calling onAuthenticated without username (profile will load via subscription)...');
                     onAuthenticated();
                     console.log('[AuthScreen] ✅ onAuthenticated called without username');
                 }
@@ -546,6 +545,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthenticated }) => {
                 {/* Biometric Icon Button */}
                 {isLogin && hasSavedCredentials && !isLoading && (
                     <TouchableOpacity
+                        testID="auth-biometric-button"
                         style={styles.biometricIconButton}
                         onPress={handleBiometricLogin}
                     >

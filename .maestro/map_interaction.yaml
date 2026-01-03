@@ -1,0 +1,26 @@
+appId: com.builtbylee.app80days
+---
+- launchApp
+- runFlow:
+    when:
+      visible: ".*DEBUG.*"
+    commands:
+        # Basic Map Interaction
+        - swipe:
+            direction: LEFT
+            duration: 500
+        - swipe:
+            direction: UP
+            duration: 500
+            
+        # Zoom (Pinch) - Maestro supports 'pinch'
+        # pinchToZoomOut: duration: 1000
+        # Not natively supported in simple syntax sometimes, checking docs... 
+        # Standard swipe is safest.
+        
+        # Double Tap to Zoom
+        - doubleTapOn:
+            point: 50%,50%
+            
+        # Wait to verify stability
+        - assertVisible: ".*DEBUG.*"

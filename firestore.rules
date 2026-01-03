@@ -5,8 +5,10 @@ service cloud.firestore {
     // USERS COLLECTION
     match /users/{userId} {
       // Read: Authenticated users can read any profile
-      // Exception: Allow unauthenticated usernameLower queries for sign-up validation
-      allow read: if request.auth != null;
+      allow get: if request.auth != null;
+      allow list: if request.auth != null;
+      // allow read: if request.auth != null; // decomposing for clarity
+      
       allow create: if request.auth != null && request.auth.uid == userId;
       allow update: if request.auth != null && request.auth.uid == userId; // STRICT: Owner only
       allow delete: if request.auth.uid == userId;

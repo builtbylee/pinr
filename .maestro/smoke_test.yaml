@@ -1,0 +1,8 @@
+appId: com.builtbylee.app80days
+---
+- launchApp
+# Wait for the app to initialize
+- extendedWaitUntil:
+    visible: ".*DEBUG.*" # Checking for our v35 Debug Banner
+    timeout: 30000
+- assertVisible: ".*DEBUG.*"

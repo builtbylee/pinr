@@ -1,0 +1,35 @@
+appId: com.builtbylee.app80days
+---
+- launchApp
+- runFlow:
+    when:
+      visible: ".*DEBUG.*"
+    commands:
+        # Open Games
+        - tapOn:
+            id: "fab-menu-toggle"
+        - tapOn:
+            id: "fab-games-button"
+        
+        # Start Travel Battle
+        - tapOn: "Travel Battle"
+        
+        # Start Game (Assuming "Start Game" or Difficulty selection exists)
+        - tapOn: "Medium" 
+        - tapOn: "Start Game"
+        
+        # Wait for Game Load
+        - assertVisible: "Streak"
+        
+        # Play a Turn (Tap first option)
+        - tapOn: 
+            id: "game-option-0"
+        
+        # Play another (Tap second option)
+        # Note: We don't know which is correct, just ensuring interaction works
+        - tapOn: 
+            id: "game-option-1"
+            
+        # Exit Game
+        - tapOn: "x" # Close/Quit button
+        - tapOn: "Quit" # Confirm quit modal

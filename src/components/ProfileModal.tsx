@@ -110,8 +110,10 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                             useMemoryStore.getState().setPinColor(normalizedColor);
                         }
                     }
-                    // Load Bucket List (fallback to triplist if migration needed, but for now just bucketList)
-                    setBucketList(profile.bucketList || []);
+                    // Load Bucket List (fallback to legacy 'triplist' if present)
+                    // @ts-ignore - 'triplist' is legacy field
+                    const legacyList = profile.triplist as BucketListItem[] | undefined;
+                    setBucketList(profile.bucketList || legacyList || []);
 
                     // Streak (Only relevant to display? Maybe add to stats)
                 }
@@ -261,7 +263,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                 {/* Fixed Header Buttons - Outside ScrollView */}
                 <View style={{ position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10, flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 24, paddingTop: 20 }}>
                     {isMe ? (
-                        <TouchableOpacity onPress={onOpenSettings}>
+                        <TouchableOpacity onPress={onOpenSettings} testID="profile-settings-button">
                             <Feather name="settings" size={22} color="rgba(0,0,0,0.5)" />
                         </TouchableOpacity>
                     ) : <View style={{ width: 22 }} />}
@@ -281,7 +283,8 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                     style={[styles.glassCard, { backgroundColor: 'rgba(255,255,255,0.95)', paddingTop: 50, alignItems: 'center', paddingBottom: 16 }]}
                 >
 
-                    {/* ===== FIXED TOP SECTION ===== */}
+
+                    {/* FIXED TOP SECTION */}
 
                     {/* Avatar */}
                     <View style={styles.avatarContainer}>

@@ -1,0 +1,23 @@
+appId: com.builtbylee.app80days
+---
+- launchApp
+- runFlow:
+    when:
+      visible: ".*DEBUG.*"
+    commands:
+        # Open Games Menu
+        - tapOn:
+            id: "fab-menu-toggle"
+        - tapOn:
+            id: "fab-games-button"
+        
+        # Verify Games Dashboard
+        - assertVisible: "Play a Game"
+        
+        # Test "Travel Battle" (Check if button exists)
+        - assertVisible: "Travel Battle"
+        # - tapOn: "Travel Battle" 
+        # Note: Launching a game might require handling the game UI which is complex.
+        # For now, we verify we can reach the dashboard.
+        
+        - tapOn: "Close"

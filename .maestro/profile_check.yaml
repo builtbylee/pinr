@@ -1,0 +1,14 @@
+appId: com.builtbylee.app80days
+---
+- launchApp
+- runFlow:
+    when:
+      visible: ".*DEBUG.*"
+    commands:
+        # Open Profile
+        - tapOn:
+            id: "fab-menu-toggle"
+        - tapOn:
+            id: "fab-profile-button"
+        - assertVisible: "Bucket List"
+        - tapOn: "Close" 

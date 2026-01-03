@@ -338,6 +338,33 @@ export const isAnonymous = (): boolean => {
 };
 
 /**
+ * Sign out the current user
+ */
+export const signOut = async (): Promise<void> => {
+    console.log('[AuthService] ========== signOut START ==========');
+    try {
+        // Check if user is already signed out
+        const currentUser = auth().currentUser;
+        if (!currentUser) {
+            console.log('[AuthService] ℹ️ No user currently signed in, sign out not needed');
+            return;
+        }
+        
+        await auth().signOut();
+        console.log('[AuthService] ✅ User signed out successfully');
+    } catch (error: any) {
+        // Ignore "no-current-user" errors - user is already signed out
+        if (error.code === 'auth/no-current-user' || error.message?.includes('No user currently signed in')) {
+            console.log('[AuthService] ℹ️ User already signed out, ignoring error');
+            return;
+        }
+        console.error('[AuthService] ❌ Sign out failed:', error);
+        throw error;
+    }
+    console.log('[AuthService] ========== signOut END ==========');
+};
+
+/**
  * Get current user email
  */
 export const getCurrentEmail = (): string | null => {

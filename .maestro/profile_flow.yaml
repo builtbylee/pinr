@@ -1,0 +1,26 @@
+appId: com.builtbylee.app80days
+---
+- launchApp
+- runFlow:
+    when:
+      visible: ".*DEBUG.*"
+    commands:
+        # Open Profile
+        - tapOn:
+            id: "fab-menu-toggle"
+        - tapOn:
+            id: "fab-profile-button"
+        - assertVisible: "Settings"
+        - assertVisible: "Bucket List"
+        
+        # Verify Bucket List Interaction (Mock Item Verification)
+        # Note: Depending on user state, list might be empty, so we check for the HEADER
+        - assertVisible: "Add to Bucket List"
+
+        # Verify Edit Profile
+        - tapOn: "Edit Profile"
+        - assertVisible: "Update Profile"
+        - tapOn: "Cancel"
+        
+        # Close Profile
+        - tapOn: "Close"

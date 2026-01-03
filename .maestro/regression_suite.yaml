@@ -1,0 +1,27 @@
+appId: com.builtbylee.app80days
+---
+- launchApp
+- runFlow: smoke_test.yaml
+
+# 2. Date Picker (Critical Fix Verification)
+- runFlow: test_date_picker.yaml
+
+# 3. Core Navigation & Features (The "Skeleton")
+- runFlow: profile_flow.yaml
+- runFlow: settings_flow.yaml
+
+# 4. New: Gameplay Loop (The "Heart")
+- runFlow: play_travel_battle.yaml
+
+# 5. New: Social Interaction (The "Network")
+- runFlow: friends_flow.yaml
+
+# 6. New: Map Interaction (The "World")
+- runFlow: map_interaction.yaml
+
+# 7. New: Creation Flow (The "Creative")
+- runFlow: create_pin.yaml
+
+# 8. Navigation Check (Games & Explore)
+- runFlow: games_flow.yaml
+- runFlow: explore_flow.yaml

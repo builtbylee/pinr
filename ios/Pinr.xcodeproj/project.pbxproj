@@ -19,6 +19,7 @@
 		E6F7ADEC8E034D38BBCA0E72 /* FirebaseEarlyConfig.m in Sources */ = {isa = PBXBuildFile; fileRef = 5BB605162F1F4D39947641B0 /* FirebaseEarlyConfig.m */; };
 		E842E5312AAE49188D5B5F74 /* NotificationService.m in Sources */ = {isa = PBXBuildFile; fileRef = 0513AC77CACA4771A41EDD19 /* NotificationService.m */; };
 		F11748422D0307B40044C1D9 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = F11748412D0307B40044C1D9 /* AppDelegate.swift */; };
+		C8718CCEF8B44C588FE41B75 /* FirebaseEarlyConfig.m in Sources */ = {isa = PBXBuildFile; fileRef = E5CFEFF6DFB848FB8A0460C5 /* FirebaseEarlyConfig.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -67,6 +68,7 @@
 		C5FE8B36467E476FA3A6DBC2 /* OneSignalNotificationServiceExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = undefined; name = OneSignalNotificationServiceExtension.appex; path = OneSignalNotificationServiceExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
 		F11748412D0307B40044C1D9 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = Pinr/AppDelegate.swift; sourceTree = "<group>"; };
+		E5CFEFF6DFB848FB8A0460C5 /* FirebaseEarlyConfig.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = FirebaseEarlyConfig.m; path = Pinr/FirebaseEarlyConfig.m; sourceTree = "<group>"; };
 		F11748442D0722820044C1D9 /* Pinr-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = "Pinr-Bridging-Header.h"; path = "Pinr/Pinr-Bridging-Header.h"; sourceTree = "<group>"; };
 		F3FCB1F3E88198DA4F3FA7A5 /* Pods-Pinr.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Pinr.debug.xcconfig"; path = "Target Support Files/Pods-Pinr/Pods-Pinr.debug.xcconfig"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -95,6 +97,7 @@
 			isa = PBXGroup;
 			children = (
 				F11748412D0307B40044C1D9 /* AppDelegate.swift */,
+				E5CFEFF6DFB848FB8A0460C5 /* FirebaseEarlyConfig.m */,
 				5BB605162F1F4D39947641B0 /* FirebaseEarlyConfig.m */,
 				F11748442D0722820044C1D9 /* Pinr-Bridging-Header.h */,
 				BB2F792B24A3F905000567C9 /* Supporting */,
@@ -254,12 +257,12 @@
 				LastUpgradeCheck = 1130;
 				TargetAttributes = {
 					13B07F861A680F5B00A75B9A = {
-						DevelopmentTeam = "CMBSFLQ5V6";
+						DevelopmentTeam = CMBSFLQ5V6;
 						LastSwiftMigration = 1250;
 						ProvisioningStyle = Automatic;
 					};
 					C79E2BBD47184AC48331D8B6 = {
-						DevelopmentTeam = "CMBSFLQ5V6";
+						DevelopmentTeam = CMBSFLQ5V6;
 						ProvisioningStyle = Automatic;
 					};
 				};
@@ -567,6 +570,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				F11748422D0307B40044C1D9 /* AppDelegate.swift in Sources */,
+				C8718CCEF8B44C588FE41B75 /* FirebaseEarlyConfig.m in Sources */,
 				E6F7ADEC8E034D38BBCA0E72 /* FirebaseEarlyConfig.m in Sources */,
 				06D9C9D291ED6C4525E2BBE5 /* ExpoModulesProvider.swift in Sources */,
 			);
@@ -598,7 +602,10 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = Pinr/Pinr.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = CMBSFLQ5V6;
 				ENABLE_BITCODE = NO;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					"$(inherited)",
@@ -624,9 +631,6 @@
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				VERSIONING_SYSTEM = "apple-generic";
-				DEVELOPMENT_TEAM = "CMBSFLQ5V6";
-				CODE_SIGN_IDENTITY = "Apple Development";
-				CODE_SIGN_STYLE = Automatic;
 			};
 			name = Debug;
 		};
@@ -637,7 +641,10 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = Pinr/Pinr.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = CMBSFLQ5V6;
 				INFOPLIST_FILE = Pinr/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -657,9 +664,6 @@
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				VERSIONING_SYSTEM = "apple-generic";
-				DEVELOPMENT_TEAM = "CMBSFLQ5V6";
-				CODE_SIGN_IDENTITY = "Apple Development";
-				CODE_SIGN_STYLE = Automatic;
 			};
 			name = Release;
 		};
@@ -668,8 +672,9 @@
 			baseConfigurationReference = 082660B52ADBF81E67386D46 /* Pods-OneSignalNotificationServiceExtension.release.xcconfig */;
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = OneSignalNotificationServiceExtension/OneSignalNotificationServiceExtension.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = "CMBSFLQ5V6";
+				DEVELOPMENT_TEAM = CMBSFLQ5V6;
 				INFOPLIST_FILE = "OneSignalNotificationServiceExtension/OneSignalNotificationServiceExtension-Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 11.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -682,7 +687,6 @@
 				PRODUCT_NAME = OneSignalNotificationServiceExtension;
 				SKIP_INSTALL = YES;
 				TARGETED_DEVICE_FAMILY = "1,2";
-				CODE_SIGN_IDENTITY = "Apple Development";
 			};
 			name = Release;
 		};
@@ -691,8 +695,9 @@
 			baseConfigurationReference = 5BE4296839F193C244D581E3 /* Pods-OneSignalNotificationServiceExtension.debug.xcconfig */;
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = OneSignalNotificationServiceExtension/OneSignalNotificationServiceExtension.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = "CMBSFLQ5V6";
+				DEVELOPMENT_TEAM = CMBSFLQ5V6;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					"DEBUG=1",
 					"$(inherited)",
@@ -709,7 +714,6 @@
 				PRODUCT_NAME = OneSignalNotificationServiceExtension;
 				SKIP_INSTALL = YES;
 				TARGETED_DEVICE_FAMILY = "1,2";
-				CODE_SIGN_IDENTITY = "Apple Development";
 			};
 			name = Debug;
 		};

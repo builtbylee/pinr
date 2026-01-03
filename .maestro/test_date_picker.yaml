@@ -1,0 +1,21 @@
+appId: com.builtbylee.app80days
+---
+- launchApp
+- runFlow:
+    when:
+      visible: ".*DEBUG.*"
+    commands:
+        - tapOn:
+            id: "fab-menu-toggle"
+        - tapOn:
+            id: "fab-add-pin"
+        - assertVisible: "Select Dates"
+        - tapOn: "Select Dates"
+        # Verify the Custom Header is visible (Red Header content)
+        - assertVisible: ".*DEBUG MODE ACTIVE.*"
+        # Tap the Month/Year header (The bug fix)
+        # Note: We use a regex match for any month/year combination
+        - tapOn: ".*202[0-9].*" 
+        # Verify the Year Picker opened
+        - assertVisible: "Select Month & Year"
+        - assertVisible: "Confirm"

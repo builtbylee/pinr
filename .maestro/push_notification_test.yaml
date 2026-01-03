@@ -1,0 +1,13 @@
+appId: com.builtbylee.app80days
+---
+- launchApp
+- runFlow: smoke_test.yaml
+- openLink: "pinr://sandbox/games"
+        
+# Verify we arrived at the Games Dashboard
+- assertVisible: "Travel Battle"
+- assertVisible: "Pin Drop"
+
+# Navigate back to Home (Smoke check)
+- back
+- assertVisible: ".*DEBUG.*"
