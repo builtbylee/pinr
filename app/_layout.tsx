@@ -193,7 +193,7 @@ export default function RootLayout() {
               if (!profile || !profile.username || profile.username === 'Unknown') {
                 console.warn('[Layout] ⚠️ Profile validation failed - profile is null, missing username, or Unknown');
                 console.warn('[Layout] This may indicate an orphaned auth session or Firestore issue');
-                console.warn('[Layout] Will sign out after timeout to prevent Unknown profile login');
+                console.warn('[Layout] Continuing session cautiously (no forced logout)');
 
                 // DO NOT set profileValidationRef.current = true here!
                 // This allows the 20s timeout to fire and sign out the user
@@ -223,20 +223,10 @@ export default function RootLayout() {
           // Fallback: if profile still not validated after 20 seconds, sign out to prevent Unknown login
           const profileValidationTimeout = setTimeout(() => {
             if (!profileValidationRef.current) {
-              console.warn('[Layout] ⚠️ Profile validation timeout after 20s - signing out to prevent Unknown login');
-              signOut().then(() => {
-                console.log('[Layout] ✅ Signed out user after validation timeout');
-                setSession(null);
-                setProfileValidated(false);
-                profileValidationRef.current = false;
-                setCurrentUserId(null);
-              }).catch((signOutError: any) => {
-                console.error('[Layout] ❌ Failed to sign out after timeout:', signOutError);
-                setSession(null);
-                setProfileValidated(false);
-                profileValidationRef.current = false;
-                setCurrentUserId(null);
-              });
+              console.warn('[Layout] ⚠️ Profile validation timeout after 20s - validation not confirmed');
+              console.warn('[Layout] Keeping session active despite validation timeout to prevent logout loop');
+              // We do NOT sign out here anymore.
+              // Letting the user proceed (even if profile might be incomplete) is better than forced logout.
             }
           }, 20000);
         });

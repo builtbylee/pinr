@@ -556,7 +556,7 @@ export const getUserProfile = async (uid: string, skipCache = false): Promise<Us
         // Try Firestore SDK with aggressive timeout
         try {
             const timeoutPromise = new Promise((_, reject) =>
-                setTimeout(() => reject(new Error('SDK Timeout')), 2000)
+                setTimeout(() => reject(new Error('SDK Timeout')), 15000)
             );
 
             const sdkPromise = firestore().collection(USERS_COLLECTION).doc(uid).get();
