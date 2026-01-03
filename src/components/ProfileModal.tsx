@@ -490,7 +490,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                                                     />
                                                     <View style={styles.gridCardOverlay}>
                                                         <View style={styles.gridCardTitleContainer}>
-                                                            <Text style={styles.gridCardTitle} numberOfLines={2}>{item.title}</Text>
+                                                            <Text style={styles.gridCardTitle} numberOfLines={2}>{item.locationName}</Text>
                                                         </View>
                                                     </View>
                                                     {/* Status Badge */}
