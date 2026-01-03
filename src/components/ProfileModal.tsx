@@ -412,7 +412,10 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                                                         </View>
                                                     )}
                                                     <View style={styles.gridCardOverlay}>
-                                                        <Text style={styles.gridCardTitle} numberOfLines={2}>{pin.title || pin.locationName}</Text>
+                                                        {/* Floating Pill Title */}
+                                                        <View style={styles.gridCardTitleContainer}>
+                                                            <Text style={styles.gridCardTitle} numberOfLines={2}>{pin.title || pin.locationName}</Text>
+                                                        </View>
                                                     </View>
                                                 </TouchableOpacity>
                                             ))
@@ -445,8 +448,9 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                                                             contentFit="cover"
                                                         />
                                                         <View style={styles.gridCardOverlay}>
-                                                            <Text style={styles.gridCardTitle} numberOfLines={1}>{story.title}</Text>
-                                                            <Text style={styles.gridCardSubtitle}>{story.pinIds.length} Pins</Text>
+                                                            <View style={styles.gridCardTitleContainer}>
+                                                                <Text style={styles.gridCardTitle} numberOfLines={1}>{story.title}</Text>
+                                                            </View>
                                                         </View>
                                                         {isMe && (
                                                             <TouchableOpacity
@@ -485,7 +489,9 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                                                         contentFit="cover"
                                                     />
                                                     <View style={styles.gridCardOverlay}>
-                                                        <Text style={styles.gridCardTitle} numberOfLines={2}>{item.title}</Text>
+                                                        <View style={styles.gridCardTitleContainer}>
+                                                            <Text style={styles.gridCardTitle} numberOfLines={2}>{item.title}</Text>
+                                                        </View>
                                                     </View>
                                                     {/* Status Badge */}
                                                     {item.status === 'visited' && (
@@ -1170,23 +1176,39 @@ const styles = StyleSheet.create({
     },
     gridCardOverlay: {
         position: 'absolute',
-        bottom: 0,
+        bottom: 8, // Floating above bottom edge
         left: 0,
         right: 0,
-        padding: 10,
-        height: 55, // Fixed height for consistency across all tile types
-        justifyContent: 'center', // Center text vertically
-        backgroundColor: 'rgba(0,0,0,0.6)',
+        height: 'auto', // Auto height for text
+        alignItems: 'center', // Center horizontally
+        justifyContent: 'flex-end',
+        backgroundColor: 'transparent',
+        zIndex: 10,
+    },
+    gridCardTitleContainer: {
+        backgroundColor: 'white',
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 12,
+        maxWidth: '90%',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.15,
+        shadowRadius: 3,
+        elevation: 3,
     },
     gridCardTitle: {
-        color: 'white',
+        color: '#1a1a1a', // Dark text
         fontWeight: 'bold',
-        fontSize: 13,
+        fontSize: 12,
+        textAlign: 'center',
     },
     gridCardSubtitle: {
-        color: 'rgba(255,255,255,0.8)',
-        fontSize: 11,
+        color: '#666',
+        fontSize: 10,
         marginTop: 2,
+        textAlign: 'center',
+        display: 'none', // Hide subtitle for cleaner pill look as requested ("small pill with text")
     },
     emptyTabState: {
         width: '100%',
