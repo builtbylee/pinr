@@ -1,7 +1,7 @@
 import { Feather } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import React, { useEffect, useMemo, useState } from 'react';
-import { Dimensions, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Dimensions, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import { useMemoryStore } from '../store/useMemoryStore';
@@ -88,6 +88,9 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
 
     // Refresh key to force re-fetch when profile is edited
     const [refreshKey, setRefreshKey] = useState(0);
+
+    // Tab state for Android tabbed layout
+    const [activeTab, setActiveTab] = useState<'pins' | 'journeys' | 'bucketlist'>('pins');
 
     // Fetch profile data
     useEffect(() => {
@@ -328,107 +331,265 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                         </View>
                     </View>
 
-                    {/* View Pins Button - Moved to fixed section */}
-                    <View style={{ flexDirection: 'row', gap: 8, marginTop: 12, marginBottom: 16, paddingHorizontal: 16 }}>
-                        <TouchableOpacity
-                            style={[styles.actionButton, styles.secondaryButton, { flex: 1 }]}
-                            onPress={handleFilter}
-                        >
-                            <Feather name="globe" size={20} color="#1a1a1a" />
-                            <Text style={styles.secondaryButtonText}>View Pins</Text>
-                        </TouchableOpacity>
+                    {/* ===== ANDROID: TABBED LAYOUT ===== */}
+                    {Platform.OS === 'android' ? (
+                        <>
+                            {/* Tab Bar */}
+                            <View style={styles.tabBar}>
+                                <TouchableOpacity
+                                    style={[styles.tab, activeTab === 'pins' && styles.activeTab]}
+                                    onPress={() => setActiveTab('pins')}
+                                >
+                                    <Text style={[styles.tabText, activeTab === 'pins' && styles.activeTabText]}>Pins</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity
+                                    style={[styles.tab, activeTab === 'journeys' && styles.activeTab]}
+                                    onPress={() => setActiveTab('journeys')}
+                                >
+                                    <Text style={[styles.tabText, activeTab === 'journeys' && styles.activeTabText]}>Journeys</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity
+                                    style={[styles.tab, activeTab === 'bucketlist' && styles.activeTab]}
+                                    onPress={() => setActiveTab('bucketlist')}
+                                >
+                                    <Text style={[styles.tabText, activeTab === 'bucketlist' && styles.activeTabText]}>Bucket List</Text>
+                                </TouchableOpacity>
+                            </View>
 
-                        {!isMe && userId && (
-                            <TouchableOpacity
-                                style={[styles.actionButton, styles.secondaryButton, styles.iconOnlyButton]}
-                                onPress={handleToggleHide}
+                            {/* Tab Content - Vertical Scrolling Grid */}
+                            <ScrollView
+                                style={{ flex: 1, width: '100%' }}
+                                contentContainerStyle={styles.tabContent}
+                                showsVerticalScrollIndicator={false}
                             >
-                                <Feather
-                                    name={hiddenFriendIds.includes(userId) ? 'eye-off' : 'eye'}
-                                    size={22}
-                                    color={hiddenFriendIds.includes(userId) ? '#999' : '#1a1a1a'}
-                                />
-                            </TouchableOpacity>
-                        )}
-                    </View>
-
-                    {/* ===== SCROLLABLE TILES SECTION ===== */}
-                    <ScrollView
-                        horizontal
-                        showsHorizontalScrollIndicator={false}
-                        style={{ flexGrow: 0, marginBottom: 16 }}
-                        contentContainerStyle={{ paddingHorizontal: 16, gap: 12 }}
-                    >
-                        {/* Bucket List Items */}
-                        {bucketList.map((item, index) => (
-                            <TouchableOpacity
-                                key={`bucket-${index}`}
-                                style={styles.storyCard}
-                                onPress={() => setSelectedBucketItem(item)}
-                            >
-                                {item.imageUrl ? (
-                                    <Image source={{ uri: item.imageUrl }} style={styles.storyCover} contentFit="cover" />
-                                ) : (
-                                    <View style={[styles.storyCover, { backgroundColor: '#eee', justifyContent: 'center', alignItems: 'center' }]}>
-                                        <Feather name="map-pin" size={24} color="#ccc" />
+                                {/* PINS TAB */}
+                                {activeTab === 'pins' && (
+                                    <View style={styles.gridContainer}>
+                                        {userPins.length > 0 ? (
+                                            userPins.map((pin, index) => (
+                                                <TouchableOpacity
+                                                    key={`pin-${pin.id || index}`}
+                                                    style={styles.gridCard}
+                                                    onPress={() => {
+                                                        handleFilter();
+                                                    }}
+                                                >
+                                                    {pin.imageUris?.[0] ? (
+                                                        <Image source={{ uri: pin.imageUris[0] }} style={styles.gridCardImage} contentFit="cover" />
+                                                    ) : (
+                                                        <View style={[styles.gridCardImage, { backgroundColor: '#eee', justifyContent: 'center', alignItems: 'center' }]}>
+                                                            <Feather name="map-pin" size={24} color="#ccc" />
+                                                        </View>
+                                                    )}
+                                                    <View style={styles.gridCardOverlay}>
+                                                        <Text style={styles.gridCardTitle} numberOfLines={2}>{pin.title || pin.locationName}</Text>
+                                                    </View>
+                                                </TouchableOpacity>
+                                            ))
+                                        ) : (
+                                            <View style={styles.emptyTabState}>
+                                                <Feather name="map-pin" size={32} color="#ccc" />
+                                                <Text style={styles.emptyTabText}>No pins yet</Text>
+                                                <Text style={styles.emptyTabSubtext}>Start exploring to add pins!</Text>
+                                            </View>
+                                        )}
                                     </View>
                                 )}
-                                <View style={[
-                                    styles.statusPill,
-                                    item.status === 'booked' ? styles.pillBooked :
-                                        item.status === 'visited' ? styles.pillVisited : styles.pillWishlist
-                                ]}>
-                                    <Text style={[
-                                        styles.statusPillText,
-                                        (item.status === 'booked' || item.status === 'visited') ? { color: 'white' } : { color: '#1F2937' }
-                                    ]}>
-                                        {item.status === 'visited' ? 'Visited' : item.status === 'booked' ? 'Booked' : 'Wishlist'}
-                                    </Text>
-                                </View>
-                                <View style={styles.storyOverlay}>
-                                    <Text style={styles.storyTitle} numberOfLines={2}>{item.locationName}</Text>
-                                </View>
-                            </TouchableOpacity>
-                        ))}
 
-                        {/* Journey Stories */}
-                        {stories.map(story => {
-                            const coverPin = userPins.find(p => p.id === story.coverPinId) || userPins.find(p => p.id === story.pinIds[0]);
-                            return (
-                                <TouchableOpacity
-                                    key={story.id}
-                                    style={styles.storyCard}
-                                    onPress={() => handlePlay(story)}
-                                    onLongPress={() => isMe && handleEditStory(story)}
-                                >
-                                    <Image
-                                        source={{ uri: coverPin?.imageUris?.[0] || 'https://via.placeholder.com/150' }}
-                                        style={styles.storyCover}
-                                    />
-                                    <View style={styles.storyOverlay}>
-                                        <Text style={styles.storyTitle} numberOfLines={1}>{story.title}</Text>
-                                        <Text style={styles.storyCount}>{story.pinIds.length} Pins</Text>
+                                {/* JOURNEYS TAB */}
+                                {activeTab === 'journeys' && (
+                                    <View style={styles.gridContainer}>
+                                        {stories.length > 0 ? (
+                                            stories.map(story => {
+                                                const coverPin = userPins.find(p => p.id === story.coverPinId) || userPins.find(p => p.id === story.pinIds[0]);
+                                                return (
+                                                    <TouchableOpacity
+                                                        key={story.id}
+                                                        style={styles.gridCard}
+                                                        onPress={() => handlePlay(story)}
+                                                        onLongPress={() => isMe && handleEditStory(story)}
+                                                    >
+                                                        <Image
+                                                            source={{ uri: coverPin?.imageUris?.[0] || 'https://via.placeholder.com/150' }}
+                                                            style={styles.gridCardImage}
+                                                            contentFit="cover"
+                                                        />
+                                                        <View style={styles.gridCardOverlay}>
+                                                            <Text style={styles.gridCardTitle} numberOfLines={1}>{story.title}</Text>
+                                                            <Text style={styles.gridCardSubtitle}>{story.pinIds.length} Pins</Text>
+                                                        </View>
+                                                        {isMe && (
+                                                            <TouchableOpacity
+                                                                style={styles.deleteStoryBtn}
+                                                                onPress={() => handleDeleteStory(story.id)}
+                                                            >
+                                                                <Feather name="x" size={12} color="white" />
+                                                            </TouchableOpacity>
+                                                        )}
+                                                    </TouchableOpacity>
+                                                );
+                                            })
+                                        ) : (
+                                            <View style={styles.emptyTabState}>
+                                                <Feather name="book-open" size={32} color="#ccc" />
+                                                <Text style={styles.emptyTabText}>No journeys yet</Text>
+                                                <Text style={styles.emptyTabSubtext}>Create a journey from your pins!</Text>
+                                            </View>
+                                        )}
                                     </View>
-                                    {isMe && (
-                                        <TouchableOpacity
-                                            style={styles.deleteStoryBtn}
-                                            onPress={() => handleDeleteStory(story.id)}
-                                        >
-                                            <Feather name="x" size={12} color="white" />
-                                        </TouchableOpacity>
-                                    )}
-                                </TouchableOpacity>
-                            );
-                        })}
+                                )}
 
-                        {/* Empty State if no items */}
-                        {bucketList.length === 0 && stories.length === 0 && (
-                            <View style={[styles.emptyStoryCard, { width: 120, height: 160 }]}>
-                                <Feather name="map" size={24} color="#ccc" />
-                                <Text style={styles.emptyStoryText}>Explore to add</Text>
+                                {/* BUCKET LIST TAB */}
+                                {activeTab === 'bucketlist' && (
+                                    <View style={styles.gridContainer}>
+                                        {bucketList.length > 0 ? (
+                                            bucketList.map((item, index) => (
+                                                <TouchableOpacity
+                                                    key={`bucket-${index}`}
+                                                    style={styles.gridCard}
+                                                    onPress={() => setSelectedBucketItem(item)}
+                                                >
+                                                    {item.imageUrl ? (
+                                                        <Image source={{ uri: item.imageUrl }} style={styles.gridCardImage} contentFit="cover" />
+                                                    ) : (
+                                                        <View style={[styles.gridCardImage, { backgroundColor: '#eee', justifyContent: 'center', alignItems: 'center' }]}>
+                                                            <Feather name="map-pin" size={24} color="#ccc" />
+                                                        </View>
+                                                    )}
+                                                    <View style={[
+                                                        styles.statusPill,
+                                                        item.status === 'booked' ? styles.pillBooked :
+                                                            item.status === 'visited' ? styles.pillVisited : styles.pillWishlist
+                                                    ]}>
+                                                        <Text style={[
+                                                            styles.statusPillText,
+                                                            (item.status === 'booked' || item.status === 'visited') ? { color: 'white' } : { color: '#1F2937' }
+                                                        ]}>
+                                                            {item.status === 'visited' ? 'Visited' : item.status === 'booked' ? 'Booked' : 'Wishlist'}
+                                                        </Text>
+                                                    </View>
+                                                    <View style={styles.gridCardOverlay}>
+                                                        <Text style={styles.gridCardTitle} numberOfLines={2}>{item.locationName}</Text>
+                                                    </View>
+                                                </TouchableOpacity>
+                                            ))
+                                        ) : (
+                                            <View style={styles.emptyTabState}>
+                                                <Feather name="star" size={32} color="#ccc" />
+                                                <Text style={styles.emptyTabText}>Bucket list empty</Text>
+                                                <Text style={styles.emptyTabSubtext}>Add dream destinations!</Text>
+                                            </View>
+                                        )}
+                                    </View>
+                                )}
+                            </ScrollView>
+                        </>
+                    ) : (
+                        /* ===== iOS: ORIGINAL HORIZONTAL LAYOUT ===== */
+                        <>
+                            {/* View Pins Button */}
+                            <View style={{ flexDirection: 'row', gap: 8, marginTop: 12, marginBottom: 16, paddingHorizontal: 16 }}>
+                                <TouchableOpacity
+                                    style={[styles.actionButton, styles.secondaryButton, { flex: 1 }]}
+                                    onPress={handleFilter}
+                                >
+                                    <Feather name="globe" size={20} color="#1a1a1a" />
+                                    <Text style={styles.secondaryButtonText}>View Pins</Text>
+                                </TouchableOpacity>
+
+                                {!isMe && userId && (
+                                    <TouchableOpacity
+                                        style={[styles.actionButton, styles.secondaryButton, styles.iconOnlyButton]}
+                                        onPress={handleToggleHide}
+                                    >
+                                        <Feather
+                                            name={hiddenFriendIds.includes(userId) ? 'eye-off' : 'eye'}
+                                            size={22}
+                                            color={hiddenFriendIds.includes(userId) ? '#999' : '#1a1a1a'}
+                                        />
+                                    </TouchableOpacity>
+                                )}
                             </View>
-                        )}
-                    </ScrollView>
+
+                            {/* Horizontal Scroll */}
+                            <ScrollView
+                                horizontal
+                                showsHorizontalScrollIndicator={false}
+                                style={{ flexGrow: 0, marginBottom: 16 }}
+                                contentContainerStyle={{ paddingHorizontal: 16, gap: 12 }}
+                            >
+                                {/* Bucket List Items */}
+                                {bucketList.map((item, index) => (
+                                    <TouchableOpacity
+                                        key={`bucket-${index}`}
+                                        style={styles.storyCard}
+                                        onPress={() => setSelectedBucketItem(item)}
+                                    >
+                                        {item.imageUrl ? (
+                                            <Image source={{ uri: item.imageUrl }} style={styles.storyCover} contentFit="cover" />
+                                        ) : (
+                                            <View style={[styles.storyCover, { backgroundColor: '#eee', justifyContent: 'center', alignItems: 'center' }]}>
+                                                <Feather name="map-pin" size={24} color="#ccc" />
+                                            </View>
+                                        )}
+                                        <View style={[
+                                            styles.statusPill,
+                                            item.status === 'booked' ? styles.pillBooked :
+                                                item.status === 'visited' ? styles.pillVisited : styles.pillWishlist
+                                        ]}>
+                                            <Text style={[
+                                                styles.statusPillText,
+                                                (item.status === 'booked' || item.status === 'visited') ? { color: 'white' } : { color: '#1F2937' }
+                                            ]}>
+                                                {item.status === 'visited' ? 'Visited' : item.status === 'booked' ? 'Booked' : 'Wishlist'}
+                                            </Text>
+                                        </View>
+                                        <View style={styles.storyOverlay}>
+                                            <Text style={styles.storyTitle} numberOfLines={2}>{item.locationName}</Text>
+                                        </View>
+                                    </TouchableOpacity>
+                                ))}
+
+                                {/* Journey Stories */}
+                                {stories.map(story => {
+                                    const coverPin = userPins.find(p => p.id === story.coverPinId) || userPins.find(p => p.id === story.pinIds[0]);
+                                    return (
+                                        <TouchableOpacity
+                                            key={story.id}
+                                            style={styles.storyCard}
+                                            onPress={() => handlePlay(story)}
+                                            onLongPress={() => isMe && handleEditStory(story)}
+                                        >
+                                            <Image
+                                                source={{ uri: coverPin?.imageUris?.[0] || 'https://via.placeholder.com/150' }}
+                                                style={styles.storyCover}
+                                            />
+                                            <View style={styles.storyOverlay}>
+                                                <Text style={styles.storyTitle} numberOfLines={1}>{story.title}</Text>
+                                                <Text style={styles.storyCount}>{story.pinIds.length} Pins</Text>
+                                            </View>
+                                            {isMe && (
+                                                <TouchableOpacity
+                                                    style={styles.deleteStoryBtn}
+                                                    onPress={() => handleDeleteStory(story.id)}
+                                                >
+                                                    <Feather name="x" size={12} color="white" />
+                                                </TouchableOpacity>
+                                            )}
+                                        </TouchableOpacity>
+                                    );
+                                })}
+
+                                {/* Empty State if no items */}
+                                {bucketList.length === 0 && stories.length === 0 && (
+                                    <View style={[styles.emptyStoryCard, { width: 120, height: 160 }]}>
+                                        <Feather name="map" size={24} color="#ccc" />
+                                        <Text style={styles.emptyStoryText}>Explore to add</Text>
+                                    </View>
+                                )}
+                            </ScrollView>
+                        </>
+                    )}
 
                 </View>
             </Animated.View >
@@ -925,5 +1086,85 @@ const styles = StyleSheet.create({
     statusPillText: {
         fontSize: 10,
         fontWeight: '700',
+    },
+    // Android Tab Styles
+    tabBar: {
+        flexDirection: 'row',
+        borderBottomWidth: 1,
+        borderBottomColor: '#eee',
+        marginBottom: 16,
+    },
+    tab: {
+        flex: 1,
+        paddingVertical: 12,
+        alignItems: 'center',
+        borderBottomWidth: 2,
+        borderBottomColor: 'transparent',
+    },
+    activeTab: {
+        borderBottomColor: '#1a1a1a',
+    },
+    tabText: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: '#999',
+    },
+    activeTabText: {
+        color: '#1a1a1a',
+    },
+    tabContent: {
+        paddingBottom: 24,
+    },
+    gridContainer: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        paddingHorizontal: 16,
+        gap: 12,
+    },
+    gridCard: {
+        width: (width - 32 - 12) / 2, // 2 column grid
+        height: ((width - 32 - 12) / 2) * 1.5, // 2:3 aspect ratio
+        borderRadius: 16,
+        backgroundColor: '#eee',
+        overflow: 'hidden',
+        marginBottom: 12,
+    },
+    gridCardImage: {
+        width: '100%',
+        height: '100%',
+    },
+    gridCardOverlay: {
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        padding: 10,
+        backgroundColor: 'rgba(0,0,0,0.6)',
+    },
+    gridCardTitle: {
+        color: 'white',
+        fontWeight: 'bold',
+        fontSize: 13,
+    },
+    gridCardSubtitle: {
+        color: 'rgba(255,255,255,0.8)',
+        fontSize: 11,
+        marginTop: 2,
+    },
+    emptyTabState: {
+        width: '100%',
+        paddingVertical: 40,
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 8,
+    },
+    emptyTabText: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: '#999',
+    },
+    emptyTabSubtext: {
+        fontSize: 14,
+        color: '#ccc',
     },
 });
