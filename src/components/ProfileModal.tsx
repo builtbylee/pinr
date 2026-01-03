@@ -1,5 +1,6 @@
 import { Feather } from '@expo/vector-icons';
 import { Image } from 'expo-image';
+import { BlurView } from 'expo-blur';
 import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { Dimensions, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -413,9 +414,9 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                                                     )}
                                                     <View style={styles.gridCardOverlay}>
                                                         {/* Floating Pill Title */}
-                                                        <View style={styles.gridCardTitleContainer}>
+                                                        <BlurView style={styles.gridCardTitleContainer} intensity={30} tint="dark">
                                                             <Text style={styles.gridCardTitle} numberOfLines={2}>{pin.title || pin.locationName}</Text>
-                                                        </View>
+                                                        </BlurView>
                                                     </View>
                                                 </TouchableOpacity>
                                             ))
@@ -448,9 +449,9 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                                                             contentFit="cover"
                                                         />
                                                         <View style={styles.gridCardOverlay}>
-                                                            <View style={styles.gridCardTitleContainer}>
+                                                            <BlurView style={styles.gridCardTitleContainer} intensity={30} tint="dark">
                                                                 <Text style={styles.gridCardTitle} numberOfLines={1}>{story.title}</Text>
-                                                            </View>
+                                                            </BlurView>
                                                         </View>
                                                         {isMe && (
                                                             <TouchableOpacity
@@ -489,9 +490,9 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                                                         contentFit="cover"
                                                     />
                                                     <View style={styles.gridCardOverlay}>
-                                                        <View style={styles.gridCardTitleContainer}>
+                                                        <BlurView style={styles.gridCardTitleContainer} intensity={30} tint="dark">
                                                             <Text style={styles.gridCardTitle} numberOfLines={2}>{item.locationName}</Text>
-                                                        </View>
+                                                        </BlurView>
                                                     </View>
                                                     {/* Status Badge */}
                                                     {item.status === 'visited' && (
@@ -1186,17 +1187,14 @@ const styles = StyleSheet.create({
         zIndex: 10,
     },
     gridCardTitleContainer: {
-        backgroundColor: 'rgba(0,0,0,0.7)', // Dark translucent
-        paddingHorizontal: 12,
-        paddingVertical: 6,
-        borderRadius: 12,
+        // backgroundColor handled by BlurView
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.3)', // Thin light border
+        paddingHorizontal: 16, // Slightly wider for pill shape
+        paddingVertical: 8,
+        borderRadius: 20, // More rounded capsule
+        overflow: 'hidden', // Required for BlurView rounding
         maxWidth: '90%',
-        // Shadows might be less visible on dark translucent, but keeping for depth
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.15,
-        shadowRadius: 3,
-        elevation: 3,
     },
     gridCardTitle: {
         color: 'white', // White text
