@@ -1384,10 +1384,7 @@ export default function App() {
 
             </Mapbox.MapView >
 
-            {/* DEBUG VERSION OVERLAY */}
-            <View style={{ position: 'absolute', top: 60, left: 20, backgroundColor: 'red', padding: 10, borderRadius: 8, zIndex: 9999 }}>
-                <Text style={{ color: 'white', fontWeight: 'bold' }}>DEBUG: v35 (Check)</Text>
-            </View>
+            {/* DEBUG VERSION OVERLAY - REMOVED FOR PRODUCTION */}
 
             {/* Explore UI Overlays - Rendering AFTER map forces correct Android Elevation/Touch handling */}
             <ExploreSearchBar
