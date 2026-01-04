@@ -20,7 +20,7 @@ const addDiagnosticEvent = (event: string) => {
 addDiagnosticEvent('Module loaded');
 
 // Build identifier to verify OTA updates
-const BUILD_ID = 'v3-auth-debug-0104';
+const BUILD_ID = 'v4-visibility-debug';
 
 import { CreationModal } from '@/src/components/CreationModal';
 import { DestinationCard } from '@/src/components/DestinationCard';
@@ -273,6 +273,8 @@ export default function App() {
             return true;
         });
 
+        // TELEMETRY: Track visibility filter results
+        addDiagnosticEvent(`Visibility: ${filtered.length}/${memories.length} (User=${currentUserId ? 'Y' : 'N'})`);
         console.log(`[App] Visibility Check: Total=${memories.length}, Visible=${filtered.length}`);
         console.log(`[App] Visibility Context: User=${currentUserId}, Friends=${friends.length}, HiddenCreators=${hiddenByCreators.length}, HiddenPins=${hiddenPinIds.length}`);
         return filtered;
