@@ -22,23 +22,46 @@ export const useDataSubscriptions = (currentUserId: string | null) => {
     // 0. Reactive Hydration (Instant Load)
     // Listen to the store and populate state as soon as disk data is ready (~50ms)
     // This bypasses the 11s network wait for the initial render.
-    const cachedMemories = useMemoryStore((state) => state.memories);
-    const [hasHydrated, setHasHydrated] = useState(false);
+    const [hasUsedCache, setHasUsedCache] = useState(false);
 
-    // Instrumentation: Check Zustand's actual hydration state
-    const storeHasHydrated = useMemoryStore.persist?.hasHydrated?.() ?? false;
-    log('Hydration', `Zustand store hasHydrated: ${storeHasHydrated}, cachedMemories.length: ${cachedMemories?.length ?? 0}, local hasHydrated: ${hasHydrated}`);
-
+    // FIX: Properly wait for Zustand to finish hydrating from AsyncStorage
+    // The old approach used useMemoryStore(state => state.memories) which returns
+    // the INITIAL empty array on first render, before AsyncStorage hydration completes.
     useEffect(() => {
-        log('Hydration', `Effect triggered - cachedMemories: ${cachedMemories?.length ?? 0}, hasHydrated: ${hasHydrated}`);
-        if (!hasHydrated && cachedMemories && cachedMemories.length > 0) {
-            log('Hydration', `⚡️ FAST HYDRATION: Loaded ${cachedMemories.length} pins from disk`);
-            setAllPins(cachedMemories);
-            setPinsLoaded(true);
-            setHasHydrated(true); // Only do this once on mount
-            log('Hydration', `setPinsLoaded(true) called - map should now render`);
+        log('Hydration', 'Setting up hydration listener...');
+
+        // Function to apply cached data
+        const applyCachedData = () => {
+            if (hasUsedCache) return; // Already used cache
+
+            const memories = useMemoryStore.getState().memories;
+            log('Hydration', `Checking cache: ${memories?.length ?? 0} memories available`);
+
+            if (memories && memories.length > 0) {
+                log('Hydration', `⚡️ FAST HYDRATION: Loaded ${memories.length} pins from disk`);
+                setAllPins(memories);
+                setPinsLoaded(true);
+                setHasUsedCache(true);
+                log('Hydration', `setPinsLoaded(true) called - map should now render`);
+            }
+        };
+
+        // Check if already hydrated (app was backgrounded/foregrounded)
+        if (useMemoryStore.persist?.hasHydrated?.()) {
+            log('Hydration', 'Store already hydrated, applying immediately');
+            applyCachedData();
         }
-    }, [cachedMemories, hasHydrated]);
+
+        // Subscribe to hydration completion (for cold start)
+        const unsub = useMemoryStore.persist?.onFinishHydration?.(() => {
+            log('Hydration', 'onFinishHydration callback fired');
+            applyCachedData();
+        });
+
+        return () => {
+            if (unsub) unsub();
+        };
+    }, [hasUsedCache]);
 
     // 1. Subscribe to Pins
     useEffect(() => {
