@@ -10,34 +10,10 @@
  * 2. Firebase native module to have read GoogleService-Info.plist and initialized
  */
 
-import { NativeModules, Alert, Platform } from 'react-native';
+import { NativeModules, Alert } from 'react-native';
 import auth from '@react-native-firebase/auth';
 import firestore from '@react-native-firebase/firestore';
 import { getApp, initializeApp } from '@react-native-firebase/app';
-import Constants from 'expo-constants';
-
-/**
- * Determine if we should use long polling instead of native gRPC.
- * Long polling is needed in Expo Go and simulators where gRPC can hang.
- * Production builds on physical devices should use native gRPC for better performance.
- */
-function shouldUseLongPolling(): boolean {
-    // Expo Go always needs long polling (gRPC doesn't work properly)
-    if (Constants.appOwnership === 'expo') {
-        console.log('[FirebaseInit] Expo Go detected - will use long polling');
-        return true;
-    }
-
-    // Development mode (including dev client) may need long polling
-    if (__DEV__) {
-        console.log('[FirebaseInit] Dev mode detected - will use long polling');
-        return true;
-    }
-
-    // Production builds on physical devices: use native gRPC for performance
-    console.log('[FirebaseInit] Production build detected - will use native gRPC');
-    return false;
-}
 
 let isFirebaseReady = false;
 let initPromise: Promise<void> | null = null;
@@ -296,23 +272,22 @@ export async function waitForFirestore(): Promise<void> {
                 // If we got an instance, we assume it's usable or will queue requests
                 if (firestoreInstance) {
                     try {
-                        // Only enable long polling in development/Expo Go
-                        // Production builds use native gRPC for better performance
-                        if (shouldUseLongPolling()) {
-                            console.log('[FirebaseInit] Enabling experimentalForceLongPolling (dev/Expo Go mode)...');
+                        // Critical: Enable Long Polling to avoid gRPC connection hangs
+                        // We enable this on Physical Devices too because standard gRPC seems to be failing
+                        // (likely network/firewall issues causing timeouts)
+                        console.log('[FirebaseInit] Enabling experimentalForceLongPolling for ALL devices...');
 
-                            const settingsProp = (firestoreInstance as any).settings;
+                        // API Check: .settings might be a function (Standard) or property (New/Legacy)
+                        console.log('[FirebaseInit] DEBUG: Instance:', firestoreInstance);
 
-                            if (typeof settingsProp === 'function') {
-                                // Cast to any to bypass TypeScript - experimentalForceLongPolling is valid but not in types
-                                await (firestoreInstance as any).settings({ experimentalForceLongPolling: true });
-                                console.log('[FirebaseInit] ✅ experimentalForceLongPolling enabled (via Method)');
-                            } else {
-                                (firestoreInstance as any).settings = { experimentalForceLongPolling: true };
-                                console.log('[FirebaseInit] ✅ experimentalForceLongPolling enabled (via Assignment)');
-                            }
+                        const settingsProp = (firestoreInstance as any).settings;
+
+                        if (typeof settingsProp === 'function') {
+                            await firestoreInstance.settings({ experimentalForceLongPolling: true });
+                            console.log('[FirebaseInit] ✅ experimentalForceLongPolling enabled (via Method)');
                         } else {
-                            console.log('[FirebaseInit] ✅ Using native gRPC (production mode - faster)');
+                            (firestoreInstance as any).settings = { experimentalForceLongPolling: true };
+                            console.log('[FirebaseInit] ✅ experimentalForceLongPolling enabled (via Assignment)');
                         }
                     } catch (e: any) {
                         console.warn('[FirebaseInit] ⚠️ Failed to configure Firestore settings:', e.message);

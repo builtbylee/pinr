@@ -1,54 +1,35 @@
 import { useState, useEffect, useRef } from 'react';
 import { subscribeToPins } from '../services/firestoreService';
 import { subscribeToUserProfile, UserProfile } from '../services/userService';
-import { Memory, useMemoryStore } from '../store/useMemoryStore';
+import { Memory } from '../store/useMemoryStore';
 
 export const useDataSubscriptions = (currentUserId: string | null) => {
     const [allPins, setAllPins] = useState<Memory[]>([]);
     const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
     const [profileLoaded, setProfileLoaded] = useState(false); // Flag to track if Firestore has responded
 
-    // Track current friends list to detect changes
-    const friendsRef = useRef<string[]>([]);
-    const pinsUnsubscribeRef = useRef<(() => void) | null>(null);
-
-    // 1. Subscribe to Pins IMMEDIATELY using CACHED friends list
-    // This allows own pins + friends' pins to load in parallel with profile
+    // 1. Subscribe to Pins
     useEffect(() => {
         if (!currentUserId) {
             setAllPins([]);
-            if (pinsUnsubscribeRef.current) {
-                pinsUnsubscribeRef.current();
-                pinsUnsubscribeRef.current = null;
-            }
             return;
         }
 
-        // Get cached friends list from persisted Zustand store
-        const cachedFriends = useMemoryStore.getState().friends || [];
-        friendsRef.current = cachedFriends;
+        console.log('[useDataSubscriptions] Subscribing to pins...');
+        const unsubscribe = subscribeToPins((pins) => {
+            setAllPins(pins);
+        });
 
-        // Subscribe to pins immediately with cached friends (parallel with profile load)
-        console.log('[useDataSubscriptions] Subscribing to pins immediately with cached friends');
-        console.log('[useDataSubscriptions] Cached friends count:', cachedFriends.length);
-        pinsUnsubscribeRef.current = subscribeToPins(cachedFriends, currentUserId, setAllPins);
-
-        return () => {
-            if (pinsUnsubscribeRef.current) {
-                pinsUnsubscribeRef.current();
-                pinsUnsubscribeRef.current = null;
-            }
-        };
+        return () => unsubscribe();
     }, [currentUserId]);
 
-    // 2. Subscribe to Profile (parallel with pins)
+    // 2. Subscribe to Profile
     useEffect(() => {
         console.log('[useDataSubscriptions] Effect triggered. currentUserId:', currentUserId);
         if (!currentUserId) {
             console.log('[useDataSubscriptions] No user ID, resetting profile');
             setUserProfile(null);
             setProfileLoaded(false);
-            friendsRef.current = [];
             return;
         }
 
@@ -83,28 +64,11 @@ export const useDataSubscriptions = (currentUserId: string | null) => {
                 if (data.pinColor) store.setPinColor(data.pinColor);
                 if (data.friends) store.setFriends(data.friends);
                 if (data.bucketList) store.setBucketList(data.bucketList);
-
-                // PINS RE-SUBSCRIPTION: When friends list arrives, re-subscribe to include friends' pins
-                const newFriends = data.friends || [];
-                const friendsChanged = JSON.stringify(newFriends) !== JSON.stringify(friendsRef.current);
-
-                if (friendsChanged && newFriends.length > 0) {
-                    console.log('[useDataSubscriptions] Friends list loaded, re-subscribing to include friends pins');
-                    console.log('[useDataSubscriptions] Friends count:', newFriends.length);
-                    friendsRef.current = newFriends;
-
-                    // Unsubscribe from own-pins-only listener
-                    if (pinsUnsubscribeRef.current) {
-                        pinsUnsubscribeRef.current();
-                    }
-
-                    // Re-subscribe with friends included
-                    pinsUnsubscribeRef.current = subscribeToPins(newFriends, currentUserId, setAllPins);
-                }
             }
         });
 
-        // 3. Subscribe to User Stories (Journeys)
+        // 2. Subscribe to User Stories (Journeys)
+        // using the new Fail-Fast logic in StoryService
         const storyService = require('../services/StoryService').storyService;
         const unsubscribeStories = storyService.subscribeToUserStories(currentUserId, (stories: any[]) => {
             console.log('[useDataSubscriptions] Stories update received:', stories.length);
@@ -117,7 +81,6 @@ export const useDataSubscriptions = (currentUserId: string | null) => {
             clearTimeout(safetyTimeout);
             unsubscribe();
             unsubscribeStories();
-            friendsRef.current = [];
         };
     }, [currentUserId]);
 

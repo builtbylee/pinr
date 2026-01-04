@@ -185,10 +185,7 @@ export const useMemoryStore = create<MemoryStore>()(
         {
             name: 'memory-storage',
             storage: createJSONStorage(() => AsyncStorage),
-            partialize: (state) => ({
-                activeGameId: state.activeGameId,
-                friends: state.friends, // Persist friends list for fast cold start
-            }),
+            partialize: (state) => ({ activeGameId: state.activeGameId }), // Only persist activeGameId
         }
     )
 );

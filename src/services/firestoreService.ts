@@ -91,176 +91,201 @@ export const updatePin = async (pinId: string, updates: Partial<Memory>): Promis
 };
 
 /**
- * Helper: Split array into chunks of specified size
- * Used for Firestore 'in' queries which have a 30-value limit
- */
-function chunkArray<T>(array: T[], size: number): T[][] {
-    const chunks: T[][] = [];
-    for (let i = 0; i < array.length; i += size) {
-        chunks.push(array.slice(i, i + size));
-    }
-    return chunks;
-}
-
-/**
- * Subscribe to real-time pin updates with server-side filtering
- * Only fetches pins from the current user and their friends (not all users globally)
+ * Subscribe to real-time pin updates
  * Automatically filters out expired pins and deletes them
- *
- * @param friendIds Array of friend user IDs to fetch pins from
- * @param currentUserId Current user's ID (to include their own pins)
  * @param callback Function called whenever pins change
  * @returns Unsubscribe function
  */
 export const subscribeToPins = (
-    friendIds: string[],
-    currentUserId: string,
     callback: (memories: Memory[]) => void
 ): (() => void) => {
-    // Combine current user with friends - user should see their own pins too
-    const creatorIds = [currentUserId, ...friendIds];
-    console.log('[Firestore] subscribeToPins called with', creatorIds.length, 'creator IDs (self + friends)');
-
-    // Store raw data from all chunks to allow local re-filtering
-    const allRawPins: Map<string, FirestorePin> = new Map();
-    const unsubscribers: (() => void)[] = [];
+    // Store raw data to allow local re-filtering without new snapshot
+    let rawPins: FirestorePin[] = [];
+    let rawIds: string[] = [];
+    let unsubscribeSnapshot: (() => void) | null = null;
     let intervalId: NodeJS.Timeout | null = null;
-    let hasCalledBackOnce = false;
 
     const processPins = () => {
         const now = Date.now();
         const expiredPinIds: string[] = [];
 
-        const memories: Memory[] = [];
+        const memories: Memory[] = rawPins
+            .map((data, index) => {
+                const id = rawIds[index];
 
-        allRawPins.forEach((data, id) => {
-            // Check if expired
-            if (data.expiresAt && data.expiresAt < now) {
-                expiredPinIds.push(id);
-                return; // Skip this pin
-            }
+                // Check if expired
+                if (data.expiresAt && data.expiresAt < now) {
+                    expiredPinIds.push(id);
+                    return null; // Will be filtered out
+                }
 
-            memories.push({
-                id: id,
-                title: data.title,
-                date: data.date,
-                location: [data.location.longitude, data.location.latitude] as [number, number],
-                locationName: data.locationName,
-                imageUris: data.imageUrl ? [data.imageUrl] : [],
-                pinColor: data.pinColor,
-                creatorId: data.creatorId,
-                expiresAt: data.expiresAt,
-            });
-        });
-
-        // Sort by date descending (newest first)
-        memories.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+                return {
+                    id: id,
+                    title: data.title,
+                    date: data.date,
+                    location: [data.location.longitude, data.location.latitude] as [number, number],
+                    locationName: data.locationName,
+                    imageUris: data.imageUrl ? [data.imageUrl] : [],
+                    pinColor: data.pinColor,
+                    creatorId: data.creatorId,
+                    expiresAt: data.expiresAt,
+                };
+            })
+            .filter((m): m is Memory => m !== null);
 
         // Opportunistically delete expired pins
         if (expiredPinIds.length > 0) {
             console.log('[Firestore] Found expired pins (cleanup):', expiredPinIds.length);
-            expiredPinIds.forEach(id => {
-                allRawPins.delete(id);
-                deletePin(id).catch(err => console.warn('Failed to delete expired pin:', id, err));
-            });
+            // We don't wait for this; fire and forget
+            expiredPinIds.forEach(id => deletePin(id).catch(err => console.warn('Failed to delete expired pin:', id, err)));
         }
 
         callback(memories);
-        hasCalledBackOnce = true;
     };
 
     // Wait for Firestore to be ready before subscribing
     const { waitForFirestore } = require('./firebaseInitService');
+    let hasReceivedSnapshot = false;
+    let timeoutId: NodeJS.Timeout | null = null;
 
     waitForFirestore()
-        .then(async () => {
-            console.log('[Firestore] Firestore ready, subscribing to pins with server-side filtering...');
+        .then(() => {
+            console.log('[Firestore] Firestore ready, subscribing to pins...');
 
-            // If no creators (edge case: no friends and somehow no self), return empty
-            if (creatorIds.length === 0) {
-                console.log('[Firestore] No creator IDs, returning empty pins');
-                callback([]);
-                return;
-            }
+            // Set timeout: if no snapshot after 10s (Android) or 2.5s (iOS), call REST fallback
+            // SAFE FIX: Fail fast on iOS to avoid startup hang
+            const timeoutMs = Platform.OS === 'ios' ? 2500 : 10000;
 
-            // CACHE-FIRST: Try to load from cache immediately (non-blocking)
-            // This gives instant UI on cold start
-            const firstChunk = creatorIds.slice(0, 30); // First chunk for cache
-            try {
-                const cacheSnapshot = await firestore()
-                    .collection(PINS_COLLECTION)
-                    .where('creatorId', 'in', firstChunk)
-                    .orderBy('createdAt', 'desc')
-                    .get({ source: 'cache' });
+            timeoutId = setTimeout(async () => {
+                if (!hasReceivedSnapshot) {
+                    console.warn(`[Firestore] ⚠️ Pins subscription timeout after ${timeoutMs}ms, trying REST API query...`);
+                    // Alert.alert('Debug: Pins Timeout', 'SDK timed out, trying REST...');
+                    try {
+                        // Use REST API to query pins collection
+                        const auth = require('@react-native-firebase/auth').default;
+                        const currentUser = auth().currentUser;
 
-                if (cacheSnapshot.docs.length > 0) {
-                    console.log('[Firestore] ✅ Cache hit:', cacheSnapshot.docs.length, 'pins from cache');
-                    cacheSnapshot.docs.forEach(doc => {
-                        allRawPins.set(doc.id, doc.data() as FirestorePin);
-                    });
-                    processPins(); // Show cached data immediately
-                } else {
-                    console.log('[Firestore] Cache empty or miss, waiting for network');
-                }
-            } catch (cacheError) {
-                // Cache miss or error - that's fine, listener will populate
-                console.log('[Firestore] Cache read failed (normal on first launch):', cacheError);
-            }
+                        if (currentUser) {
+                            const token = await currentUser.getIdToken(true);
+                            const projectId = 'days-c4ad4';
 
-            // Chunk creator IDs for Firestore 'in' query limit (max 30 values)
-            const chunks = chunkArray(creatorIds, 30);
-            console.log('[Firestore] Setting up', chunks.length, 'listener(s) for', creatorIds.length, 'creators');
+                            // Firestore REST API structured query
+                            const queryBody = {
+                                structuredQuery: {
+                                    from: [{ collectionId: PINS_COLLECTION }],
+                                    orderBy: [
+                                        {
+                                            field: { fieldPath: 'createdAt' },
+                                            direction: 'DESCENDING'
+                                        }
+                                    ]
+                                }
+                            };
 
-            // Set up real-time listeners for each chunk
-            chunks.forEach((chunk, chunkIndex) => {
-                const unsubscribe = firestore()
-                    .collection(PINS_COLLECTION)
-                    .where('creatorId', 'in', chunk)
-                    .orderBy('createdAt', 'desc')
-                    .onSnapshot(
-                        { includeMetadataChanges: false },
-                        (snapshot) => {
-                            const source = snapshot.metadata.fromCache ? 'cache' : 'server';
-                            console.log(`[Firestore] ✅ Chunk ${chunkIndex + 1}/${chunks.length} snapshot from ${source}:`, snapshot.docs.length, 'pins');
+                            const url = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents:runQuery`;
+                            const response = await fetch(url, {
+                                method: 'POST',
+                                headers: {
+                                    'Authorization': `Bearer ${token}`,
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify(queryBody)
+                            });
 
-                            // Clear old pins from this chunk's creators and add new ones
-                            chunk.forEach(creatorId => {
-                                // Remove all pins from this creator (they'll be re-added below)
-                                allRawPins.forEach((pin, id) => {
-                                    if (pin.creatorId === creatorId) {
-                                        allRawPins.delete(id);
+                            if (response.ok) {
+                                const results = await response.json();
+                                console.log('[Firestore] ✅ REST query succeeded, results:', results.length);
+
+                                // Parse REST API response (array of result objects)
+                                rawPins = [];
+                                rawIds = [];
+
+                                for (const result of results) {
+                                    if (result.document) {
+                                        const doc = result.document;
+                                        const pathParts = doc.name.split('/');
+                                        const docId = pathParts[pathParts.length - 1];
+                                        rawIds.push(docId);
+
+                                        // Parse fields from REST format
+                                        const fields = doc.fields;
+                                        const pinData: any = {};
+                                        for (const key in fields) {
+                                            const value = fields[key];
+                                            if (value.stringValue !== undefined) pinData[key] = value.stringValue;
+                                            else if (value.integerValue !== undefined) pinData[key] = parseInt(value.integerValue, 10);
+                                            else if (value.timestampValue !== undefined) {
+                                                // Convert timestamp to Firestore Timestamp-like object
+                                                pinData[key] = { toMillis: () => new Date(value.timestampValue).getTime() };
+                                            }
+                                            else if (value.geoPointValue !== undefined) {
+                                                pinData[key] = {
+                                                    latitude: value.geoPointValue.latitude,
+                                                    longitude: value.geoPointValue.longitude
+                                                };
+                                            }
+                                        }
+                                        rawPins.push(pinData as FirestorePin);
                                     }
-                                });
-                            });
+                                }
 
-                            // Add all pins from this snapshot
-                            snapshot.docs.forEach(doc => {
-                                allRawPins.set(doc.id, doc.data() as FirestorePin);
-                            });
-
-                            processPins();
-                        },
-                        (error) => {
-                            console.error(`[Firestore] ❌ Chunk ${chunkIndex + 1} snapshot error:`, error);
-                            // Don't call callback with empty on error - keep showing cached data
-                            if (!hasCalledBackOnce) {
+                                processPins();
+                                hasReceivedSnapshot = true;
+                            } else {
+                                console.error('[Firestore] ❌ REST query failed:', response.status);
                                 callback([]);
                             }
+                        } else {
+                            console.error('[Firestore] ❌ No authenticated user for REST fallback');
+                            callback([]);
                         }
-                    );
-                unsubscribers.push(unsubscribe);
-            });
+                    } catch (error: any) {
+                        console.error('[Firestore] ❌ REST query failed:', error);
+                        callback([]);
+                    }
+                }
+            }, 10000);
 
-            // Setup interval to re-check expiry every 30 seconds (in case app stays open)
+            unsubscribeSnapshot = firestore()
+                .collection(PINS_COLLECTION)
+                .orderBy('createdAt', 'desc')
+                .onSnapshot(
+                    (snapshot) => {
+                        console.log('[Firestore] ✅ Pins snapshot received, count:', snapshot.docs.length);
+                        hasReceivedSnapshot = true;
+                        if (timeoutId) {
+                            clearTimeout(timeoutId);
+                            timeoutId = null;
+                        }
+                        // Update cache
+                        rawPins = snapshot.docs.map(doc => doc.data() as FirestorePin);
+                        rawIds = snapshot.docs.map(doc => doc.id);
+
+                        // Process immediately
+                        processPins();
+                    },
+                    (error) => {
+                        console.error('[Firestore] ❌ Pins snapshot error:', error);
+                        console.error('[Firestore] Error code:', error.code);
+                        console.error('[Firestore] Error message:', error.message);
+                        // Call callback with empty array on error to prevent hang
+                        callback([]);
+                    }
+                );
+
+            // Setup interval to re-check every 30 seconds (in case app stays open)
             intervalId = setInterval(processPins, 30000);
         })
         .catch((error) => {
             console.error('[Firestore] ❌ Failed to wait for Firestore:', error);
+            // Call callback with empty array to prevent hang
             callback([]);
         });
 
     return () => {
-        unsubscribers.forEach(unsub => unsub());
+        if (unsubscribeSnapshot) {
+            unsubscribeSnapshot();
+        }
         if (intervalId) {
             clearInterval(intervalId);
         }
