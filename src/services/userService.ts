@@ -553,11 +553,10 @@ export const getUserProfile = async (uid: string, skipCache = false): Promise<Us
         let profile: UserProfile | null = null;
         let useRestFallback = false;
 
-        // Try Firestore SDK with aggressive timeout
+        // Try Firestore SDK with unified timeout
         try {
-            // SAFE FIX V2: On iOS, fail fast (2.5s) to switch to REST API if native bridge hangs.
-            // Android keeps original 15s timeout.
-            const timeoutMs = Platform.OS === 'ios' ? 2500 : 15000;
+            // MINIMAL FIX: Unified 10s timeout for both platforms (removes iOS 2.5s aggressive timeout)
+            const timeoutMs = 10000;
 
             const timeoutPromise = new Promise((_, reject) =>
                 setTimeout(() => reject(new Error('SDK Timeout')), timeoutMs)

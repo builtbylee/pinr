@@ -152,9 +152,8 @@ export const subscribeToPins = (
         .then(() => {
             console.log('[Firestore] Firestore ready, subscribing to pins...');
 
-            // Set timeout: if no snapshot after 10s (Android) or 2.5s (iOS), call REST fallback
-            // SAFE FIX: Fail fast on iOS to avoid startup hang
-            const timeoutMs = Platform.OS === 'ios' ? 2500 : 10000;
+            // MINIMAL FIX: Unified 10s timeout for both platforms (removes iOS 2.5s aggressive timeout)
+            const timeoutMs = 10000;
 
             timeoutId = setTimeout(async () => {
                 if (!hasReceivedSnapshot) {
