@@ -12,8 +12,8 @@ export const useDataSubscriptions = (currentUserId: string | null) => {
     const friendsRef = useRef<string[]>([]);
     const pinsUnsubscribeRef = useRef<(() => void) | null>(null);
 
-    // 1. Subscribe to Pins IMMEDIATELY (don't wait for profile)
-    // Start with just own pins, then re-subscribe when friends list is available
+    // 1. Subscribe to Pins IMMEDIATELY using CACHED friends list
+    // This allows own pins + friends' pins to load in parallel with profile
     useEffect(() => {
         if (!currentUserId) {
             setAllPins([]);
@@ -24,9 +24,14 @@ export const useDataSubscriptions = (currentUserId: string | null) => {
             return;
         }
 
-        // Subscribe to own pins immediately (parallel with profile load)
-        console.log('[useDataSubscriptions] Subscribing to own pins immediately (parallel start)');
-        pinsUnsubscribeRef.current = subscribeToPins([], currentUserId, setAllPins);
+        // Get cached friends list from persisted Zustand store
+        const cachedFriends = useMemoryStore.getState().friends || [];
+        friendsRef.current = cachedFriends;
+
+        // Subscribe to pins immediately with cached friends (parallel with profile load)
+        console.log('[useDataSubscriptions] Subscribing to pins immediately with cached friends');
+        console.log('[useDataSubscriptions] Cached friends count:', cachedFriends.length);
+        pinsUnsubscribeRef.current = subscribeToPins(cachedFriends, currentUserId, setAllPins);
 
         return () => {
             if (pinsUnsubscribeRef.current) {
