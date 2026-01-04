@@ -30,6 +30,7 @@ export const useDataSubscriptions = (currentUserId: string | null) => {
     // Listen to the store and populate state as soon as disk data is ready (~50ms)
     // This bypasses the 11s network wait for the initial render.
     const [hasUsedCache, setHasUsedCache] = useState(false);
+    const hasHydratedRef = useRef(false);
 
     // FIX: Properly wait for Zustand to finish hydrating from AsyncStorage
     // The old approach used useMemoryStore(state => state.memories) which returns
@@ -52,8 +53,10 @@ export const useDataSubscriptions = (currentUserId: string | null) => {
                 setAllPins(memories);
                 setPinsLoaded(true);
                 setHasUsedCache(true);
+                hasHydratedRef.current = true;
                 log('Hydration', `setPinsLoaded(true) called - map should now render`);
             } else {
+                hasHydratedRef.current = true;
                 addEvent('Cache empty, waiting for network');
             }
         };
@@ -90,24 +93,43 @@ export const useDataSubscriptions = (currentUserId: string | null) => {
         }
 
         log('Pins', 'Subscribing to pins (network)...');
-        // CRITICAL FIX: Do NOT reset pinsLoaded to false here.
-        // If we have already hydrated from disk, we want to keep showing those pins
-        // while the network updates in the background (Stale-While-Revalidate).
+        addEvent('Network: Subscribing to pins');
+
+        // RESILIENCE: If state pins are empty (e.g. due to user ID flicker wiping them),
+        // but Store still has data, RESTORE IT IMMEDIATELY.
+        const currentStoreMemories = useMemoryStore.getState().memories;
+        if (allPins.length === 0 && currentStoreMemories.length > 0) {
+            log('Pins', `Resilience: Restoring ${currentStoreMemories.length} pins from store`);
+            addEvent(`Resilience: Restored ${currentStoreMemories.length} pins`);
+            setAllPins(currentStoreMemories);
+            setPinsLoaded(true);
+        }
 
         const unsubscribe = subscribeToPins((pins) => {
             log('Pins', `Network callback received - pins count: ${pins.length}`);
+            addEvent(`Network: Rx ${pins.length} pins`);
             // SAFETY: If we have already hydrated data, and Firestore returns EMPTY (0),
             // and we are in the initial loading phase, it's likely a false-positive from an empty cache.
             // Ignore it to preserve the "Instant Load" experience.
             const currentStoreMemories = useMemoryStore.getState().memories;
+            const isHydrated = hasHydratedRef.current;
 
-            if (pins.length === 0 && currentStoreMemories.length > 0) {
-                log('Pins', 'Ignoring empty network update (preserving hydrated state)');
-                setPinsLoaded(true);
-                return;
+            if (pins.length === 0) {
+                if (currentStoreMemories.length > 0) {
+                    log('Pins', 'Ignoring empty network update (Store has data)');
+                    addEvent('Network: Ignored empty (Store has data)');
+                    setPinsLoaded(true);
+                    return;
+                }
+                if (!isHydrated) {
+                    log('Pins', 'Ignoring empty network update (Not yet hydrated)');
+                    addEvent('Network: Ignored empty (Not hydrated)');
+                    return;
+                }
             }
 
             log('Pins', `Setting ${pins.length} pins from network, calling setPinsLoaded(true)`);
+            addEvent(`Network: Setting ${pins.length} pins`);
             setAllPins(pins);
             setPinsLoaded(true);
         });

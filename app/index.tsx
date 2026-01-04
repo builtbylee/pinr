@@ -240,7 +240,7 @@ export default function App() {
             return memories.filter(m => m.creatorId === storyModeUserId);
         }
 
-        return memories.filter(m => {
+        const filtered = memories.filter(m => {
             // 1. Filter by specific user
             if (filteredUserId && m.creatorId !== filteredUserId) return false;
 
@@ -272,6 +272,10 @@ export default function App() {
 
             return true;
         });
+
+        console.log(`[App] Visibility Check: Total=${memories.length}, Visible=${filtered.length}`);
+        console.log(`[App] Visibility Context: User=${currentUserId}, Friends=${friends.length}, HiddenCreators=${hiddenByCreators.length}, HiddenPins=${hiddenPinIds.length}`);
+        return filtered;
     }, [memories, filteredUserId, friends, currentUserId, hiddenByCreators, hiddenPinIds, storyPinIds, pinToStoryMap, storyModeUserId]);
 
     // Convert visible memories to GeoJSON points for clustering
