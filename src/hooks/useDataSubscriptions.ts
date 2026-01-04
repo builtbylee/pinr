@@ -12,19 +12,38 @@ export const useDataSubscriptions = (currentUserId: string | null) => {
     const friendsRef = useRef<string[]>([]);
     const pinsUnsubscribeRef = useRef<(() => void) | null>(null);
 
-    // 1. Subscribe to Profile (must load first to get friends list)
+    // 1. Subscribe to Pins IMMEDIATELY (don't wait for profile)
+    // Start with just own pins, then re-subscribe when friends list is available
     useEffect(() => {
-        console.log('[useDataSubscriptions] Effect triggered. currentUserId:', currentUserId);
         if (!currentUserId) {
-            console.log('[useDataSubscriptions] No user ID, resetting profile and pins');
-            setUserProfile(null);
-            setProfileLoaded(false);
             setAllPins([]);
-            friendsRef.current = [];
             if (pinsUnsubscribeRef.current) {
                 pinsUnsubscribeRef.current();
                 pinsUnsubscribeRef.current = null;
             }
+            return;
+        }
+
+        // Subscribe to own pins immediately (parallel with profile load)
+        console.log('[useDataSubscriptions] Subscribing to own pins immediately (parallel start)');
+        pinsUnsubscribeRef.current = subscribeToPins([], currentUserId, setAllPins);
+
+        return () => {
+            if (pinsUnsubscribeRef.current) {
+                pinsUnsubscribeRef.current();
+                pinsUnsubscribeRef.current = null;
+            }
+        };
+    }, [currentUserId]);
+
+    // 2. Subscribe to Profile (parallel with pins)
+    useEffect(() => {
+        console.log('[useDataSubscriptions] Effect triggered. currentUserId:', currentUserId);
+        if (!currentUserId) {
+            console.log('[useDataSubscriptions] No user ID, resetting profile');
+            setUserProfile(null);
+            setProfileLoaded(false);
+            friendsRef.current = [];
             return;
         }
 
@@ -38,11 +57,6 @@ export const useDataSubscriptions = (currentUserId: string | null) => {
                 console.warn('[useDataSubscriptions] ⚠️ Profile load timeout after 15s, unblocking UI');
                 setProfileLoaded(true);
                 hasLoaded = true;
-                // Even on timeout, subscribe to own pins only
-                if (!pinsUnsubscribeRef.current) {
-                    console.log('[useDataSubscriptions] Subscribing to own pins only (profile timeout)');
-                    pinsUnsubscribeRef.current = subscribeToPins([], currentUserId, setAllPins);
-                }
             }
         }, 15000);
 
@@ -65,34 +79,27 @@ export const useDataSubscriptions = (currentUserId: string | null) => {
                 if (data.friends) store.setFriends(data.friends);
                 if (data.bucketList) store.setBucketList(data.bucketList);
 
-                // PINS SUBSCRIPTION: Subscribe/re-subscribe when friends list changes
+                // PINS RE-SUBSCRIPTION: When friends list arrives, re-subscribe to include friends' pins
                 const newFriends = data.friends || [];
                 const friendsChanged = JSON.stringify(newFriends) !== JSON.stringify(friendsRef.current);
 
-                if (friendsChanged || !pinsUnsubscribeRef.current) {
-                    console.log('[useDataSubscriptions] Friends list changed or first load, (re)subscribing to pins');
+                if (friendsChanged && newFriends.length > 0) {
+                    console.log('[useDataSubscriptions] Friends list loaded, re-subscribing to include friends pins');
                     console.log('[useDataSubscriptions] Friends count:', newFriends.length);
                     friendsRef.current = newFriends;
 
-                    // Unsubscribe from old pins listener
+                    // Unsubscribe from own-pins-only listener
                     if (pinsUnsubscribeRef.current) {
                         pinsUnsubscribeRef.current();
                     }
 
-                    // Subscribe to pins with server-side filtering (self + friends only)
+                    // Re-subscribe with friends included
                     pinsUnsubscribeRef.current = subscribeToPins(newFriends, currentUserId, setAllPins);
-                }
-            } else {
-                // No profile data - subscribe to own pins only
-                if (!pinsUnsubscribeRef.current) {
-                    console.log('[useDataSubscriptions] No profile, subscribing to own pins only');
-                    pinsUnsubscribeRef.current = subscribeToPins([], currentUserId, setAllPins);
                 }
             }
         });
 
-        // 2. Subscribe to User Stories (Journeys)
-        // using the new Fail-Fast logic in StoryService
+        // 3. Subscribe to User Stories (Journeys)
         const storyService = require('../services/StoryService').storyService;
         const unsubscribeStories = storyService.subscribeToUserStories(currentUserId, (stories: any[]) => {
             console.log('[useDataSubscriptions] Stories update received:', stories.length);
@@ -101,14 +108,10 @@ export const useDataSubscriptions = (currentUserId: string | null) => {
         });
 
         return () => {
-            console.log('[useDataSubscriptions] Unsubscribing from profile, pins & stories');
+            console.log('[useDataSubscriptions] Unsubscribing from profile & stories');
             clearTimeout(safetyTimeout);
             unsubscribe();
             unsubscribeStories();
-            if (pinsUnsubscribeRef.current) {
-                pinsUnsubscribeRef.current();
-                pinsUnsubscribeRef.current = null;
-            }
             friendsRef.current = [];
         };
     }, [currentUserId]);
