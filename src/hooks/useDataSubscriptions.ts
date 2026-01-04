@@ -11,6 +11,13 @@ const log = (tag: string, msg: string) => {
     console.log(`[Perf +${elapsed}ms] [${tag}] ${msg}`);
 };
 
+// Export diagnostic events for UI display
+export const HYDRATION_EVENTS: { time: number; event: string }[] = [];
+const addEvent = (event: string) => {
+    const elapsed = Date.now() - COLD_START_TIME;
+    HYDRATION_EVENTS.push({ time: elapsed, event });
+};
+
 export const useDataSubscriptions = (currentUserId: string | null) => {
     log('Hook', `useDataSubscriptions called with userId: ${currentUserId ? 'present' : 'null'}`);
 
@@ -29,33 +36,42 @@ export const useDataSubscriptions = (currentUserId: string | null) => {
     // the INITIAL empty array on first render, before AsyncStorage hydration completes.
     useEffect(() => {
         log('Hydration', 'Setting up hydration listener...');
+        addEvent('Hydration effect mounted');
 
         // Function to apply cached data
-        const applyCachedData = () => {
+        const applyCachedData = (source: string) => {
             if (hasUsedCache) return; // Already used cache
 
             const memories = useMemoryStore.getState().memories;
-            log('Hydration', `Checking cache: ${memories?.length ?? 0} memories available`);
+            log('Hydration', `Checking cache (${source}): ${memories?.length ?? 0} memories available`);
+            addEvent(`Cache check (${source}): ${memories?.length ?? 0} mems`);
 
             if (memories && memories.length > 0) {
                 log('Hydration', `⚡️ FAST HYDRATION: Loaded ${memories.length} pins from disk`);
+                addEvent(`HYDRATED: ${memories.length} pins from cache`);
                 setAllPins(memories);
                 setPinsLoaded(true);
                 setHasUsedCache(true);
                 log('Hydration', `setPinsLoaded(true) called - map should now render`);
+            } else {
+                addEvent('Cache empty, waiting for network');
             }
         };
 
         // Check if already hydrated (app was backgrounded/foregrounded)
-        if (useMemoryStore.persist?.hasHydrated?.()) {
+        const alreadyHydrated = useMemoryStore.persist?.hasHydrated?.() ?? false;
+        addEvent(`hasHydrated check: ${alreadyHydrated}`);
+
+        if (alreadyHydrated) {
             log('Hydration', 'Store already hydrated, applying immediately');
-            applyCachedData();
+            applyCachedData('already-hydrated');
         }
 
         // Subscribe to hydration completion (for cold start)
         const unsub = useMemoryStore.persist?.onFinishHydration?.(() => {
             log('Hydration', 'onFinishHydration callback fired');
-            applyCachedData();
+            addEvent('onFinishHydration fired');
+            applyCachedData('onFinishHydration');
         });
 
         return () => {
