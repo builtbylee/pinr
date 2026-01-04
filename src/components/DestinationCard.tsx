@@ -2,7 +2,7 @@ import { Feather } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import React, { useEffect, useState } from 'react';
-import { Alert, Dimensions, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Dimensions, StyleSheet, Text, TouchableOpacity, View, Image as RNImage } from 'react-native';
 // Note: ViewShot removed until native rebuild - using text sharing fallback
 import { Memory, useMemoryStore } from '../store/useMemoryStore';
 import { deletePin } from '../services/firestoreService';
@@ -49,12 +49,10 @@ export const DestinationCard: React.FC<DestinationCardProps> = ({ memory, onClos
 
     useEffect(() => {
         if (memory.imageUris && memory.imageUris.length > 0) {
-            // Get original image size
-            import('react-native').then(({ Image: RNImage }) => {
-                RNImage.getSize(memory.imageUris[0], (w, h) => {
-                    setImageSize({ width: w, height: h });
-                    setAspectRatio(w / h);
-                });
+            // Get original image size (using static import to avoid bridge contention on iOS)
+            RNImage.getSize(memory.imageUris[0], (w, h) => {
+                setImageSize({ width: w, height: h });
+                setAspectRatio(w / h);
             });
         }
     }, [memory.imageUris]);

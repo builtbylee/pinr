@@ -312,7 +312,7 @@ export async function waitForFirestore(): Promise<void> {
                     console.warn('[FirebaseInit] Firestore check timed out, proceeding anyway');
                     isFirestoreReady = true;
                     if (!hasAlertedReady) {
-                        Alert.alert('Debug: Init', 'Firestore Timed Out (Max Attempts)');
+                        // Alert.alert('Debug: Init', 'Firestore Timed Out (Max Attempts)');
                         hasAlertedReady = true;
                     }
                     resolve();
@@ -328,7 +328,7 @@ export async function waitForFirestore(): Promise<void> {
                 } else {
                     isFirestoreReady = true;
                     if (!hasAlertedReady) {
-                        Alert.alert('Debug: Init', `Init Error: ${error.message}`);
+                        // Alert.alert('Debug: Init', `Init Error: ${error.message}`);
                         hasAlertedReady = true;
                     }
                     resolve();

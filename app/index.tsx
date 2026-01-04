@@ -267,7 +267,7 @@ export default function App() {
     const autoRotateTimer = useRef<NodeJS.Timeout | null>(null);
 
     const startAutoRotate = (currentCenter: [number, number]) => {
-        if (isExploreInfoVisible || !cameraRef.current) return;
+        if (isExploreInfoVisible || selectedMemoryId || !cameraRef.current) return;
 
         // Continuous Westward Drift (Left-to-Right ground)
         // We use -170 degrees to stay valid-ish, and loop.
@@ -999,6 +999,7 @@ export default function App() {
         const memoryToSpinTo = selectedMemory;
         // Deselect first to close the card
         selectMemory(null);
+        setSelectedExplorePlace(null); // Also clear any animation overlay
 
         // Then spin to the pin location
         if (memoryToSpinTo && cameraRef.current) {
@@ -1046,45 +1047,56 @@ export default function App() {
         console.log('[App] Playing story for user:', userId, story ? `(${story.title})` : '(All)');
         // Close ProfileModal before starting story mode to prevent it blocking map after story ends
         setSelectedUserProfileId(null);
-        setStoryModeData({ userId, story });
+
+        // SAFE FIX for iOS: Delay entering story mode to allow/ensure modal closes first
+        setTimeout(() => {
+            setStoryModeData({ userId, story });
+        }, 500);
     };
 
     const handleExploreSelect = async (location: GeocodingResult) => {
         setIsExploreSearchVisible(false);
         setSelectedExplorePlace(location);
-        isCameraAnimating.current = true;
-        stopAutoRotate();
 
-        // Fly to location
-        if (cameraRef.current) {
-            cameraRef.current.setCamera({
-                centerCoordinate: location.center,
-                animationDuration: 2000,
-                animationMode: 'flyTo',
-            });
-        }
-
-        // Reset camera animating state after flight
+        // SAFE FIX for iOS: Delay camera movement to allow modal to close
         setTimeout(() => {
-            isCameraAnimating.current = false;
-        }, 2000);
+            isCameraAnimating.current = true;
+            stopAutoRotate();
 
-        // Track exploration streak
+            // Fly to location
+            if (cameraRef.current) {
+                cameraRef.current.setCamera({
+                    centerCoordinate: location.center,
+                    animationDuration: 2000,
+                    animationMode: 'flyTo',
+                });
+            }
+
+            // Reset camera animating state after flight
+            setTimeout(() => {
+                isCameraAnimating.current = false;
+            }, 2000);
+
+            // Show info card immediately after globe spin (2000ms) + glow animation (800ms)
+            // Relative to this timeout block start
+            // STAGGER FIX: Delay slightly to 2900ms to match safe timing
+            setTimeout(() => {
+                setIsExploreInfoVisible(true);
+            }, 2900);
+
+        }, 500); // 500ms Safety Delay
+
+        // Track exploration streak (Background task, can run immediately)
         if (currentUserId) {
             const streakResult = await checkExplorationStreak(currentUserId);
             if (streakResult.increased) {
                 setCelebrationStreak(streakResult.streak);
-                // Delay celebration to after info card is shown
+                // Delay celebration to after info card is shown (2500 + 500 = 3000ms effective)
                 setTimeout(() => {
                     setShowStreakCelebration(true);
-                }, 2500);
+                }, 3000);
             }
         }
-
-        // Show info card immediately after globe spin (2000ms) + glow animation (800ms)
-        setTimeout(() => {
-            setIsExploreInfoVisible(true);
-        }, 2800);
     };
 
     // Explore Pulse & Glow Animation
@@ -1161,7 +1173,7 @@ export default function App() {
             <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
                 <ActivityIndicator size="large" color="#1a1a1a" />
                 <Text style={{ marginTop: 20, color: '#1a1a1a', fontSize: 16 }}>Preparing your journey...</Text>
-
+     
                 <TouchableOpacity
                     onPress={async () => {
                         try {
@@ -1237,7 +1249,7 @@ export default function App() {
                                         width: 44,
                                         height: 44,
                                         borderRadius: 22,
-                                        backgroundColor: getUserHexColor(),
+                                        backgroundColor: (selectedExplorePlace as any).properties?.ringColor || getUserHexColor(),
                                         zIndex: -1,
                                     },
                                     glowRingStyle
@@ -1245,18 +1257,18 @@ export default function App() {
 
                                 {/* Pulsing Avatar */}
                                 <Animated.View style={[pulseAnimatedStyle]}>
-                                    {avatarUri ? (
+                                    {((selectedExplorePlace as any).properties?.avatarUri || avatarUri) ? (
                                         <Image
-                                            source={{ uri: avatarUri }}
+                                            source={{ uri: (selectedExplorePlace as any).properties?.avatarUri || avatarUri }}
                                             style={{
                                                 width: 44,
                                                 height: 44,
                                                 borderRadius: 22,
                                                 borderWidth: 3,
-                                                borderColor: getUserHexColor(), // User Color
+                                                borderColor: (selectedExplorePlace as any).properties?.ringColor || getUserHexColor(),
                                                 backgroundColor: 'white',
                                                 // Glow Shadow
-                                                shadowColor: getUserHexColor(),
+                                                shadowColor: (selectedExplorePlace as any).properties?.ringColor || getUserHexColor(),
                                                 shadowOffset: { width: 0, height: 0 },
                                                 shadowOpacity: 0.8,
                                                 shadowRadius: 10,
@@ -1267,12 +1279,12 @@ export default function App() {
                                             width: 30, // Fallback icon size
                                             height: 30,
                                             borderRadius: 15,
-                                            backgroundColor: getUserHexColor(),
+                                            backgroundColor: (selectedExplorePlace as any).properties?.ringColor || getUserHexColor(),
                                             borderWidth: 2,
                                             borderColor: 'white',
                                             justifyContent: 'center',
                                             alignItems: 'center',
-                                            shadowColor: getUserHexColor(),
+                                            shadowColor: (selectedExplorePlace as any).properties?.ringColor || getUserHexColor(),
                                             shadowOffset: { width: 0, height: 0 },
                                             shadowOpacity: 0.8,
                                             shadowRadius: 10,
@@ -1560,30 +1572,54 @@ export default function App() {
                     // 1. Close modal
                     setSelectedUserProfileId(null);
 
-                    // 2. Prepare Camera (Stop rotation & lock)
-                    isCameraAnimating.current = true;
-                    stopAutoRotate();
+                    // 2. Prepare Animation Data (Use Explore Marker Overlay to avoid global re-render crash)
+                    const pinMemory = memories.find(m => m.id === pinId);
+                    const isMyPin = pinMemory?.creatorId === currentUserId;
+                    const pinAvatar = isMyPin ? avatarUri : (pinMemory?.creatorId ? authorAvatars[pinMemory.creatorId] : null);
+                    const pinColorHex = isMyPin
+                        ? (colorMap[(pinColor || 'orange').toLowerCase()] || '#FF8C00')
+                        : (authorColors[pinMemory?.creatorId || ''] || pinMemory?.pinColor || '#FF8C00');
 
-                    // 3. Fly to location (MATCH EXPLORE STYLE: No Zoom)
-                    cameraRef.current?.setCamera({
-                        centerCoordinate: location,
-                        animationDuration: 2000,
-                        animationMode: 'flyTo',
-                    });
+                    // Set Overlay (Starts Animation Sequence immediately - 2000ms delay built-in)
+                    setSelectedExplorePlace({
+                        id: `pin-anim-${pinId}`,
+                        text: pinMemory?.title || 'Pin',
+                        place_name: pinMemory?.description || '',
+                        center: location,
+                        context: [],
+                        properties: {
+                            avatarUri: pinAvatar,
+                            ringColor: pinColorHex
+                        }
+                    } as any);
 
-                    // 4. Trigger Pulse Animation
-                    setPulsingPinId(pinId);
-                    setTimeout(() => setPulsingPinId(null), 2800); // Stop pulse when card opens
-
-                    // 5. Cleanup Camera State
+                    // 3. Wrap Camera Sequence in Timeout (SAFE FIX for iOS Crash)
+                    // Allow 500ms for modal to close/unmount before hitting Mapbox
                     setTimeout(() => {
-                        isCameraAnimating.current = false;
-                    }, 2000);
+                        // 3a. Prepare Camera
+                        isCameraAnimating.current = true;
+                        stopAutoRotate();
 
-                    // 6. Open Destination Card
-                    setTimeout(() => {
-                        selectMemory(pinId);
-                    }, 2800); // 2800ms to match Explore Location (2000ms flight + 800ms glow)
+                        // 3b. Fly to location
+                        cameraRef.current?.setCamera({
+                            centerCoordinate: location,
+                            animationDuration: 2000,
+                            animationMode: 'flyTo',
+                        });
+
+                        // 3c. Cleanup Camera State
+                        setTimeout(() => {
+                            isCameraAnimating.current = false;
+                        }, 2000);
+
+                        // 3d. Open Destination Card
+                        // Delay 2900ms (matches handleExploreSelect timing)
+                        // CRITICAL: We DO NOT remove the overlay here. It stays until card close.
+                        setTimeout(() => {
+                            selectMemory(pinId); // Open Card
+                        }, 2900);
+
+                    }, 500); // 500ms Safety Delay
                 }}
             />
 

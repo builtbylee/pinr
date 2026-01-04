@@ -337,20 +337,133 @@ class StoryService {
     }
 
     /**
-     * Subscribe to user's stories (Real-time).
+     * Helper to parse Firestore REST API fields recursively
+     */
+    private parseFirestoreField(value: any): any {
+        if (!value) return null;
+        if (value.stringValue !== undefined) return value.stringValue;
+        if (value.integerValue !== undefined) return parseInt(value.integerValue, 10);
+        if (value.doubleValue !== undefined) return parseFloat(value.doubleValue);
+        if (value.booleanValue !== undefined) return value.booleanValue;
+        if (value.timestampValue !== undefined) return new Date(value.timestampValue).getTime();
+        if (value.geoPointValue !== undefined) return {
+            latitude: value.geoPointValue.latitude,
+            longitude: value.geoPointValue.longitude
+        };
+        if (value.arrayValue !== undefined) {
+            return (value.arrayValue.values || []).map((v: any) => this.parseFirestoreField(v));
+        }
+        if (value.mapValue !== undefined) {
+            const map: any = {};
+            const fields = value.mapValue.fields || {};
+            for (const key in fields) {
+                map[key] = this.parseFirestoreField(fields[key]);
+            }
+            return map;
+        }
+        return null;
+    }
+
+    /**
+     * Subscribe to user's stories (Real-time) with iOS Fail-Fast
      */
     subscribeToUserStories(userId: string, callback: (stories: Story[]) => void): () => void {
-        return firestore()
+        const { Platform } = require('react-native');
+        let hasReceivedSnapshot = false;
+        let timeoutId: NodeJS.Timeout | null = null;
+        let unsubscribeSnapshot: () => void;
+
+        // SAFE FIX: Fail fast on iOS to avoid startup hang
+        const timeoutMs = Platform.OS === 'ios' ? 2500 : 10000;
+
+        timeoutId = setTimeout(async () => {
+            if (!hasReceivedSnapshot) {
+                console.warn(`[StoryService] ⚠️ Stories subscription timeout after ${timeoutMs}ms, trying REST API...`);
+                try {
+                    const auth = require('@react-native-firebase/auth').default;
+                    const currentUser = auth().currentUser;
+
+                    if (currentUser) {
+                        const token = await currentUser.getIdToken(true);
+                        const projectId = 'days-c4ad4'; // Hardcoded ID for consistency with other services
+
+                        // Structured Query for Stories by Creator
+                        const queryBody = {
+                            structuredQuery: {
+                                from: [{ collectionId: STORIES_COLLECTION }],
+                                where: {
+                                    fieldFilter: {
+                                        field: { fieldPath: 'creatorId' },
+                                        op: 'EQUAL',
+                                        value: { stringValue: userId }
+                                    }
+                                },
+                                orderBy: [
+                                    {
+                                        field: { fieldPath: 'createdAt' },
+                                        direction: 'DESCENDING'
+                                    }
+                                ]
+                            }
+                        };
+
+                        const url = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents:runQuery`;
+                        const response = await fetch(url, {
+                            method: 'POST',
+                            headers: {
+                                'Authorization': `Bearer ${token}`,
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify(queryBody)
+                        });
+
+                        if (response.ok) {
+                            const results = await response.json();
+                            console.log(`[StoryService] ✅ REST query succeeded, found ${results.length - 1} possible stories`); // -1 because runQuery often returns a readTime only object at end
+
+                            const stories: Story[] = [];
+                            for (const result of results) {
+                                if (result.document) {
+                                    const doc = result.document;
+                                    const pathParts = doc.name.split('/');
+                                    const id = pathParts[pathParts.length - 1];
+
+                                    const fields = doc.fields;
+                                    const storyData: any = { id };
+                                    for (const key in fields) {
+                                        storyData[key] = this.parseFirestoreField(fields[key]);
+                                    }
+                                    stories.push(storyData as Story);
+                                }
+                            }
+
+                            hasReceivedSnapshot = true;
+                            callback(stories);
+
+                        } else {
+                            console.error('[StoryService] ❌ REST query failed:', response.status);
+                        }
+                    }
+                } catch (e) {
+                    console.error('[StoryService] ❌ REST query error:', e);
+                }
+            }
+        }, timeoutMs);
+
+        unsubscribeSnapshot = firestore()
             .collection(STORIES_COLLECTION)
             .where('creatorId', '==', userId)
             .orderBy('createdAt', 'desc')
             .onSnapshot(
                 (snapshot) => {
+                    hasReceivedSnapshot = true;
+                    if (timeoutId) clearTimeout(timeoutId);
+
                     const stories = snapshot.docs.map(doc => doc.data() as Story);
+                    // console.log('[StoryService] Real-time snapshot received:', stories.length);
                     callback(stories);
                 },
                 (error: any) => {
-                    // permission-denied is expected when user logs out while subscribed
                     if (error?.code === 'firestore/permission-denied') {
                         console.log('[StoryService] Subscription ended (user logged out)');
                     } else {
@@ -358,6 +471,11 @@ class StoryService {
                     }
                 }
             );
+
+        return () => {
+            if (timeoutId) clearTimeout(timeoutId);
+            unsubscribeSnapshot();
+        };
     }
 }
 

@@ -15,11 +15,11 @@
 		8115A02E9A1435FC64EDAA11 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 281B46DC39C9AAE3E8024221 /* PrivacyInfo.xcprivacy */; };
 		880C3F5C73B44B79A593B2C7 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 88A5A2E20E324E6D9E3A1879 /* GoogleService-Info.plist */; };
 		BB2F792D24A3F905000567C9 /* Expo.plist in Resources */ = {isa = PBXBuildFile; fileRef = BB2F792C24A3F905000567C9 /* Expo.plist */; };
+		C8718CCEF8B44C588FE41B75 /* FirebaseEarlyConfig.m in Sources */ = {isa = PBXBuildFile; fileRef = E5CFEFF6DFB848FB8A0460C5 /* FirebaseEarlyConfig.m */; };
 		DAE054247A6645D7B4AE6D19 /* OneSignalNotificationServiceExtension.appex in Copy Files */ = {isa = PBXBuildFile; fileRef = C5FE8B36467E476FA3A6DBC2 /* OneSignalNotificationServiceExtension.appex */; };
 		E6F7ADEC8E034D38BBCA0E72 /* FirebaseEarlyConfig.m in Sources */ = {isa = PBXBuildFile; fileRef = 5BB605162F1F4D39947641B0 /* FirebaseEarlyConfig.m */; };
 		E842E5312AAE49188D5B5F74 /* NotificationService.m in Sources */ = {isa = PBXBuildFile; fileRef = 0513AC77CACA4771A41EDD19 /* NotificationService.m */; };
 		F11748422D0307B40044C1D9 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = F11748412D0307B40044C1D9 /* AppDelegate.swift */; };
-		C8718CCEF8B44C588FE41B75 /* FirebaseEarlyConfig.m in Sources */ = {isa = PBXBuildFile; fileRef = E5CFEFF6DFB848FB8A0460C5 /* FirebaseEarlyConfig.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -66,9 +66,9 @@
 		BB2F792C24A3F905000567C9 /* Expo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Expo.plist; sourceTree = "<group>"; };
 		C1923859C233E3F3B1F784A6 /* Pods_Pinr.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_Pinr.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		C5FE8B36467E476FA3A6DBC2 /* OneSignalNotificationServiceExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = undefined; name = OneSignalNotificationServiceExtension.appex; path = OneSignalNotificationServiceExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		E5CFEFF6DFB848FB8A0460C5 /* FirebaseEarlyConfig.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = FirebaseEarlyConfig.m; path = Pinr/FirebaseEarlyConfig.m; sourceTree = "<group>"; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
 		F11748412D0307B40044C1D9 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = Pinr/AppDelegate.swift; sourceTree = "<group>"; };
-		E5CFEFF6DFB848FB8A0460C5 /* FirebaseEarlyConfig.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = FirebaseEarlyConfig.m; path = Pinr/FirebaseEarlyConfig.m; sourceTree = "<group>"; };
 		F11748442D0722820044C1D9 /* Pinr-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = "Pinr-Bridging-Header.h"; path = "Pinr/Pinr-Bridging-Header.h"; sourceTree = "<group>"; };
 		F3FCB1F3E88198DA4F3FA7A5 /* Pods-Pinr.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Pinr.debug.xcconfig"; path = "Target Support Files/Pods-Pinr/Pods-Pinr.debug.xcconfig"; sourceTree = "<group>"; };
 /* End PBXFileReference section */

@@ -152,11 +152,14 @@ export const subscribeToPins = (
         .then(() => {
             console.log('[Firestore] Firestore ready, subscribing to pins...');
 
-            // Set timeout: if no snapshot after 10 seconds, try REST API query fallback
+            // Set timeout: if no snapshot after 10s (Android) or 2.5s (iOS), call REST fallback
+            // SAFE FIX: Fail fast on iOS to avoid startup hang
+            const timeoutMs = Platform.OS === 'ios' ? 2500 : 10000;
+
             timeoutId = setTimeout(async () => {
                 if (!hasReceivedSnapshot) {
-                    console.warn('[Firestore] ⚠️ Pins subscription timeout after 10s, trying REST API query...');
-                    Alert.alert('Debug: Pins Timeout', 'SDK timed out, trying REST...');
+                    console.warn(`[Firestore] ⚠️ Pins subscription timeout after ${timeoutMs}ms, trying REST API query...`);
+                    // Alert.alert('Debug: Pins Timeout', 'SDK timed out, trying REST...');
                     try {
                         // Use REST API to query pins collection
                         const auth = require('@react-native-firebase/auth').default;

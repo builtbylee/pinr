@@ -190,6 +190,18 @@ export default function RootLayout() {
               // Profile validation is for data loading, not authentication
               setSession(userId);
 
+              // SYNC WITH GLOBAL STORE (Redundancy for Startup)
+              if (profile) {
+                const store = useMemoryStore.getState();
+                store.setUsername(profile.username);
+                store.setAvatarUri(profile.avatarUrl || null);
+                store.setBio(profile.bio || null);
+                if (profile.pinColor) store.setPinColor(profile.pinColor);
+                if (profile.friends) store.setFriends(profile.friends);
+                if (profile.bucketList) store.setBucketList(profile.bucketList);
+                console.log('[Layout] ✅ Synced initial profile to MemoryStore');
+              }
+
               if (!profile || !profile.username || profile.username === 'Unknown') {
                 console.warn('[Layout] ⚠️ Profile validation failed - profile is null, missing username, or Unknown');
                 console.warn('[Layout] This may indicate an orphaned auth session or Firestore issue');

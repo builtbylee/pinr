@@ -126,7 +126,6 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                         setFriendBio(profile.bio || null);
                         setFriendHidePinsFrom(profile.hidePinsFrom || []);
                     } else {
-                        // For own profile, fetch pinColor from Firestore to ensure consistency
                         if (profile.pinColor) {
                             // Normalize pinColor to lowercase for consistent lookup
                             const normalizedColor = profile.pinColor.toLowerCase().trim();
@@ -134,10 +133,19 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                             useMemoryStore.getState().setPinColor(normalizedColor);
                         }
                     }
-                    // Load Bucket List (fallback to legacy 'triplist' if present)
+
+                    // Load Bucket List (prefer store for self, otherwise profile)
                     // @ts-ignore - 'triplist' is legacy field
                     const legacyList = profile.triplist as BucketListItem[] | undefined;
-                    setBucketList(profile.bucketList || legacyList || []);
+                    const fetchedList = profile.bucketList || legacyList || [];
+
+                    if (isMe) {
+                        // For me, rely on store if available (synced by subscription), else fetch
+                        const storeList = useMemoryStore.getState().bucketList;
+                        setBucketList((storeList && storeList.length > 0) ? storeList : fetchedList);
+                    } else {
+                        setBucketList(fetchedList);
+                    }
 
                     // Streak (Only relevant to display? Maybe add to stats)
                 }
@@ -146,7 +154,14 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
     }, [visible, userId, isMe, refreshKey]);
 
     // Stories Logic
-    const [stories, setStories] = useState<Story[]>([]);
+    // For own profile, try store first (synced in bg), but fallback to local fetch if store is empty (redundancy)
+    const storeStories = useMemoryStore(state => state.stories);
+    const [localStories, setLocalStories] = useState<Story[]>([]);
+
+    // UI logic: If I have store stories, use them. If not, use local stories (which are fetched on mount of this modal)
+    // This handles the case where useDataSubscriptions might have timed out or auth wasn't ready, but now we retry.
+    const stories = (isMe && storeStories && storeStories.length > 0) ? storeStories : localStories;
+
     const [isStoryEditorVisible, setIsStoryEditorVisible] = useState(false);
     const [editingStory, setEditingStory] = useState<Story | null>(null);
     const [isEditProfileVisible, setIsEditProfileVisible] = useState(false);
@@ -154,7 +169,17 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
 
     useEffect(() => {
         if (visible && userId) {
-            const unsubscribe = storyService.subscribeToUserStories(userId, setStories);
+            // If it's me, useDataSubscriptions handles the main sync, but we subscription here for real-time updates while modal is open?
+            // Actually, keep local subscription for Friends, but for Me rely on store OR subscription here is fine too.
+            // If we rely on store for "Me", we don't strictly need this if store sync is robust.
+            // BUT, to be safe for "Friends", we definitely need this.
+            // And for "Me", redundant subscription is okay or we can skip if isMe.
+            // Let's keep it for everyone to ensure latest data, BUT initialize with store data to prevent empty flash.
+
+            const unsubscribe = storyService.subscribeToUserStories(userId, (data) => {
+                setLocalStories(data);
+                // If isMe, also update store? No, useDataSubscriptions does that.
+            });
             return () => unsubscribe();
         }
     }, [visible, userId]);
@@ -287,9 +312,9 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                 styles.cardContainer,
                 animatedStyle,
                 {
-                    marginTop: insets.top + 10,
-                    // On Android, we need a fixed height for the flex:1 children to expand
-                    height: Platform.OS === 'android' ? height - insets.top - insets.bottom - 40 : undefined,
+                    marginBottom: 0,
+                    // Use fixed height for both platforms to support flex:1 Tabbed Layout
+                    height: height - insets.top - insets.bottom - 40,
                     maxHeight: height - insets.top - insets.bottom - 40
                 }
             ]}>
@@ -313,7 +338,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                 </View>
 
                 <View
-                    style={[styles.glassCard, { backgroundColor: 'rgba(255,255,255,0.95)', paddingTop: 50, alignItems: 'center', paddingBottom: 16 }]}
+                    style={[styles.glassCard, { flex: 1, backgroundColor: 'rgba(255,255,255,0.95)', paddingTop: 50, alignItems: 'center', paddingBottom: 16 }]}
                 >
 
 
@@ -361,311 +386,204 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                         </View>
                     </View>
 
-                    {/* ===== ANDROID: TABBED LAYOUT ===== */}
-                    {Platform.OS === 'android' ? (
-                        <>
-                            {/* Tab Bar */}
-                            <View style={styles.tabBar}>
-                                <TouchableOpacity
-                                    style={[styles.tab, activeTab === 'pins' && styles.activeTab]}
-                                    onPress={() => handleTabPress('pins')}
-                                >
-                                    <Text style={[styles.tabText, activeTab === 'pins' && styles.activeTabText]}>Pins</Text>
-                                </TouchableOpacity>
-                                <TouchableOpacity
-                                    style={[styles.tab, activeTab === 'journeys' && styles.activeTab]}
-                                    onPress={() => handleTabPress('journeys')}
-                                >
-                                    <Text style={[styles.tabText, activeTab === 'journeys' && styles.activeTabText]}>Journeys</Text>
-                                </TouchableOpacity>
-                                <TouchableOpacity
-                                    style={[styles.tab, activeTab === 'bucketlist' && styles.activeTab]}
-                                    onPress={() => handleTabPress('bucketlist')}
-                                >
-                                    <Text style={[styles.tabText, activeTab === 'bucketlist' && styles.activeTabText]}>Bucket List</Text>
-                                </TouchableOpacity>
-                            </View>
-
-                            {/* Tab Content - Swipeable Horizontal Pager */}
-                            <ScrollView
-                                ref={tabScrollViewRef}
-                                horizontal
-                                pagingEnabled
-                                showsHorizontalScrollIndicator={false}
-                                onMomentumScrollEnd={handleTabScroll}
-                                style={{ flex: 1, width: '100%' }}
+                    {/* ===== TABBED LAYOUT (Universal) ===== */}
+                    <>
+                        {/* Tab Bar */}
+                        <View style={styles.tabBar}>
+                            <TouchableOpacity
+                                style={[styles.tab, activeTab === 'pins' && styles.activeTab]}
+                                onPress={() => handleTabPress('pins')}
                             >
-                                {/* PINS TAB */}
-                                <ScrollView style={{ width: modalContentWidth }} contentContainerStyle={styles.tabContent} showsVerticalScrollIndicator={false}>
-                                    <View style={styles.gridContainer}>
-                                        {userPins.length > 0 ? (
-                                            userPins.map((pin, index) => (
+                                <Text style={[styles.tabText, activeTab === 'pins' && styles.activeTabText]}>Pins</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={[styles.tab, activeTab === 'journeys' && styles.activeTab]}
+                                onPress={() => handleTabPress('journeys')}
+                            >
+                                <Text style={[styles.tabText, activeTab === 'journeys' && styles.activeTabText]}>Journeys</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={[styles.tab, activeTab === 'bucketlist' && styles.activeTab]}
+                                onPress={() => handleTabPress('bucketlist')}
+                            >
+                                <Text style={[styles.tabText, activeTab === 'bucketlist' && styles.activeTabText]}>Bucket List</Text>
+                            </TouchableOpacity>
+                        </View>
+
+                        {/* Tab Content - Swipeable Horizontal Pager */}
+                        <ScrollView
+                            ref={tabScrollViewRef}
+                            horizontal
+                            pagingEnabled
+                            showsHorizontalScrollIndicator={false}
+                            onMomentumScrollEnd={handleTabScroll}
+                            style={{ flex: 1, width: '100%' }}
+                        >
+                            {/* PINS TAB */}
+                            <ScrollView style={{ width: modalContentWidth }} contentContainerStyle={styles.tabContent} showsVerticalScrollIndicator={false}>
+                                <View style={styles.gridContainer}>
+                                    {userPins.length > 0 ? (
+                                        userPins.map((pin, index) => (
+                                            <Pressable
+                                                key={`pin-${pin.id || index}`}
+                                                style={({ pressed }) => [
+                                                    styles.gridCard,
+                                                    Platform.OS === 'ios' && pressed && { opacity: 0.7 }
+                                                ]}
+                                                android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+                                                onPress={() => {
+                                                    if (onViewPin && pin.location) {
+                                                        onViewPin(pin.id, pin.location);
+                                                    } else {
+                                                        handleFilter();
+                                                    }
+                                                }}
+                                            >
+                                                {pin.imageUris?.[0] ? (
+                                                    <Image source={{ uri: pin.imageUris[0] }} style={styles.gridCardImage} contentFit="cover" />
+                                                ) : (
+                                                    <View style={[styles.gridCardImage, { backgroundColor: '#eee', justifyContent: 'center', alignItems: 'center' }]}>
+                                                        <Feather name="map-pin" size={24} color="#ccc" />
+                                                    </View>
+                                                )}
+                                                <View style={styles.gridCardOverlay}>
+                                                    {/* Floating Pill Title */}
+                                                    {Platform.OS === 'ios' ? (
+                                                        <BlurView style={styles.gridCardTitleContainer} intensity={30} tint="dark">
+                                                            <Text style={styles.gridCardTitle} numberOfLines={2}>{pin.title || pin.locationName}</Text>
+                                                        </BlurView>
+                                                    ) : (
+                                                        <View style={[styles.gridCardTitleContainer, { backgroundColor: 'rgba(0,0,0,0.6)' }]}>
+                                                            <Text style={styles.gridCardTitle} numberOfLines={2}>{pin.title || pin.locationName}</Text>
+                                                        </View>
+                                                    )}
+                                                </View>
+                                            </Pressable>
+                                        ))
+                                    ) : (
+                                        <View style={styles.emptyTabState}>
+                                            <Feather name="map-pin" size={32} color="#ccc" />
+                                            <Text style={styles.emptyTabText}>No pins yet</Text>
+                                            <Text style={styles.emptyTabSubtext}>Start exploring to add pins!</Text>
+                                        </View>
+                                    )}
+                                </View>
+                            </ScrollView>
+
+                            {/* JOURNEYS TAB */}
+                            <ScrollView style={{ width: modalContentWidth }} contentContainerStyle={styles.tabContent} showsVerticalScrollIndicator={false}>
+                                <View style={styles.gridContainer}>
+                                    {stories.length > 0 ? (
+                                        stories.map(story => {
+                                            const coverPin = userPins.find(p => p.id === story.coverPinId) || userPins.find(p => p.id === story.pinIds[0]);
+                                            return (
                                                 <Pressable
-                                                    key={`pin-${pin.id || index}`}
+                                                    key={story.id}
                                                     style={({ pressed }) => [
                                                         styles.gridCard,
                                                         Platform.OS === 'ios' && pressed && { opacity: 0.7 }
                                                     ]}
                                                     android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-                                                    onPress={() => {
-                                                        if (onViewPin && pin.location) {
-                                                            onViewPin(pin.id, pin.location);
-                                                        } else {
-                                                            handleFilter();
-                                                        }
-                                                    }}
+                                                    onPress={() => handlePlay(story)}
+                                                    onLongPress={() => isMe && handleEditStory(story)}
                                                 >
-                                                    {pin.imageUris?.[0] ? (
-                                                        <Image source={{ uri: pin.imageUris[0] }} style={styles.gridCardImage} contentFit="cover" />
-                                                    ) : (
-                                                        <View style={[styles.gridCardImage, { backgroundColor: '#eee', justifyContent: 'center', alignItems: 'center' }]}>
-                                                            <Feather name="map-pin" size={24} color="#ccc" />
-                                                        </View>
-                                                    )}
+                                                    <Image
+                                                        source={{ uri: coverPin?.imageUris?.[0] || 'https://via.placeholder.com/150' }}
+                                                        style={styles.gridCardImage}
+                                                        contentFit="cover"
+                                                    />
                                                     <View style={styles.gridCardOverlay}>
-                                                        {/* Floating Pill Title */}
                                                         {Platform.OS === 'ios' ? (
                                                             <BlurView style={styles.gridCardTitleContainer} intensity={30} tint="dark">
-                                                                <Text style={styles.gridCardTitle} numberOfLines={2}>{pin.title || pin.locationName}</Text>
+                                                                <Text style={styles.gridCardTitle} numberOfLines={1}>{story.title}</Text>
                                                             </BlurView>
                                                         ) : (
                                                             <View style={[styles.gridCardTitleContainer, { backgroundColor: 'rgba(0,0,0,0.6)' }]}>
-                                                                <Text style={styles.gridCardTitle} numberOfLines={2}>{pin.title || pin.locationName}</Text>
+                                                                <Text style={styles.gridCardTitle} numberOfLines={1}>{story.title}</Text>
                                                             </View>
                                                         )}
                                                     </View>
+                                                    {isMe && (
+                                                        <TouchableOpacity
+                                                            style={styles.deleteStoryBtn}
+                                                            onPress={() => handleDeleteStory(story.id)}
+                                                        >
+                                                            <Feather name="x" size={12} color="white" />
+                                                        </TouchableOpacity>
+                                                    )}
                                                 </Pressable>
-                                            ))
-                                        ) : (
-                                            <View style={styles.emptyTabState}>
-                                                <Feather name="map-pin" size={32} color="#ccc" />
-                                                <Text style={styles.emptyTabText}>No pins yet</Text>
-                                                <Text style={styles.emptyTabSubtext}>Start exploring to add pins!</Text>
-                                            </View>
-                                        )}
-                                    </View>
-                                </ScrollView>
+                                            );
+                                        })
+                                    ) : (
+                                        <View style={styles.emptyTabState}>
+                                            <Feather name="book-open" size={32} color="#ccc" />
+                                            <Text style={styles.emptyTabText}>No journeys yet</Text>
+                                            <Text style={styles.emptyTabSubtext}>Create a journey from your pins!</Text>
+                                        </View>
+                                    )}
+                                </View>
+                            </ScrollView>
 
-                                {/* JOURNEYS TAB */}
-                                <ScrollView style={{ width: modalContentWidth }} contentContainerStyle={styles.tabContent} showsVerticalScrollIndicator={false}>
-                                    <View style={styles.gridContainer}>
-                                        {stories.length > 0 ? (
-                                            stories.map(story => {
-                                                const coverPin = userPins.find(p => p.id === story.coverPinId) || userPins.find(p => p.id === story.pinIds[0]);
-                                                return (
-                                                    <Pressable
-                                                        key={story.id}
-                                                        style={({ pressed }) => [
-                                                            styles.gridCard,
-                                                            Platform.OS === 'ios' && pressed && { opacity: 0.7 }
-                                                        ]}
-                                                        android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-                                                        onPress={() => handlePlay(story)}
-                                                        onLongPress={() => isMe && handleEditStory(story)}
-                                                    >
-                                                        <Image
-                                                            source={{ uri: coverPin?.imageUris?.[0] || 'https://via.placeholder.com/150' }}
-                                                            style={styles.gridCardImage}
-                                                            contentFit="cover"
-                                                        />
-                                                        <View style={styles.gridCardOverlay}>
-                                                            {Platform.OS === 'ios' ? (
-                                                                <BlurView style={styles.gridCardTitleContainer} intensity={30} tint="dark">
-                                                                    <Text style={styles.gridCardTitle} numberOfLines={1}>{story.title}</Text>
-                                                                </BlurView>
-                                                            ) : (
-                                                                <View style={[styles.gridCardTitleContainer, { backgroundColor: 'rgba(0,0,0,0.6)' }]}>
-                                                                    <Text style={styles.gridCardTitle} numberOfLines={1}>{story.title}</Text>
-                                                                </View>
-                                                            )}
-                                                        </View>
-                                                        {isMe && (
-                                                            <TouchableOpacity
-                                                                style={styles.deleteStoryBtn}
-                                                                onPress={() => handleDeleteStory(story.id)}
-                                                            >
-                                                                <Feather name="x" size={12} color="white" />
-                                                            </TouchableOpacity>
-                                                        )}
-                                                    </Pressable>
-                                                );
-                                            })
-                                        ) : (
-                                            <View style={styles.emptyTabState}>
-                                                <Feather name="book-open" size={32} color="#ccc" />
-                                                <Text style={styles.emptyTabText}>No journeys yet</Text>
-                                                <Text style={styles.emptyTabSubtext}>Create a journey from your pins!</Text>
-                                            </View>
-                                        )}
-                                    </View>
-                                </ScrollView>
-
-                                {/* BUCKET LIST TAB */}
-                                <ScrollView style={{ width: modalContentWidth }} contentContainerStyle={styles.tabContent} showsVerticalScrollIndicator={false}>
-                                    <View style={styles.gridContainer}>
-                                        {bucketList.length > 0 ? (
-                                            bucketList.map(item => (
-                                                <Pressable
-                                                    key={item.locationName}
-                                                    style={({ pressed }) => [
-                                                        styles.gridCard,
-                                                        Platform.OS === 'ios' && pressed && { opacity: 0.7 }
-                                                    ]}
-                                                    onPress={() => setSelectedBucketItem(item)}
-                                                >
-                                                    <View style={{ flex: 1 }}>
-                                                        <Image
-                                                            source={{ uri: item.imageUrl || 'https://via.placeholder.com/150' }}
-                                                            style={styles.gridCardImage}
-                                                            contentFit="cover"
-                                                        />
-                                                        <View style={styles.gridCardOverlay}>
-                                                            {Platform.OS === 'ios' ? (
-                                                                <BlurView style={styles.gridCardTitleContainer} intensity={30} tint="dark">
-                                                                    <Text style={styles.gridCardTitle} numberOfLines={2}>{item.locationName}</Text>
-                                                                </BlurView>
-                                                            ) : (
-                                                                <View style={[styles.gridCardTitleContainer, { backgroundColor: 'rgba(0,0,0,0.6)' }]}>
-                                                                    <Text style={styles.gridCardTitle} numberOfLines={2}>{item.locationName}</Text>
-                                                                </View>
-                                                            )}
-                                                        </View>
-                                                        {/* Status Badge */}
-                                                        {item.status === 'visited' && (
-                                                            <View style={[styles.statusPill, styles.pillVisited]}>
-                                                                <Text style={[styles.statusPillText, { color: 'white' }]}>VISITED</Text>
-                                                            </View>
-                                                        )}
-                                                        {item.status === 'booked' && (
-                                                            <View style={[styles.statusPill, styles.pillBooked]}>
-                                                                <Text style={styles.statusPillText}>BOOKED</Text>
-                                                            </View>
-                                                        )}
-                                                        {item.status === 'wishlist' && (
-                                                            <View style={[styles.statusPill, styles.pillWishlist]}>
-                                                                <Text style={[styles.statusPillText, { color: '#666' }]}>WISHLIST</Text>
+                            {/* BUCKET LIST TAB */}
+                            <ScrollView style={{ width: modalContentWidth }} contentContainerStyle={styles.tabContent} showsVerticalScrollIndicator={false}>
+                                <View style={styles.gridContainer}>
+                                    {bucketList.length > 0 ? (
+                                        bucketList.map(item => (
+                                            <Pressable
+                                                key={item.locationName}
+                                                style={({ pressed }) => [
+                                                    styles.gridCard,
+                                                    Platform.OS === 'ios' && pressed && { opacity: 0.7 }
+                                                ]}
+                                                onPress={() => setSelectedBucketItem(item)}
+                                            >
+                                                <View style={{ flex: 1 }}>
+                                                    <Image
+                                                        source={{ uri: item.imageUrl || 'https://via.placeholder.com/150' }}
+                                                        style={styles.gridCardImage}
+                                                        contentFit="cover"
+                                                    />
+                                                    <View style={styles.gridCardOverlay}>
+                                                        {Platform.OS === 'ios' ? (
+                                                            <BlurView style={styles.gridCardTitleContainer} intensity={30} tint="dark">
+                                                                <Text style={styles.gridCardTitle} numberOfLines={2}>{item.locationName}</Text>
+                                                            </BlurView>
+                                                        ) : (
+                                                            <View style={[styles.gridCardTitleContainer, { backgroundColor: 'rgba(0,0,0,0.6)' }]}>
+                                                                <Text style={styles.gridCardTitle} numberOfLines={2}>{item.locationName}</Text>
                                                             </View>
                                                         )}
                                                     </View>
-                                                </Pressable>
-                                            ))
-                                        ) : (
-                                            <View style={styles.emptyTabState}>
-                                                <Feather name="flag" size={32} color="#ccc" />
-                                                <Text style={styles.emptyTabText}>Empty Bucket List</Text>
-                                                <Text style={styles.emptyTabSubtext}>Add places you want to visit!</Text>
-                                            </View>
-                                        )}
-                                    </View>
-                                </ScrollView>
-                            </ScrollView>
-                        </>
-                    ) : (
-                        /* ===== iOS: ORIGINAL HORIZONTAL LAYOUT ===== */
-                        <>
-                            {/* View Pins Button */}
-                            <View style={{ flexDirection: 'row', gap: 8, marginTop: 12, marginBottom: 16, paddingHorizontal: 16 }}>
-                                <TouchableOpacity
-                                    style={[styles.actionButton, styles.secondaryButton, { flex: 1 }]}
-                                    onPress={handleFilter}
-                                >
-                                    <Feather name="globe" size={20} color="#1a1a1a" />
-                                    <Text style={styles.secondaryButtonText}>View Pins</Text>
-                                </TouchableOpacity>
-
-                                {!isMe && userId && (
-                                    <TouchableOpacity
-                                        style={[styles.actionButton, styles.secondaryButton, styles.iconOnlyButton]}
-                                        onPress={handleToggleHide}
-                                    >
-                                        <Feather
-                                            name={hiddenFriendIds.includes(userId) ? 'eye-off' : 'eye'}
-                                            size={22}
-                                            color={hiddenFriendIds.includes(userId) ? '#999' : '#1a1a1a'}
-                                        />
-                                    </TouchableOpacity>
-                                )}
-                            </View>
-
-                            {/* Horizontal Scroll */}
-                            <ScrollView
-                                horizontal
-                                showsHorizontalScrollIndicator={false}
-                                style={{ flexGrow: 0, marginBottom: 16 }}
-                                contentContainerStyle={{ paddingHorizontal: 16, gap: 12 }}
-                            >
-                                {/* Bucket List Items */}
-                                {bucketList.map((item, index) => (
-                                    <TouchableOpacity
-                                        key={`bucket-${index}`}
-                                        style={styles.storyCard}
-                                        onPress={() => setSelectedBucketItem(item)}
-                                    >
-                                        {item.imageUrl ? (
-                                            <Image source={{ uri: item.imageUrl }} style={styles.storyCover} contentFit="cover" />
-                                        ) : (
-                                            <View style={[styles.storyCover, { backgroundColor: '#eee', justifyContent: 'center', alignItems: 'center' }]}>
-                                                <Feather name="map-pin" size={24} color="#ccc" />
-                                            </View>
-                                        )}
-                                        <View style={[
-                                            styles.statusPill,
-                                            item.status === 'booked' ? styles.pillBooked :
-                                                item.status === 'visited' ? styles.pillVisited : styles.pillWishlist
-                                        ]}>
-                                            <Text style={[
-                                                styles.statusPillText,
-                                                (item.status === 'booked' || item.status === 'visited') ? { color: 'white' } : { color: '#1F2937' }
-                                            ]}>
-                                                {item.status === 'visited' ? 'Visited' : item.status === 'booked' ? 'Booked' : 'Wishlist'}
-                                            </Text>
+                                                    {/* Status Badge */}
+                                                    {item.status === 'visited' && (
+                                                        <View style={[styles.statusPill, styles.pillVisited]}>
+                                                            <Text style={[styles.statusPillText, { color: 'white' }]}>VISITED</Text>
+                                                        </View>
+                                                    )}
+                                                    {item.status === 'booked' && (
+                                                        <View style={[styles.statusPill, styles.pillBooked]}>
+                                                            <Text style={styles.statusPillText}>BOOKED</Text>
+                                                        </View>
+                                                    )}
+                                                    {item.status === 'wishlist' && (
+                                                        <View style={[styles.statusPill, styles.pillWishlist]}>
+                                                            <Text style={[styles.statusPillText, { color: '#666' }]}>WISHLIST</Text>
+                                                        </View>
+                                                    )}
+                                                </View>
+                                            </Pressable>
+                                        ))
+                                    ) : (
+                                        <View style={styles.emptyTabState}>
+                                            <Feather name="flag" size={32} color="#ccc" />
+                                            <Text style={styles.emptyTabText}>Empty Bucket List</Text>
+                                            <Text style={styles.emptyTabSubtext}>Add places you want to visit!</Text>
                                         </View>
-                                        <View style={styles.storyOverlay}>
-                                            <Text style={styles.storyTitle} numberOfLines={2}>{item.locationName}</Text>
-                                        </View>
-                                    </TouchableOpacity>
-                                ))}
-
-                                {/* Journey Stories */}
-                                {stories.map(story => {
-                                    const coverPin = userPins.find(p => p.id === story.coverPinId) || userPins.find(p => p.id === story.pinIds[0]);
-                                    return (
-                                        <TouchableOpacity
-                                            key={story.id}
-                                            style={styles.storyCard}
-                                            onPress={() => handlePlay(story)}
-                                            onLongPress={() => isMe && handleEditStory(story)}
-                                        >
-                                            <Image
-                                                source={{ uri: coverPin?.imageUris?.[0] || 'https://via.placeholder.com/150' }}
-                                                style={styles.storyCover}
-                                            />
-                                            <View style={styles.storyOverlay}>
-                                                <Text style={styles.storyTitle} numberOfLines={1}>{story.title}</Text>
-                                                <Text style={styles.storyCount}>{story.pinIds.length} Pins</Text>
-                                            </View>
-                                            {isMe && (
-                                                <TouchableOpacity
-                                                    style={styles.deleteStoryBtn}
-                                                    onPress={() => handleDeleteStory(story.id)}
-                                                >
-                                                    <Feather name="x" size={12} color="white" />
-                                                </TouchableOpacity>
-                                            )}
-                                        </TouchableOpacity>
-                                    );
-                                })}
-
-                                {/* Empty State if no items */}
-                                {bucketList.length === 0 && stories.length === 0 && (
-                                    <View style={[styles.emptyStoryCard, { width: 120, height: 160 }]}>
-                                        <Feather name="map" size={24} color="#ccc" />
-                                        <Text style={styles.emptyStoryText}>Explore to add</Text>
-                                    </View>
-                                )}
+                                    )}
+                                </View>
                             </ScrollView>
-                        </>
-                    )}
+                        </ScrollView>
+                    </>
 
                 </View>
             </Animated.View >
@@ -810,7 +728,7 @@ const styles = StyleSheet.create({
         elevation: 10,
     },
     glassCard: {
-        flex: 1, // Ensure it fills the card container
+        // flex: 1, // Removed to prevent collapse on iOS auto-height
         width: '100%',
         paddingTop: 30, // Changed from paddingVertical to paddingTop/Bottom to allow flex children
         paddingBottom: 16,

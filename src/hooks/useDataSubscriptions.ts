@@ -53,14 +53,35 @@ export const useDataSubscriptions = (currentUserId: string | null) => {
                 hasLoaded = true;
             }
             setUserProfile(data);
-            setProfileLoaded(true); // Firestore has responded (even if null)
+            setProfileLoaded(true);
+
+            // SYNC WITH GLOBAL STORE
+            if (data) {
+                const store = useMemoryStore.getState();
+                store.setUsername(data.username);
+                store.setAvatarUri(data.avatarUrl || null);
+                store.setBio(data.bio || null);
+                if (data.pinColor) store.setPinColor(data.pinColor);
+                if (data.friends) store.setFriends(data.friends);
+                if (data.bucketList) store.setBucketList(data.bucketList);
+            }
+        });
+
+        // 2. Subscribe to User Stories (Journeys)
+        // using the new Fail-Fast logic in StoryService
+        const storyService = require('../services/StoryService').storyService;
+        const unsubscribeStories = storyService.subscribeToUserStories(currentUserId, (stories: any[]) => {
+            console.log('[useDataSubscriptions] Stories update received:', stories.length);
+            const store = useMemoryStore.getState();
+            store.setStories(stories);
         });
 
         return () => {
-            console.log('[useDataSubscriptions] Unsubscribing from profile');
+            console.log('[useDataSubscriptions] Unsubscribing from profile & stories');
             clearTimeout(safetyTimeout);
             unsubscribe();
-        }
+            unsubscribeStories();
+        };
     }, [currentUserId]);
 
     return { allPins, userProfile, profileLoaded };

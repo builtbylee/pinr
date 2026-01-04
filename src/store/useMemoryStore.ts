@@ -46,6 +46,10 @@ interface MemoryStore {
     friends: string[];
     setFriends: (friends: string[]) => void;
 
+    // Bucket List
+    bucketList: any[]; // Ideally import BucketListItem, but using any[] to avoid circular deps for now (or I will try to import it if I can find it)
+    setBucketList: (list: any[]) => void;
+
     // Game State Persistence
     activeGameId: string | null;
     setActiveGameId: (id: string | null) => void;
@@ -54,6 +58,10 @@ interface MemoryStore {
     hiddenFriendIds: string[];
     setHiddenFriendIds: (ids: string[]) => void;
     toggleHiddenFriend: (friendUid: string) => void;
+
+    // Stories (Journeys)
+    stories: any[]; // User's created journeys
+    setStories: (stories: any[]) => void;
 
     // Hidden Pins (Specific pins hidden from map)
     // Hidden Pins (Specific pins hidden from map)
@@ -87,6 +95,8 @@ export const useMemoryStore = create<MemoryStore>()(
             bio: null,
             pinColor: 'magenta',
             friends: [],
+            bucketList: [],
+            stories: [],
             activeGameId: null,
             hiddenFriendIds: [],
             hiddenPinIds: [],
@@ -125,6 +135,10 @@ export const useMemoryStore = create<MemoryStore>()(
 
             setFriends: (friends) => set({ friends }),
 
+            // Bucket List & Stories
+            setBucketList: (bucketList) => set({ bucketList }),
+            setStories: (stories) => set({ stories }),
+
             setActiveGameId: (id) => set({ activeGameId: id }),
 
             setHiddenFriendIds: (ids) => set({ hiddenFriendIds: ids }),
@@ -151,9 +165,7 @@ export const useMemoryStore = create<MemoryStore>()(
                 memories: [],
                 exploredPath: [],
                 selectedMemoryId: null,
-                // currentUserId: null, // Don't reset this here, handled by setCurrentUserId usually, but safe to do if fully logging out. 
-                // However, the caller usually sets currentUserId to null. 
-                // Let's reset purely content.
+                // currentUserId: null, // Don't reset this here
                 username: null,
                 avatarUri: null,
                 bio: null,
@@ -162,6 +174,8 @@ export const useMemoryStore = create<MemoryStore>()(
                 activeGameId: null,
                 hiddenFriendIds: [],
                 hiddenPinIds: [],
+                bucketList: [],
+                stories: [],
                 toast: { visible: false, message: '', type: 'info' }
             }),
 
