@@ -20,7 +20,7 @@ const addDiagnosticEvent = (event: string) => {
 addDiagnosticEvent('Module loaded');
 
 // Build identifier to verify OTA updates
-const BUILD_ID = 'v2-hydration-fix-0104';
+const BUILD_ID = 'v3-auth-debug-0104';
 
 import { CreationModal } from '@/src/components/CreationModal';
 import { DestinationCard } from '@/src/components/DestinationCard';
@@ -2036,6 +2036,9 @@ export default function App() {
                     </Text>
                     <Text style={{ color: '#0ff', fontSize: 11, marginBottom: 4 }}>
                         Tap to dismiss | Store: {memories.length} pins | pinsLoaded: {pinsLoaded ? 'YES' : 'NO'}
+                    </Text>
+                    <Text style={{ color: currentUserId ? '#0f0' : '#f00', fontSize: 11, marginBottom: 4 }}>
+                        Auth: {currentUserId ? '✅ User ID Present' : '❌ NO USER ID'} | Friends: {friends.length}
                     </Text>
                     <Text style={{ color: '#ff0', fontSize: 12, marginTop: 8, marginBottom: 4 }}>
                         Hydration Timeline:
