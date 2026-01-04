@@ -11,16 +11,8 @@ const log = (tag: string, msg: string) => {
 };
 log('Init', 'Index module loaded');
 
-// Diagnostic: Track events for on-screen display
-const DIAGNOSTIC_EVENTS: { time: number; event: string }[] = [];
-const addDiagnosticEvent = (event: string) => {
-    const elapsed = Date.now() - COLD_START_TIME;
-    DIAGNOSTIC_EVENTS.push({ time: elapsed, event });
-};
-addDiagnosticEvent('Module loaded');
-
 // Build identifier to verify OTA updates
-const BUILD_ID = 'v6-cluster-fix';
+const BUILD_ID = 'v7-production';
 
 import { CreationModal } from '@/src/components/CreationModal';
 import { DestinationCard } from '@/src/components/DestinationCard';
@@ -52,7 +44,7 @@ import { StreakCelebrationModal } from '@/src/components/StreakCelebrationModal'
 import { challengeService } from '@/src/services/ChallengeService';
 import { notificationService } from '@/src/services/NotificationService';
 import { useAppLocation } from '@/src/hooks/useAppLocation';
-import { useDataSubscriptions, HYDRATION_EVENTS } from '@/src/hooks/useDataSubscriptions';
+import { useDataSubscriptions } from '@/src/hooks/useDataSubscriptions';
 import { Story, storyService } from '@/src/services/StoryService';
 import { Feather } from '@expo/vector-icons';
 import Mapbox from '@rnmapbox/maps';
@@ -179,21 +171,6 @@ export default function App() {
     const { allPins, userProfile: firestoreProfile, profileLoaded, pinsLoaded } = useDataSubscriptions(currentUserId);
     log('DataSub', `useDataSubscriptions returned: allPins=${allPins.length}, profileLoaded=${profileLoaded}, pinsLoaded=${pinsLoaded}`);
 
-    // Diagnostic state for on-screen display
-    const [diagnosticInfo, setDiagnosticInfo] = useState<string[]>([`Build: ${BUILD_ID}`]);
-    const [showDiagnostic, setShowDiagnostic] = useState(true); // Show by default for debugging
-    const diagnosticUpdated = useRef(false);
-
-    // Track when pinsLoaded changes
-    useEffect(() => {
-        if (pinsLoaded && !diagnosticUpdated.current) {
-            const elapsed = Date.now() - COLD_START_TIME;
-            addDiagnosticEvent(`pinsLoaded=true (${allPins.length} pins)`);
-            setDiagnosticInfo(prev => [...prev, `+${elapsed}ms: Pins loaded (${allPins.length})`]);
-            diagnosticUpdated.current = true;
-        }
-    }, [pinsLoaded, allPins.length]);
-
     // FORCE SPLASH HIDE on Hydration
     // As soon as we have pins from disk, show the app.
     // Do not wait for Map Style or Profile Validation (which might time out).
@@ -273,11 +250,6 @@ export default function App() {
             return true;
         });
 
-        // TELEMETRY: Track visibility filter results (push to shared HYDRATION_EVENTS)
-        const elapsed = Date.now() - (typeof COLD_START_TIME !== 'undefined' ? COLD_START_TIME : Date.now());
-        HYDRATION_EVENTS.push({ time: elapsed, event: `Visibility: ${filtered.length}/${memories.length} (User=${currentUserId ? 'Y' : 'N'})` });
-        console.log(`[App] Visibility Check: Total=${memories.length}, Visible=${filtered.length}`);
-        console.log(`[App] Visibility Context: User=${currentUserId}, Friends=${friends.length}, HiddenCreators=${hiddenByCreators.length}, HiddenPins=${hiddenPinIds.length}`);
         return filtered;
     }, [memories, filteredUserId, friends, currentUserId, hiddenByCreators, hiddenPinIds, storyPinIds, pinToStoryMap, storyModeUserId]);
 
@@ -2017,58 +1989,7 @@ export default function App() {
                 onDismiss={() => setShowStreakCelebration(false)}
             />
 
-            {/* Diagnostic Overlay - Tap to dismiss */}
-            {showDiagnostic && (
-                <TouchableOpacity
-                    style={{
-                        position: 'absolute',
-                        top: 50,
-                        left: 10,
-                        right: 10,
-                        backgroundColor: 'rgba(0,0,0,0.9)',
-                        padding: 12,
-                        borderRadius: 8,
-                        zIndex: 9999,
-                        maxHeight: 400,
-                    }}
-                    onPress={() => setShowDiagnostic(false)}
-                    activeOpacity={0.9}
-                >
-                    <Text style={{ color: '#0f0', fontSize: 14, fontWeight: 'bold', marginBottom: 8 }}>
-                        🔧 DIAGNOSTIC - {BUILD_ID}
-                    </Text>
-                    <Text style={{ color: '#0ff', fontSize: 11, marginBottom: 4 }}>
-                        Tap to dismiss | Store: {memories.length} pins | pinsLoaded: {pinsLoaded ? 'YES' : 'NO'}
-                    </Text>
-                    <Text style={{ color: currentUserId ? '#0f0' : '#f00', fontSize: 11, marginBottom: 4 }}>
-                        Auth: {currentUserId ? '✅ User ID Present' : '❌ NO USER ID'} | Friends: {friends.length}
-                    </Text>
-                    <Text style={{ color: '#ff0', fontSize: 12, marginTop: 8, marginBottom: 4 }}>
-                        Hydration Timeline:
-                    </Text>
-                    {HYDRATION_EVENTS.length === 0 ? (
-                        <Text style={{ color: '#f88', fontSize: 11 }}>No events yet...</Text>
-                    ) : (
-                        HYDRATION_EVENTS.slice(-10).map((evt, i) => (
-                            <Text key={i} style={{ color: '#fff', fontSize: 10 }}>
-                                +{evt.time}ms: {evt.event}
-                            </Text>
-                        ))
-                    )}
-                    {diagnosticInfo.length > 1 && (
-                        <>
-                            <Text style={{ color: '#ff0', fontSize: 12, marginTop: 8, marginBottom: 4 }}>
-                                App Events:
-                            </Text>
-                            {diagnosticInfo.slice(1).map((info, i) => (
-                                <Text key={i} style={{ color: '#fff', fontSize: 10 }}>
-                                    {info}
-                                </Text>
-                            ))}
-                        </>
-                    )}
-                </TouchableOpacity>
-            )}
+
 
         </View >
     );
