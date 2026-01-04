@@ -1,35 +1,30 @@
 import { useState, useEffect, useRef } from 'react';
 import { subscribeToPins } from '../services/firestoreService';
 import { subscribeToUserProfile, UserProfile } from '../services/userService';
-import { Memory } from '../store/useMemoryStore';
+import { Memory, useMemoryStore } from '../store/useMemoryStore';
 
 export const useDataSubscriptions = (currentUserId: string | null) => {
     const [allPins, setAllPins] = useState<Memory[]>([]);
     const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
     const [profileLoaded, setProfileLoaded] = useState(false); // Flag to track if Firestore has responded
 
-    // 1. Subscribe to Pins
-    useEffect(() => {
-        if (!currentUserId) {
-            setAllPins([]);
-            return;
-        }
+    // Track current friends list to detect changes
+    const friendsRef = useRef<string[]>([]);
+    const pinsUnsubscribeRef = useRef<(() => void) | null>(null);
 
-        console.log('[useDataSubscriptions] Subscribing to pins...');
-        const unsubscribe = subscribeToPins((pins) => {
-            setAllPins(pins);
-        });
-
-        return () => unsubscribe();
-    }, [currentUserId]);
-
-    // 2. Subscribe to Profile
+    // 1. Subscribe to Profile (must load first to get friends list)
     useEffect(() => {
         console.log('[useDataSubscriptions] Effect triggered. currentUserId:', currentUserId);
         if (!currentUserId) {
-            console.log('[useDataSubscriptions] No user ID, resetting profile');
+            console.log('[useDataSubscriptions] No user ID, resetting profile and pins');
             setUserProfile(null);
             setProfileLoaded(false);
+            setAllPins([]);
+            friendsRef.current = [];
+            if (pinsUnsubscribeRef.current) {
+                pinsUnsubscribeRef.current();
+                pinsUnsubscribeRef.current = null;
+            }
             return;
         }
 
@@ -43,6 +38,11 @@ export const useDataSubscriptions = (currentUserId: string | null) => {
                 console.warn('[useDataSubscriptions] ⚠️ Profile load timeout after 15s, unblocking UI');
                 setProfileLoaded(true);
                 hasLoaded = true;
+                // Even on timeout, subscribe to own pins only
+                if (!pinsUnsubscribeRef.current) {
+                    console.log('[useDataSubscriptions] Subscribing to own pins only (profile timeout)');
+                    pinsUnsubscribeRef.current = subscribeToPins([], currentUserId, setAllPins);
+                }
             }
         }, 15000);
 
@@ -64,6 +64,30 @@ export const useDataSubscriptions = (currentUserId: string | null) => {
                 if (data.pinColor) store.setPinColor(data.pinColor);
                 if (data.friends) store.setFriends(data.friends);
                 if (data.bucketList) store.setBucketList(data.bucketList);
+
+                // PINS SUBSCRIPTION: Subscribe/re-subscribe when friends list changes
+                const newFriends = data.friends || [];
+                const friendsChanged = JSON.stringify(newFriends) !== JSON.stringify(friendsRef.current);
+
+                if (friendsChanged || !pinsUnsubscribeRef.current) {
+                    console.log('[useDataSubscriptions] Friends list changed or first load, (re)subscribing to pins');
+                    console.log('[useDataSubscriptions] Friends count:', newFriends.length);
+                    friendsRef.current = newFriends;
+
+                    // Unsubscribe from old pins listener
+                    if (pinsUnsubscribeRef.current) {
+                        pinsUnsubscribeRef.current();
+                    }
+
+                    // Subscribe to pins with server-side filtering (self + friends only)
+                    pinsUnsubscribeRef.current = subscribeToPins(newFriends, currentUserId, setAllPins);
+                }
+            } else {
+                // No profile data - subscribe to own pins only
+                if (!pinsUnsubscribeRef.current) {
+                    console.log('[useDataSubscriptions] No profile, subscribing to own pins only');
+                    pinsUnsubscribeRef.current = subscribeToPins([], currentUserId, setAllPins);
+                }
             }
         });
 
@@ -77,10 +101,15 @@ export const useDataSubscriptions = (currentUserId: string | null) => {
         });
 
         return () => {
-            console.log('[useDataSubscriptions] Unsubscribing from profile & stories');
+            console.log('[useDataSubscriptions] Unsubscribing from profile, pins & stories');
             clearTimeout(safetyTimeout);
             unsubscribe();
             unsubscribeStories();
+            if (pinsUnsubscribeRef.current) {
+                pinsUnsubscribeRef.current();
+                pinsUnsubscribeRef.current = null;
+            }
+            friendsRef.current = [];
         };
     }, [currentUserId]);
 
