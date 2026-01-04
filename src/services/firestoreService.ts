@@ -1,7 +1,7 @@
 // Firebase Firestore Service
 import firestore, { FirebaseFirestoreTypes } from '@react-native-firebase/firestore';
 import { Memory, PinColor } from '../store/useMemoryStore';
-import { Alert } from 'react-native';
+import { Alert, Platform } from 'react-native';
 
 // Firestore collection name
 const PINS_COLLECTION = 'pins';
