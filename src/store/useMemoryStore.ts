@@ -2,6 +2,14 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+// Instrumentation: Track cold start time
+const COLD_START_TIME = Date.now();
+const log = (msg: string) => {
+    const elapsed = Date.now() - COLD_START_TIME;
+    console.log(`[Perf +${elapsed}ms] [Store] ${msg}`);
+};
+log('Store module loaded');
+
 // Available pin colors - add more as you create new pin icons
 export const PIN_COLORS = ['magenta', 'orange', 'green', 'blue', 'cyan', 'red', 'black', 'purple', 'silver', 'white'] as const;
 export type PinColor = typeof PIN_COLORS[number];
@@ -218,6 +226,16 @@ export const useMemoryStore = create<MemoryStore>()(
                 // Persist memories (pins) for instant map load
                 memories: state.memories
             }),
+            onRehydrateStorage: () => {
+                log('⏳ AsyncStorage rehydration STARTING...');
+                return (state, error) => {
+                    if (error) {
+                        log(`❌ Rehydration ERROR: ${error}`);
+                    } else {
+                        log(`✅ Rehydration COMPLETE - memories: ${state?.memories?.length ?? 0}, friends: ${state?.friends?.length ?? 0}`);
+                    }
+                };
+            },
         }
     )
 );

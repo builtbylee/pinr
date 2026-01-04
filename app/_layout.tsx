@@ -9,6 +9,14 @@ import 'react-native-reanimated';
 import { Image } from 'expo-image';
 import * as SplashScreen from 'expo-splash-screen';
 
+// Instrumentation: Global cold start timestamp
+const COLD_START_TIME = Date.now();
+const log = (tag: string, msg: string) => {
+    const elapsed = Date.now() - COLD_START_TIME;
+    console.log(`[Perf +${elapsed}ms] [Layout:${tag}] ${msg}`);
+};
+log('Init', 'Layout module loaded');
+
 import { MAPBOX_TOKEN } from '@/src/constants/Config';
 import { onAuthStateChanged, getCurrentUser, signOut, isAnonymous } from '@/src/services/authService';
 import { useMemoryStore } from '@/src/store/useMemoryStore';
@@ -69,6 +77,7 @@ OneSignal.initialize(ONE_SIGNAL_APP_ID);
 OneSignal.Notifications.requestPermission(true);
 
 export default function RootLayout() {
+  log('Component', 'RootLayout function called');
   const [isInitializing, setIsInitializing] = useState(true);
   const [session, setSession] = useState<string | null>(null);
   const [profileValidated, setProfileValidated] = useState(false); // Track if profile loaded successfully
@@ -80,6 +89,7 @@ export default function RootLayout() {
     : [true]; // If fonts can't load, don't block the app
 
   const setCurrentUserId = useMemoryStore((state) => state.setCurrentUserId);
+  log('Component', `State: isInitializing=${isInitializing}, session=${!!session}, profileValidated=${profileValidated}`);
 
   // Check if user is banned
   const { isBanned, isChecking: isBanCheckLoading } = useBanCheck();
@@ -267,9 +277,11 @@ export default function RootLayout() {
   // Safety fallback: Force hide splash screen after 8 seconds if it hasn't hidden yet
   // This prevents the "infinity splash" issue if Mapbox or other assets fail to load.
   useEffect(() => {
+    log('Splash', 'Setting up 8s safety timeout for splash hide');
     const timeout = setTimeout(async () => {
-      console.log('[Layout] Safety timeout hit: forcing splash screen hide.');
+      log('Splash', '⚠️ SAFETY TIMEOUT HIT - forcing splash screen hide at 8s');
       await SplashScreen.hideAsync();
+      log('Splash', 'Splash screen hidden (forced)');
     }, 8000);
 
     return () => clearTimeout(timeout);

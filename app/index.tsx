@@ -3,6 +3,14 @@ import '@/src/config/firestore';
 import { Link, useRouter } from 'expo-router';
 import auth from '@react-native-firebase/auth';
 
+// Instrumentation: Global cold start timestamp
+const COLD_START_TIME = Date.now();
+const log = (tag: string, msg: string) => {
+    const elapsed = Date.now() - COLD_START_TIME;
+    console.log(`[Perf +${elapsed}ms] [Index:${tag}] ${msg}`);
+};
+log('Init', 'Index module loaded');
+
 import { CreationModal } from '@/src/components/CreationModal';
 import { DestinationCard } from '@/src/components/DestinationCard';
 import { FabMenu } from '@/src/components/FabMenu';
@@ -76,9 +84,10 @@ const MAP_STYLE_NO_LABELS = {
 
 
 export default function App() {
+    log('Component', 'App function called');
     const { memories, setMemories, selectedMemoryId, selectMemory, addMemory, addPhotoToMemory, username, setUsername, avatarUri, setAvatarUri, pinColor, setPinColor, currentUserId, friends, setFriends, hiddenFriendIds, setHiddenFriendIds, hiddenPinIds, toggleHiddenPin: toggleHiddenPinLocal, toggleHiddenFriend: toggleHiddenFriendLocal, setHiddenPinIds, userCache, setMultipleUserCache } = useMemoryStore();
     const router = useRouter();
-    console.log('[DEBUG-App] Rendering Index. currentUserId:', currentUserId);
+    log('Component', `Store state: memories=${memories.length}, currentUserId=${!!currentUserId}`);
     const [isCreationModalVisible, setIsCreationModalVisible] = useState(false);
     const [editingMemory, setEditingMemory] = useState<Memory | null>(null); // Track memory being edited
     const [contextMenuPinId, setContextMenuPinId] = useState<string | null>(null); // Pin ID for context menu
@@ -155,15 +164,20 @@ export default function App() {
     const allPinsRef = useRef<Memory[]>([]);
 
     // 0. Data Subscriptions (RESTORED)
+    log('DataSub', `Calling useDataSubscriptions with userId: ${currentUserId ? 'present' : 'null'}`);
     const { allPins, userProfile: firestoreProfile, profileLoaded, pinsLoaded } = useDataSubscriptions(currentUserId);
+    log('DataSub', `useDataSubscriptions returned: allPins=${allPins.length}, profileLoaded=${profileLoaded}, pinsLoaded=${pinsLoaded}`);
 
     // FORCE SPLASH HIDE on Hydration
     // As soon as we have pins from disk, show the app.
     // Do not wait for Map Style or Profile Validation (which might time out).
     useEffect(() => {
+        log('Splash', `pinsLoaded effect triggered: pinsLoaded=${pinsLoaded}`);
         if (pinsLoaded) {
-            console.log('[App] Pins hydrated/loaded, hiding splash screen.');
-            SplashScreen.hideAsync();
+            log('Splash', '🎉 pinsLoaded=true, HIDING SPLASH SCREEN NOW');
+            SplashScreen.hideAsync().then(() => {
+                log('Splash', '✅ SplashScreen.hideAsync() completed');
+            });
         }
     }, [pinsLoaded]);
 
