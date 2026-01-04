@@ -20,7 +20,7 @@ const addDiagnosticEvent = (event: string) => {
 addDiagnosticEvent('Module loaded');
 
 // Build identifier to verify OTA updates
-const BUILD_ID = 'v5-visibility-fix';
+const BUILD_ID = 'v6-cluster-fix';
 
 import { CreationModal } from '@/src/components/CreationModal';
 import { DestinationCard } from '@/src/components/DestinationCard';

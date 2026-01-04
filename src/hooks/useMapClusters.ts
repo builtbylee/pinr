@@ -40,12 +40,12 @@ export const useMapClusters = ({ points, bounds, zoom }: UseMapClustersProps) =>
 
     // Update clusters when bounds/zoom change
     useEffect(() => {
-        if (bounds && superclusterRef.current) {
+        if (superclusterRef.current && points.length > 0) {
             // Get clusters for current view
             try {
-                // STABILITY FIX: Cluster the entire world instead of just visible bounds.
-                // This prevents pins from disappearing when spinning the globe (bounds calculation lag).
-                // Mapbox native view handles the clipping of off-screen markers.
+                // FIX: Always use world bounds to ensure pins render immediately.
+                // Previously, we required `bounds` to be non-null, which blocked rendering
+                // until the map reported its visible bbox (could take 10+ seconds).
                 const worldBounds: BBox = [-180, -90, 180, 90];
                 const clusteredPoints = superclusterRef.current.getClusters(worldBounds, Math.floor(zoom));
                 setClusters(clusteredPoints);
@@ -53,8 +53,10 @@ export const useMapClusters = ({ points, bounds, zoom }: UseMapClustersProps) =>
                 console.warn('[useMapClusters] Failed to get clusters:', error);
                 setClusters([]);
             }
+        } else if (points.length === 0) {
+            setClusters([]);
         }
-    }, [points, zoom]); // Removed 'bounds' dependency for stability
+    }, [points, zoom]); // Note: bounds removed from dependency, using world bounds always
 
     const getLeaves = (clusterId: number, limit = 10, offset = 0) => {
         if (!superclusterRef.current) return [];
