@@ -76,7 +76,7 @@ const MAP_STYLE_NO_LABELS = {
 
 
 export default function App() {
-    const { memories, setMemories, selectedMemoryId, selectMemory, addMemory, addPhotoToMemory, username, setUsername, avatarUri, setAvatarUri, pinColor, setPinColor, currentUserId, friends, setFriends, hiddenFriendIds, setHiddenFriendIds, hiddenPinIds, toggleHiddenPin: toggleHiddenPinLocal, toggleHiddenFriend: toggleHiddenFriendLocal, setHiddenPinIds } = useMemoryStore();
+    const { memories, setMemories, selectedMemoryId, selectMemory, addMemory, addPhotoToMemory, username, setUsername, avatarUri, setAvatarUri, pinColor, setPinColor, currentUserId, friends, setFriends, hiddenFriendIds, setHiddenFriendIds, hiddenPinIds, toggleHiddenPin: toggleHiddenPinLocal, toggleHiddenFriend: toggleHiddenFriendLocal, setHiddenPinIds, userCache, setMultipleUserCache } = useMemoryStore();
     const router = useRouter();
     console.log('[DEBUG-App] Rendering Index. currentUserId:', currentUserId);
     const [isCreationModalVisible, setIsCreationModalVisible] = useState(false);
@@ -108,8 +108,28 @@ export default function App() {
 
     const cameraRef = useRef<Mapbox.Camera>(null);
     const mapRef = useRef<Mapbox.MapView>(null);
-    const [authorAvatars, setAuthorAvatars] = useState<Record<string, string>>({}); // Cache for creator avatars
-    const [authorColors, setAuthorColors] = useState<Record<string, string>>({}); // Cache for creator pin colors
+
+    // Derived from Persistent Cache
+    const authorAvatars = useMemo(() => {
+        const avatars: Record<string, string> = {};
+        if (userCache) {
+            Object.entries(userCache).forEach(([uid, data]) => {
+                if (data.avatarUrl) avatars[uid] = data.avatarUrl;
+            });
+        }
+        return avatars;
+    }, [userCache]);
+
+    const authorColors = useMemo(() => {
+        const colors: Record<string, string> = {};
+        if (userCache) {
+            Object.entries(userCache).forEach(([uid, data]) => {
+                if (data.pinColor) colors[uid] = data.pinColor;
+            });
+        }
+        return colors;
+    }, [userCache]);
+
     const [filteredUserId, setFilteredUserId] = useState<string | null>(null); // ID of user to focus on
 
     // Story Mode State
@@ -117,6 +137,7 @@ export default function App() {
     const storyModeUserId = storyModeData?.userId || null;
 
     const [pulsingPinId, setPulsingPinId] = useState<string | null>(null); // ID of pin currently pulsing in story mode
+
     const [latestNewPinId, setLatestNewPinId] = useState<string | null>(null); // Track most recent new pin for FAB Logic
     const [friendRequestCount, setFriendRequestCount] = useState(0); // For FAB badge
     const [gameInviteCount, setGameInviteCount] = useState(0); // For Games badge
@@ -134,7 +155,17 @@ export default function App() {
     const allPinsRef = useRef<Memory[]>([]);
 
     // 0. Data Subscriptions (RESTORED)
-    const { allPins, userProfile: firestoreProfile, profileLoaded } = useDataSubscriptions(currentUserId);
+    const { allPins, userProfile: firestoreProfile, profileLoaded, pinsLoaded } = useDataSubscriptions(currentUserId);
+
+    // FORCE SPLASH HIDE on Hydration
+    // As soon as we have pins from disk, show the app.
+    // Do not wait for Map Style or Profile Validation (which might time out).
+    useEffect(() => {
+        if (pinsLoaded) {
+            console.log('[App] Pins hydrated/loaded, hiding splash screen.');
+            SplashScreen.hideAsync();
+        }
+    }, [pinsLoaded]);
 
     // Clustering State
     const [mapBounds, setMapBounds] = useState<any>(null); // [minLng, minLat, maxLng, maxLat]
@@ -202,39 +233,6 @@ export default function App() {
             return true;
         });
     }, [memories, filteredUserId, friends, currentUserId, hiddenByCreators, hiddenPinIds, storyPinIds, pinToStoryMap, storyModeUserId]);
-
-    // Fetch avatars for visible memories
-    useEffect(() => {
-        const fetchAvatars = async () => {
-            const uniqueCreatorIds = new Set(visibleMemories.map(m => m.creatorId));
-            const newAvatars: Record<string, string> = { ...authorAvatars };
-            let hasNew = false;
-
-            // Ensure current user is always there
-            if (currentUserId && avatarUri) {
-                newAvatars[currentUserId] = avatarUri;
-            }
-
-            for (const uid of uniqueCreatorIds) {
-                if (!newAvatars[uid]) {
-                    // Check if friend
-                    const friendProfile = await getUserProfile(uid);
-                    if (friendProfile && friendProfile.avatarUrl) {
-                        newAvatars[uid] = friendProfile.avatarUrl;
-                        hasNew = true;
-                    }
-                }
-            }
-
-            if (hasNew) {
-                setAuthorAvatars(newAvatars);
-            }
-        };
-
-        if (visibleMemories.length > 0) {
-            fetchAvatars();
-        }
-    }, [visibleMemories, currentUserId, avatarUri]);
 
     // Convert visible memories to GeoJSON points for clustering
     const points = useMemo<Point[]>(() => {
@@ -664,6 +662,11 @@ export default function App() {
 
     // Sync Pins & Detect New Pins
     useEffect(() => {
+        if (!pinsLoaded) {
+            // Don't sync (and wipe persisted memories) until we have loaded new data
+            return;
+        }
+
         console.log('[App] allPins changed:', allPins.length, 'pins');
         if (allPins) {
             console.log('[App] Setting memories with', allPins.length, 'pins');
@@ -680,20 +683,6 @@ export default function App() {
                         // Increment badge
                         setNewPinCount(prev => prev + 1);
 
-                        // Toast
-                        try {
-                            if (Haptics && Haptics.notificationAsync) {
-                                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-                            }
-                        } catch (e) { }
-
-                        // Fallback name if creatorName missing
-                        const name = authorAvatars[pin.creatorId] ? 'A friend' : 'A friend';
-                        // Implementation note: we don't have creatorName on Memory object usually, 
-                        // and looking up profile might be async. Just use generic or try to find cached name.
-
-                        // Toast removed - push notification already informs user
-
                         // Set as target for FAB
                         setLatestNewPinId(pin.id);
                     }
@@ -707,69 +696,64 @@ export default function App() {
         } else {
             console.log('[App] allPins is null/undefined, not setting memories');
         }
-    }, [allPins, friends, hiddenFriendIds, currentUserId]);
+    }, [allPins, friends, hiddenFriendIds, currentUserId, pinsLoaded]);
 
     // Fetch profiles for memories (Fix for blank friend pins)
     useEffect(() => {
         const fetchMissingProfiles = async () => {
             const missingIds = new Set<string>();
             memories.forEach(m => {
-                // If not me, and not in cache (checking authorAvatars from state closure which might be stale in strict mode but acceptable here as we append)
-                // Better approach: Check against current state in a functional update or just fire if memories change
                 if (m.creatorId && m.creatorId !== currentUserId) {
-                    // We can't easily check 'authorAvatars' dependency here without triggering loops or stale closures.
-                    // We'll trust the set logic to merge.
                     missingIds.add(m.creatorId);
                 }
             });
 
-            // Filter out ones we already have locally (simple optimization)
-            const idsToFetch = Array.from(missingIds).filter(uid => !authorAvatars[uid]);
+            // Filter out ones we already have in PERSISTENT CACHE
+            // Also check for expiration (e.g., > 24 hours)? For now, just existence is 90% of the win.
+            // We ensure we have valid data before skipping
+            const idsToFetch = Array.from(missingIds).filter(uid => !userCache[uid]);
 
             if (idsToFetch.length === 0) return;
 
-            console.log('[App] Fetching profiles for pins:', idsToFetch.length);
+            console.log('[App] Fetching profiles for pins (missing from cache):', idsToFetch.length);
 
             const results = await Promise.all(idsToFetch.map(async (uid) => {
                 const profile = await getUserProfile(uid);
                 return { uid, profile };
             }));
 
-            setAuthorAvatars(prev => {
-                const next = { ...prev };
-                results.forEach(({ uid, profile }) => {
-                    if (profile?.avatarUrl) next[uid] = profile.avatarUrl;
-                });
-                return next;
-            });
+            // Prepare cache updates
+            const updates: Record<string, { username: string; avatarUrl: string | null; pinColor: string }> = {};
+            const creatorsHidingPins: string[] = [];
 
-            setAuthorColors(prev => {
-                const next = { ...prev };
-                results.forEach(({ uid, profile }) => {
-                    if (profile?.pinColor) {
-                        // Store lowercase to ensure consistent lookup in colorMap
-                        next[uid] = profile.pinColor.toLowerCase().trim();
+            results.forEach(({ uid, profile }) => {
+                if (profile) {
+                    updates[uid] = {
+                        username: profile.username || 'Unknown',
+                        avatarUrl: profile.avatarUrl || null,
+                        pinColor: (profile.pinColor || 'orange').toLowerCase().trim()
+                    };
+
+                    if (currentUserId && profile.hidePinsFrom?.includes(currentUserId)) {
+                        creatorsHidingPins.push(uid);
                     }
-                });
-                return next;
+                }
             });
 
-            // Check if any creators have hidden their pins from the current user
-            if (currentUserId) {
-                const creatorsHidingPins = results
-                    .filter(({ profile }) => profile?.hidePinsFrom?.includes(currentUserId))
-                    .map(({ uid }) => uid);
+            if (Object.keys(updates).length > 0) {
+                console.log('[App] Updating persistent user cache for', Object.keys(updates).length, 'users');
+                setMultipleUserCache(updates);
+            }
 
-                if (creatorsHidingPins.length > 0) {
-                    setHiddenByCreators(prev => [...new Set([...prev, ...creatorsHidingPins])]);
-                }
+            if (creatorsHidingPins.length > 0) {
+                setHiddenByCreators(prev => [...new Set([...prev, ...creatorsHidingPins])]);
             }
         };
 
         if (memories.length > 0) {
             fetchMissingProfiles();
         }
-    }, [memories, currentUserId]); // Removing authorAvatars logic dependency avoids loop
+    }, [memories, currentUserId]); // Intentionally omitting userCache to rely on re-renders triggered by memories or currentUserId changes
 
     // Sync Profile
     const prevFriendsRef = useRef<string[]>([]);

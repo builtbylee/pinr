@@ -555,9 +555,9 @@ export const getUserProfile = async (uid: string, skipCache = false): Promise<Us
 
         // Try Firestore SDK with aggressive timeout
         try {
-            // SAFE FIX V2: On iOS, fail fast (2.5s) to switch to REST API if native bridge hangs.
+            // AGGRESSIVE FIX: On iOS, fail fast (500ms) to switch to REST API immediately.
             // Android keeps original 15s timeout.
-            const timeoutMs = Platform.OS === 'ios' ? 2500 : 15000;
+            const timeoutMs = Platform.OS === 'ios' ? 500 : 15000;
 
             const timeoutPromise = new Promise((_, reject) =>
                 setTimeout(() => reject(new Error('SDK Timeout')), timeoutMs)
@@ -690,8 +690,8 @@ export const subscribeToUserProfile = (uid: string, onUpdate: (profile: UserProf
     // This ensures the UI unblocks even if waitForFirestore() takes too long
     timeoutId = setTimeout(async () => {
         if (!hasReceivedCallback) {
-            console.error('[UserService] ⚠️ Profile subscription timeout after 15s - no callback received');
-            console.error('[UserService] Attempting REST fallback via getUserProfile...');
+            console.warn('[UserService] ⚠️ Profile subscription timeout - no callback received');
+            console.warn('[UserService] Attempting REST fallback via getUserProfile...');
 
             // Try to fetch profile via REST as fallback
             try {
@@ -700,16 +700,16 @@ export const subscribeToUserProfile = (uid: string, onUpdate: (profile: UserProf
                     console.log('[UserService] ✅ REST Fallback successful in subscription:', profile.username);
                     onUpdate(profile);
                 } else {
-                    console.error('[UserService] ❌ REST Fallback returned null');
+                    console.warn('[UserService] ❌ REST Fallback returned null');
                     onUpdate(null);
                 }
             } catch (error) {
-                console.error('[UserService] ❌ REST Fallback failed:', error);
+                console.warn('[UserService] ❌ REST Fallback failed:', error);
                 onUpdate(null);
             }
             hasReceivedCallback = true;
         }
-    }, 15000);
+    }, Platform.OS === 'ios' ? 500 : 15000); // iOS: 500ms (Fail fast), Android: 15s
 
     // Wait for Firestore to be ready before subscribing
     const { waitForFirestore } = require('./firebaseInitService');

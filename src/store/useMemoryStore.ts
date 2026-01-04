@@ -63,7 +63,11 @@ interface MemoryStore {
     stories: any[]; // User's created journeys
     setStories: (stories: any[]) => void;
 
-    // Hidden Pins (Specific pins hidden from map)
+    // Local User Cache (for faster map load)
+    userCache: Record<string, { username: string; avatarUrl: string | null; pinColor: string; updatedAt: number }>;
+    setUserCache: (userId: string, data: { username: string; avatarUrl: string | null; pinColor: string }) => void;
+    setMultipleUserCache: (data: Record<string, { username: string; avatarUrl: string | null; pinColor: string }>) => void;
+
     // Hidden Pins (Specific pins hidden from map)
     hiddenPinIds: string[];
     setHiddenPinIds: (ids: string[]) => void;
@@ -97,6 +101,7 @@ export const useMemoryStore = create<MemoryStore>()(
             friends: [],
             bucketList: [],
             stories: [],
+            userCache: {},
             activeGameId: null,
             hiddenFriendIds: [],
             hiddenPinIds: [],
@@ -112,6 +117,16 @@ export const useMemoryStore = create<MemoryStore>()(
             setAvatarUri: (uri) => set({ avatarUri: uri }),
             setBio: (bio) => set({ bio }),
             setPinColor: (color) => set({ pinColor: color }),
+            setUserCache: (userId, data) => set((state) => ({
+                userCache: { ...state.userCache, [userId]: { ...data, updatedAt: Date.now() } }
+            })),
+            setMultipleUserCache: (data) => set((state) => {
+                const newCache = { ...state.userCache };
+                Object.entries(data).forEach(([id, val]) => {
+                    newCache[id] = { ...val, updatedAt: Date.now() };
+                });
+                return { userCache: newCache };
+            }),
 
             setMemories: (memories) => set({ memories }),
             addMemory: (memory) => set((state) => ({ memories: [...state.memories, memory] })),
@@ -175,7 +190,9 @@ export const useMemoryStore = create<MemoryStore>()(
                 hiddenFriendIds: [],
                 hiddenPinIds: [],
                 bucketList: [],
+                bucketList: [],
                 stories: [],
+                userCache: {},
                 toast: { visible: false, message: '', type: 'info' }
             }),
 
@@ -185,7 +202,22 @@ export const useMemoryStore = create<MemoryStore>()(
         {
             name: 'memory-storage',
             storage: createJSONStorage(() => AsyncStorage),
-            partialize: (state) => ({ activeGameId: state.activeGameId }), // Only persist activeGameId
+            partialize: (state) => ({
+                activeGameId: state.activeGameId,
+                currentUserId: state.currentUserId,
+                username: state.username,
+                avatarUri: state.avatarUri,
+                bio: state.bio,
+                pinColor: state.pinColor,
+                friends: state.friends,
+                hiddenFriendIds: state.hiddenFriendIds,
+                hiddenPinIds: state.hiddenPinIds,
+                bucketList: state.bucketList,
+                stories: state.stories,
+                userCache: state.userCache,
+                // Persist memories (pins) for instant map load
+                memories: state.memories
+            }),
         }
     )
 );

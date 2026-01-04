@@ -373,8 +373,8 @@ class StoryService {
         let timeoutId: NodeJS.Timeout | null = null;
         let unsubscribeSnapshot: () => void;
 
-        // SAFE FIX: Fail fast on iOS to avoid startup hang
-        const timeoutMs = Platform.OS === 'ios' ? 2500 : 10000;
+        // AGGRESSIVE FIX: Fail fast on iOS to avoid startup hang
+        const timeoutMs = Platform.OS === 'ios' ? 500 : 10000;
 
         timeoutId = setTimeout(async () => {
             if (!hasReceivedSnapshot) {
