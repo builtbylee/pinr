@@ -1526,17 +1526,26 @@ export default function App() {
                 )
             }
 
+            {/* Profile Modal */}
             <ProfileModal
                 visible={!!selectedUserProfileId}
-                userId={selectedUserProfileId}
                 onClose={() => setSelectedUserProfileId(null)}
-                onFilterMap={(uid) => {
-                    console.log('[App] Filtering map by user:', uid);
-                    setFilteredUserId(uid);
+                userId={selectedUserProfileId}
+                onFilterMap={(userId) => {
+                    setFilteredUserId(userId);
+                    // Filter map to show only this user's pins
+                    useMemoryStore.getState().showToast('Map filtered', 'info');
                 }}
-                onPlayStory={handlePlayStory}
+                onPlayStory={(userId, story) => {
+                    handlePlayStory(userId, story);
+                }}
+                onOpenSettings={() => {
+                    setSelectedUserProfileId(null);
+                    setTimeout(() => setIsSettingsVisible(true), 300);
+                }}
                 onEditUsername={() => {
-                    // UsernameModal will open over ProfileModal
+                    // Keep open, open modal on top? Or close?
+                    // Just open the modal
                     setIsUsernameModalVisible(true);
                 }}
                 onEditAvatar={handleEditAvatar}
@@ -1546,8 +1555,36 @@ export default function App() {
                         await saveUserPinColor(currentUserId, color);
                     }
                 }}
-                onOpenSettings={() => setIsSettingsVisible(true)}
                 onViewBucketListItem={handleViewBucketItem}
+                onViewPin={(pinId, location) => {
+                    // 1. Close modal
+                    setSelectedUserProfileId(null);
+
+                    // 2. Prepare Camera (Stop rotation & lock)
+                    isCameraAnimating.current = true;
+                    stopAutoRotate();
+
+                    // 3. Fly to location (MATCH EXPLORE STYLE: No Zoom)
+                    cameraRef.current?.setCamera({
+                        centerCoordinate: location,
+                        animationDuration: 2000,
+                        animationMode: 'flyTo',
+                    });
+
+                    // 4. Trigger Pulse Animation
+                    setPulsingPinId(pinId);
+                    setTimeout(() => setPulsingPinId(null), 2800); // Stop pulse when card opens
+
+                    // 5. Cleanup Camera State
+                    setTimeout(() => {
+                        isCameraAnimating.current = false;
+                    }, 2000);
+
+                    // 6. Open Destination Card
+                    setTimeout(() => {
+                        selectMemory(pinId);
+                    }, 2800); // 2800ms to match Explore Location (2000ms flight + 800ms glow)
+                }}
             />
 
             <SettingsModal

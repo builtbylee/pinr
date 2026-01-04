@@ -73,16 +73,105 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     const [isChangingPassword, setIsChangingPassword] = useState(false);
     const [changePasswordError, setChangePasswordError] = useState<string | null>(null);
 
+    // Biometric State
+    const [biometricAvailable, setBiometricAvailable] = useState(false);
+    const [biometricType, setBiometricType] = useState('Biometrics');
+    const [biometricsEnabled, setBiometricsEnabled] = useState(false);
+    const [showBiometricPrompt, setShowBiometricPrompt] = useState(false);
+    const [biometricPassword, setBiometricPassword] = useState('');
+    const [biometricError, setBiometricError] = useState<string | null>(null);
+    const [isEnablingBiometrics, setIsEnablingBiometrics] = useState(false);
+
     // Check auth state and trigger animation when modal opens
     useEffect(() => {
         if (visible) {
             animation.value = 1;
             checkEmail();
             loadProfileData();
+            checkBiometricStatus();
         } else {
             animation.value = 0;
         }
-    }, [visible, globalFriends]); // Re-run when visible OR friends list updates
+    }, [visible, globalFriends]);
+
+    const checkBiometricStatus = async () => {
+        const { biometricService } = require('../services/biometricService');
+        const { available, type } = await biometricService.checkAvailability();
+        setBiometricAvailable(available);
+        if (type) setBiometricType(type);
+
+        if (available) {
+            const creds = await biometricService.getCredentials();
+            setBiometricsEnabled(!!creds);
+        }
+    };
+
+    const handleToggleBiometrics = async (value: boolean) => {
+        const { biometricService } = require('../services/biometricService');
+        if (!value) {
+            // Turning OFF
+            Alert.alert(
+                "Disable Biometrics",
+                "Are you sure you want to disable biometric login? You will need to enter your password manually next time.",
+                [
+                    { text: "Cancel", style: "cancel" },
+                    {
+                        text: "Disable",
+                        style: "destructive",
+                        onPress: async () => {
+                            await biometricService.clearCredentials();
+                            setBiometricsEnabled(false);
+                        }
+                    }
+                ]
+            );
+        } else {
+            // Turning ON
+            setBiometricError(null);
+            setBiometricPassword('');
+            setShowBiometricPrompt(true);
+        }
+    };
+
+    const handleConfirmBiometrics = async () => {
+        if (!biometricPassword) {
+            setBiometricError("Please enter your password");
+            return;
+        }
+
+        setIsEnablingBiometrics(true);
+        setBiometricError(null);
+
+        try {
+            // 1. Validate password by re-authenticating
+            await reauthenticateUser(biometricPassword);
+
+            // 2. Save credentials secure items
+            const { biometricService } = require('../services/biometricService');
+            const user = getCurrentUser();
+            // We need email to save credentials. We can get it from state or auth.
+            const email = user?.email || userEmail;
+
+            if (email) {
+                await biometricService.saveCredentials(email, biometricPassword);
+                setBiometricsEnabled(true);
+                setShowBiometricPrompt(false);
+                Alert.alert("Success", `${biometricType} login enabled!`);
+            } else {
+                throw new Error("Could not determine user email.");
+            }
+
+        } catch (error: any) {
+            console.error('[Settings] Biometric Enable Error:', error);
+            if (error.code === 'auth/wrong-password') {
+                setBiometricError('Incorrect password');
+            } else {
+                setBiometricError(error.message || 'Failed to enable biometrics');
+            }
+        } finally {
+            setIsEnablingBiometrics(false);
+        }
+    };
 
     // Handle Hardware Back Button for nested modals
     useEffect(() => {
@@ -91,23 +180,27 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         const onBackPress = () => {
             if (linkEmailVisible) {
                 setLinkEmailVisible(false);
-                return true;
+                return;
             }
             if (showTerms) {
                 setShowTerms(false);
-                return true;
+                return;
             }
             if (showDeleteConfirm) {
                 setShowDeleteConfirm(false);
-                return true;
+                return;
             }
             if (showChangePassword) {
                 setShowChangePassword(false);
-                return true;
+                return;
+            }
+            if (showBiometricPrompt) {
+                setShowBiometricPrompt(false);
+                return;
             }
             if (isVisibilityModalVisible) {
                 setIsVisibilityModalVisible(false);
-                return true;
+                return;
             }
             // Close main modal
             onClose();
@@ -116,7 +209,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
         const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
         return () => subscription.remove();
-    }, [visible, linkEmailVisible, showDeleteConfirm, showChangePassword, isVisibilityModalVisible, onClose]);
+    }, [visible, linkEmailVisible, showTerms, showDeleteConfirm, showChangePassword, showBiometricPrompt, isVisibilityModalVisible, onClose]);
 
     const loadProfileData = async () => {
         const user = getCurrentUser();
@@ -167,6 +260,95 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             }
         }
     };
+
+    // ... existing handlers ...
+
+    if (!visible) return null;
+
+    // Biometric Password Prompt
+    if (showBiometricPrompt) {
+        return (
+            <View style={[styles.container, { backgroundColor: 'rgba(0,0,0,0.8)' }]}>
+                <View style={styles.content}>
+                    <View style={styles.header}>
+                        <Text style={styles.title}>Enable {biometricType}</Text>
+                        <TouchableOpacity onPress={() => setShowBiometricPrompt(false)} style={styles.closeButton}>
+                            <Feather name="x" size={28} color="#1a1a1a" />
+                        </TouchableOpacity>
+                    </View>
+
+                    <KeyboardAvoidingView
+                        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                        style={{ flex: 1 }}
+                    >
+                        <ScrollView
+                            contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', padding: 20 }}
+                            showsVerticalScrollIndicator={false}
+                        >
+                            <View style={{ alignItems: 'center', marginBottom: 30 }}>
+                                <View style={{ width: 80, height: 80, borderRadius: 40, backgroundColor: 'rgba(52, 199, 89, 0.1)', justifyContent: 'center', alignItems: 'center', marginBottom: 16 }}>
+                                    <Feather name="shield" size={40} color="#34C759" />
+                                </View>
+                                <Text style={{ fontSize: 20, fontWeight: 'bold', color: '#1a1a1a', marginBottom: 8 }}>Verify Identity</Text>
+                                <Text style={{ fontSize: 16, color: 'rgba(0,0,0,0.6)', textAlign: 'center' }}>
+                                    Please enter your password to securely enable {biometricType} login.
+                                </Text>
+                            </View>
+
+                            <Text style={{ fontSize: 14, fontWeight: '600', color: '#1a1a1a', marginBottom: 8, marginLeft: 4 }}>PASSWORD</Text>
+                            <TextInput
+                                style={{
+                                    backgroundColor: 'rgba(0,0,0,0.05)',
+                                    borderRadius: 16,
+                                    padding: 16,
+                                    fontSize: 16,
+                                    marginBottom: 20,
+                                    color: '#1a1a1a'
+                                }}
+                                placeholder="Enter your password"
+                                placeholderTextColor="rgba(0,0,0,0.4)"
+                                secureTextEntry
+                                value={biometricPassword}
+                                onChangeText={setBiometricPassword}
+                                autoCapitalize="none"
+                            />
+
+                            {biometricError && (
+                                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginBottom: 20 }}>
+                                    <Feather name="alert-circle" size={16} color="#FF3B30" style={{ marginRight: 6 }} />
+                                    <Text style={{ color: '#FF3B30', fontSize: 14 }}>{biometricError}</Text>
+                                </View>
+                            )}
+
+                            <TouchableOpacity
+                                style={{
+                                    backgroundColor: '#34C759',
+                                    borderRadius: 16,
+                                    padding: 18,
+                                    alignItems: 'center',
+                                    shadowColor: '#34C759',
+                                    shadowOffset: { width: 0, height: 4 },
+                                    shadowOpacity: 0.3,
+                                    shadowRadius: 8,
+                                    elevation: 6,
+                                }}
+                                onPress={handleConfirmBiometrics}
+                                disabled={isEnablingBiometrics}
+                            >
+                                {isEnablingBiometrics ? (
+                                    <ActivityIndicator color="white" />
+                                ) : (
+                                    <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 18 }}>Enable {biometricType}</Text>
+                                )}
+                            </TouchableOpacity>
+                        </ScrollView>
+                    </KeyboardAvoidingView>
+                </View>
+            </View>
+        );
+    }
+
+    // Change Password Screen
 
     const handleTogglePush = async (value: boolean) => {
         setPushEnabled(value);
@@ -633,6 +815,25 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                 thumbColor={'#f4f3f4'}
                             />
                         </View>
+
+                        {/* Biometric Toggle (Only if available) */}
+                        {biometricAvailable && (
+                            <View style={styles.settingRow}>
+                                <View style={styles.settingInfo}>
+                                    <Feather name={biometricType.includes('Face') ? "smile" : "fingerprint"} size={22} color="#1a1a1a" />
+                                    <View style={styles.settingText}>
+                                        <Text style={styles.settingLabel}>{biometricType} Login</Text>
+                                        <Text style={styles.settingValue}>{biometricsEnabled ? 'Enabled' : 'Disabled'}</Text>
+                                    </View>
+                                </View>
+                                <Switch
+                                    value={biometricsEnabled}
+                                    onValueChange={handleToggleBiometrics}
+                                    trackColor={{ false: '#767577', true: '#34C759' }}
+                                    thumbColor={'#f4f3f4'}
+                                />
+                            </View>
+                        )}
 
                         {/* Notification Types - only show if push is enabled */}
                         {pushEnabled && (

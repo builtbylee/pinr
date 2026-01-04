@@ -28,3 +28,4 @@ echo ""
 xcrun simctl spawn "$BOOTED_UDID" log stream --level=debug --predicate 'processImagePath contains "Pinr" OR processImagePath contains "Expo"' 2>/dev/null | \
     grep -E "\[Firestore\]|\[UserService\]|\[useDataSubscriptions\]|\[App\]|\[Layout\]|\[FirebaseInit\]|Firestore|UserService|subscribeToPins|subscribeToUserProfile|onSnapshot|connectivity|Pins found|Profile update" --line-buffered
 
+

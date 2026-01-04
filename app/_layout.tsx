@@ -291,26 +291,20 @@ export default function RootLayout() {
     );
   }
 
-  // If still initializing auth, show AuthScreen (it will handle Firebase initialization)
-  // Don't block the UI - let AuthScreen show and handle Firebase errors
+  // If still initializing auth, show loading screen
+  // This prevents AuthScreen from mounting and triggering biometrics prematurely
   if (isInitializing) {
-    console.log('[Layout] Still initializing auth, showing AuthScreen');
-    // Show AuthScreen - it can handle Firebase not being ready
+    console.log('[Layout] Still initializing auth - showing loading spinner');
     return (
-      <AuthScreen
-        onAuthenticated={(username) => {
-          console.log('[Layout] onAuthenticated called (during init) with username:', username || 'none');
-          if (username) {
-            console.log('[Layout] Pre-setting username:', username);
-            useMemoryStore.getState().setUsername(username);
-          }
-          // Don't set session here - let onAuthStateChanged handle navigation
-          // This avoids timing issues where currentUser isn't available yet
-          console.log('[Layout] Username set, waiting for onAuthStateChanged to handle navigation');
-        }}
-      />
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#fff' }}>
+        <ActivityIndicator size="large" />
+      </View>
     );
   }
+
+  // Once initialization is done, decide where to go
+  console.log('[Layout] Initialization complete. Session:', session);
+
 
   // If ban check is still loading, proceed anyway (it will check in background)
   if (isBanCheckLoading) {

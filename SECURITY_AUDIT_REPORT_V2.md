@@ -450,3 +450,4 @@ const maxPossibleScore = this.correctAnswersCount * 100; // Can be bypassed
 
 
 
+

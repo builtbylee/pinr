@@ -111,3 +111,4 @@ If the fix doesn't work or causes issues:
 - Verify user document exists in Firestore
 - Check logs for permission errors
 
+

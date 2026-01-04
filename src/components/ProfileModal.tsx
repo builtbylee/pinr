@@ -39,6 +39,7 @@ interface ProfileModalProps {
     onPinColorChange?: (color: string) => void;
     onOpenSettings?: () => void;
     onViewBucketListItem?: (location: any) => void;
+    onViewPin?: (pinId: string, location: [number, number]) => void;
 }
 
 import { storyService, Story } from '../services/StoryService';
@@ -55,7 +56,8 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
     onEditAvatar,
     onPinColorChange,
     onOpenSettings,
-    onViewBucketListItem
+    onViewBucketListItem,
+    onViewPin
 }) => {
     // Animation state
     const animation = useSharedValue(0);
@@ -406,7 +408,11 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                                                     ]}
                                                     android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
                                                     onPress={() => {
-                                                        handleFilter();
+                                                        if (onViewPin && pin.location) {
+                                                            onViewPin(pin.id, pin.location);
+                                                        } else {
+                                                            handleFilter();
+                                                        }
                                                     }}
                                                 >
                                                     {pin.imageUris?.[0] ? (
@@ -418,9 +424,15 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                                                     )}
                                                     <View style={styles.gridCardOverlay}>
                                                         {/* Floating Pill Title */}
-                                                        <BlurView style={styles.gridCardTitleContainer} intensity={30} tint="dark">
-                                                            <Text style={styles.gridCardTitle} numberOfLines={2}>{pin.title || pin.locationName}</Text>
-                                                        </BlurView>
+                                                        {Platform.OS === 'ios' ? (
+                                                            <BlurView style={styles.gridCardTitleContainer} intensity={30} tint="dark">
+                                                                <Text style={styles.gridCardTitle} numberOfLines={2}>{pin.title || pin.locationName}</Text>
+                                                            </BlurView>
+                                                        ) : (
+                                                            <View style={[styles.gridCardTitleContainer, { backgroundColor: 'rgba(0,0,0,0.6)' }]}>
+                                                                <Text style={styles.gridCardTitle} numberOfLines={2}>{pin.title || pin.locationName}</Text>
+                                                            </View>
+                                                        )}
                                                     </View>
                                                 </Pressable>
                                             ))
@@ -457,9 +469,15 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                                                             contentFit="cover"
                                                         />
                                                         <View style={styles.gridCardOverlay}>
-                                                            <BlurView style={styles.gridCardTitleContainer} intensity={30} tint="dark">
-                                                                <Text style={styles.gridCardTitle} numberOfLines={1}>{story.title}</Text>
-                                                            </BlurView>
+                                                            {Platform.OS === 'ios' ? (
+                                                                <BlurView style={styles.gridCardTitleContainer} intensity={30} tint="dark">
+                                                                    <Text style={styles.gridCardTitle} numberOfLines={1}>{story.title}</Text>
+                                                                </BlurView>
+                                                            ) : (
+                                                                <View style={[styles.gridCardTitleContainer, { backgroundColor: 'rgba(0,0,0,0.6)' }]}>
+                                                                    <Text style={styles.gridCardTitle} numberOfLines={1}>{story.title}</Text>
+                                                                </View>
+                                                            )}
                                                         </View>
                                                         {isMe && (
                                                             <TouchableOpacity
@@ -488,40 +506,47 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                                         {bucketList.length > 0 ? (
                                             bucketList.map(item => (
                                                 <Pressable
-                                                    key={item.id}
+                                                    key={item.locationName}
                                                     style={({ pressed }) => [
                                                         styles.gridCard,
                                                         Platform.OS === 'ios' && pressed && { opacity: 0.7 }
                                                     ]}
-                                                    android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
-                                                    onPress={() => handleViewBucketItem(item)}
+                                                    onPress={() => setSelectedBucketItem(item)}
                                                 >
-                                                    <Image
-                                                        source={{ uri: item.imageUrl || 'https://via.placeholder.com/150' }}
-                                                        style={styles.gridCardImage}
-                                                        contentFit="cover"
-                                                    />
-                                                    <View style={styles.gridCardOverlay}>
-                                                        <BlurView style={styles.gridCardTitleContainer} intensity={30} tint="dark">
-                                                            <Text style={styles.gridCardTitle} numberOfLines={2}>{item.locationName}</Text>
-                                                        </BlurView>
+                                                    <View style={{ flex: 1 }}>
+                                                        <Image
+                                                            source={{ uri: item.imageUrl || 'https://via.placeholder.com/150' }}
+                                                            style={styles.gridCardImage}
+                                                            contentFit="cover"
+                                                        />
+                                                        <View style={styles.gridCardOverlay}>
+                                                            {Platform.OS === 'ios' ? (
+                                                                <BlurView style={styles.gridCardTitleContainer} intensity={30} tint="dark">
+                                                                    <Text style={styles.gridCardTitle} numberOfLines={2}>{item.locationName}</Text>
+                                                                </BlurView>
+                                                            ) : (
+                                                                <View style={[styles.gridCardTitleContainer, { backgroundColor: 'rgba(0,0,0,0.6)' }]}>
+                                                                    <Text style={styles.gridCardTitle} numberOfLines={2}>{item.locationName}</Text>
+                                                                </View>
+                                                            )}
+                                                        </View>
+                                                        {/* Status Badge */}
+                                                        {item.status === 'visited' && (
+                                                            <View style={[styles.statusPill, styles.pillVisited]}>
+                                                                <Text style={[styles.statusPillText, { color: 'white' }]}>VISITED</Text>
+                                                            </View>
+                                                        )}
+                                                        {item.status === 'booked' && (
+                                                            <View style={[styles.statusPill, styles.pillBooked]}>
+                                                                <Text style={styles.statusPillText}>BOOKED</Text>
+                                                            </View>
+                                                        )}
+                                                        {item.status === 'wishlist' && (
+                                                            <View style={[styles.statusPill, styles.pillWishlist]}>
+                                                                <Text style={[styles.statusPillText, { color: '#666' }]}>WISHLIST</Text>
+                                                            </View>
+                                                        )}
                                                     </View>
-                                                    {/* Status Badge */}
-                                                    {item.status === 'visited' && (
-                                                        <View style={[styles.statusPill, styles.pillVisited]}>
-                                                            <Text style={[styles.statusPillText, { color: 'white' }]}>VISITED</Text>
-                                                        </View>
-                                                    )}
-                                                    {item.status === 'booked' && (
-                                                        <View style={[styles.statusPill, styles.pillBooked]}>
-                                                            <Text style={[styles.statusPillText, { color: 'white' }]}>BOOKED</Text>
-                                                        </View>
-                                                    )}
-                                                    {item.status === 'wishlist' && (
-                                                        <View style={[styles.statusPill, styles.pillWishlist]}>
-                                                            <Text style={[styles.statusPillText, { color: '#666' }]}>WISHLIST</Text>
-                                                        </View>
-                                                    )}
                                                 </Pressable>
                                             ))
                                         ) : (
@@ -725,51 +750,34 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                 isOwner={userId === currentUserId}
                 onView={(item) => {
                     setSelectedBucketItem(null);
-                    onClose(); // Close profile modal too
-                    onViewBucketListItem?.(item);
+                    onViewBucketListItem && onViewBucketListItem(item);
+                    onClose(); // Close the profile modal to show the map
+                }}
+                onRemove={async (item) => {
+                    if (userId) {
+                        try {
+                            // BucketListItem uses object matching for removal
+                            await removeFromBucketList(userId, item);
+                            // Optimistic update
+                            setBucketList(prev => prev.filter(i => i.locationName !== item.locationName));
+                        } catch (error) {
+                            Alert.alert('Error', 'Failed to remove item');
+                        }
+                    }
+                    setSelectedBucketItem(null);
                 }}
                 onMarkBooked={async (item) => {
-                    if (!currentUserId) return;
-
-                    // Toggle: if already booked, set back to wishlist; otherwise mark as booked
-                    const newStatus = item.status === 'booked' ? 'wishlist' : 'booked';
-
-                    try {
-                        await updateBucketListStatus(currentUserId, item.locationName, newStatus);
-
-                        // Optimistic update for immediate UI feedback
-                        setBucketList(prev => prev.map(b =>
-                            b.locationName === item.locationName
-                                ? { ...b, status: newStatus }
-                                : b
-                        ));
-
-                        // Update the selected item so modal shows new state
-                        setSelectedBucketItem({ ...item, status: newStatus });
-                    } catch (error) {
-                        console.error('Failed to update booked status:', error);
-                        Alert.alert('Error', 'Could not update status.');
+                    if (userId) {
+                        try {
+                            const newStatus = item.status === 'booked' ? 'wishlist' : 'booked';
+                            await updateBucketListStatus(userId, item.locationName, newStatus);
+                            // Optimistic Update
+                            setBucketList(prev => prev.map(i => i.locationName === item.locationName ? { ...i, status: newStatus } : i));
+                        } catch (error) {
+                            Alert.alert('Error', 'Failed to update status');
+                        }
                     }
-                }}
-                onRemove={(item) => {
-                    Alert.alert(
-                        "Remove from Bucket List?",
-                        `Are you sure you want to remove ${item.locationName}?`,
-                        [
-                            { text: "Cancel", style: "cancel" },
-                            {
-                                text: "Remove",
-                                style: "destructive",
-                                onPress: async () => {
-                                    if (currentUserId) {
-                                        await removeFromBucketList(currentUserId, item);
-                                        setBucketList(prev => prev.filter(b => b.locationName !== item.locationName));
-                                        setSelectedBucketItem(null);
-                                    }
-                                }
-                            }
-                        ]
-                    );
+                    setSelectedBucketItem(null);
                 }}
             />
         </View >

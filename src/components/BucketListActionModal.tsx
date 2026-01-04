@@ -1,9 +1,6 @@
 import React, { useEffect } from 'react';
-import { View, StyleSheet, Modal, Dimensions, Text, TouchableOpacity, Alert } from 'react-native';
-import { Image } from 'expo-image';
+import { View, StyleSheet, Modal, Dimensions, Text, TouchableOpacity, Alert, Image } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { BlurView } from 'expo-blur';
-import Animated, { FadeIn, ZoomIn, FadeOut } from 'react-native-reanimated';
 import { BucketListItem } from '../services/userService';
 
 const { width, height } = Dimensions.get('window');
@@ -39,11 +36,7 @@ export const BucketListActionModal: React.FC<BucketListActionModalProps> = ({
             <View style={styles.overlay}>
                 <TouchableOpacity style={styles.backdrop} onPress={onClose} activeOpacity={1} />
 
-                <Animated.View
-                    entering={ZoomIn.duration(250).springify().damping(15)}
-                    exiting={FadeOut}
-                    style={styles.card}
-                >
+                <View style={styles.card}>
                     <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
                         <Feather name="x" size={20} color="#1a1a1a" />
                     </TouchableOpacity>
@@ -52,8 +45,7 @@ export const BucketListActionModal: React.FC<BucketListActionModalProps> = ({
                             <Image
                                 source={{ uri: item.imageUrl }}
                                 style={{ width: '100%', height: '100%' }}
-                                contentFit="cover"
-                                transition={300}
+                                resizeMode="cover"
                             />
                         </View>
                     )}
@@ -111,7 +103,7 @@ export const BucketListActionModal: React.FC<BucketListActionModalProps> = ({
                             )}
                         </View>
                     </View>
-                </Animated.View>
+                </View>
             </View>
         </Modal>
     );
