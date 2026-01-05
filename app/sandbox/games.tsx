@@ -499,7 +499,7 @@ export default function GameSandbox() {
                     <Text style={{ fontSize: 10, color: '#9CA3AF' }}>
                         User: {selfUsername} | Active: {activeGames.length} | Pending: {pendingChallenges.length}
                     </Text>
-                    <Text style={{ fontSize: 10, color: '#d1d5db' }}>UID: {currentUserId ? currentUserId.slice(-5) : 'None'}</Text>
+                    <Text style={{ fontSize: 10, color: '#d1d5db' }}>UID: {currentUserId ? currentUserId.slice(-5) : 'None'} | PID: {firestore().app.options.projectId}</Text>
                     {errorInfo && (
                         <Text style={{ fontSize: 10, color: 'red', fontWeight: 'bold' }}>{errorInfo}</Text>
                     )}
