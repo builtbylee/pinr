@@ -226,7 +226,7 @@ const styles = StyleSheet.create({
     },
     frostedPill: {
         flexDirection: 'column',
-        alignItems: 'center',
+        alignItems: 'flex-start',
         backgroundColor: 'rgba(245, 245, 245, 0.92)',
         paddingHorizontal: 20,
         paddingVertical: 10,
@@ -244,7 +244,7 @@ const styles = StyleSheet.create({
         color: '#1a1a1a',
         fontSize: 16,
         fontWeight: 'bold',
-        textAlign: 'center',
+        textAlign: 'left',
     },
     pillDetailsRow: {
         flexDirection: 'row',
