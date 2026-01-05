@@ -225,15 +225,18 @@ const styles = StyleSheet.create({
     frostedPill: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: 'rgba(255, 255, 255, 0.2)',
-        paddingHorizontal: 14,
+        backgroundColor: 'rgba(245, 245, 245, 0.92)',
+        paddingHorizontal: 16,
         paddingVertical: 10,
         borderRadius: 24,
-        gap: 6,
+        gap: 8,
         maxWidth: '90%',
-        // iOS blur effect simulation via backdrop
-        borderWidth: 1,
-        borderColor: 'rgba(255, 255, 255, 0.3)',
+        // Subtle shadow for depth
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        elevation: 3,
     },
     pillTitle: {
         color: '#1a1a1a',
