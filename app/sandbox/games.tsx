@@ -52,6 +52,7 @@ export default function GameSandbox() {
     // Auth Debug State
     const [authDebug, setAuthDebug] = useState<string>('Initializing...');
     const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+    const [selfUsername, setSelfUsername] = useState<string>('Loading...');
     const [errorInfo, setErrorInfo] = useState<string | null>(null);
 
     const [state, setState] = useState<GameState>({
@@ -181,6 +182,11 @@ export default function GameSandbox() {
         function setupUserSubscriptions(uid: string) {
             console.log('[GameSandbox] Setting up subscriptions for user:', uid);
             setErrorInfo(null); // Clear previous errors
+
+            // Fetch Username for verification
+            getUserProfile(uid).then(p => {
+                setSelfUsername(p?.username || 'Unknown User');
+            }).catch(() => setSelfUsername('Fetch Error'));
 
             // A. Active Games
             unsubChallenges = challengeService.subscribeToActiveChallenges(uid, async (games) => {
