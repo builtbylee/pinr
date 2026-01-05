@@ -117,6 +117,7 @@ export const useMemoryStore = create<MemoryStore>()(
             activeGameId: null,
             hiddenFriendIds: [],
             hiddenPinIds: [],
+            recentExploreLocations: [],
             toast: {
                 visible: false,
                 message: '',

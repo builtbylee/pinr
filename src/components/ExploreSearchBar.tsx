@@ -20,8 +20,8 @@ export const ExploreSearchBar: React.FC<ExploreSearchBarProps> = ({ visible, onC
     const [results, setResults] = useState<GeocodingResult[]>([]);
     const [loading, setLoading] = useState(false);
 
-    // Recent searches from persisted store
-    const recentExploreLocations = useMemoryStore((state) => state.recentExploreLocations);
+    // Recent searches from persisted store (with defensive fallback)
+    const recentExploreLocations = useMemoryStore((state) => state.recentExploreLocations) || [];
     const addRecentExploreLocation = useMemoryStore((state) => state.addRecentExploreLocation);
 
     // Handle Hardware Back Button (Android)
