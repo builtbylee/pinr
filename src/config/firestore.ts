@@ -17,6 +17,8 @@ const configureFirestore = async () => {
         const settings = {
             cacheSizeBytes: 10 * 1024 * 1024,
             experimentalForceLongPolling: true, // CRITICAL
+            host: 'firestore.googleapis.com', // Explicit host to prevent emulator confusion
+            ssl: true,
             merge: true, // Ensure we don't overwrite other defaults if any
         };
 

@@ -271,31 +271,11 @@ export async function waitForFirestore(): Promise<void> {
 
                 // If we got an instance, we assume it's usable or will queue requests
                 if (firestoreInstance) {
-                    try {
-                        // Critical: Enable Long Polling to avoid gRPC connection hangs
-                        // We enable this on Physical Devices too because standard gRPC seems to be failing
-                        // (likely network/firewall issues causing timeouts)
-                        console.log('[FirebaseInit] Enabling experimentalForceLongPolling for ALL devices...');
-
-                        // API Check: .settings might be a function (Standard) or property (New/Legacy)
-                        console.log('[FirebaseInit] DEBUG: Instance:', firestoreInstance);
-
-                        const settingsProp = (firestoreInstance as any).settings;
-
-                        if (typeof settingsProp === 'function') {
-                            try {
-                                await firestoreInstance.settings({ experimentalForceLongPolling: true });
-                            } catch (e) {
-                                console.warn('[FirebaseInit] Failed to set long polling via method:', e);
-                            }
-                            console.log('[FirebaseInit] ✅ experimentalForceLongPolling enabled (via Method)');
-                        } else {
-                            (firestoreInstance as any).settings = { experimentalForceLongPolling: true };
-                            console.log('[FirebaseInit] ✅ experimentalForceLongPolling enabled (via Assignment)');
-                        }
-                    } catch (e: any) {
-                        console.warn('[FirebaseInit] ⚠️ Failed to configure Firestore settings:', e.message);
-                    }
+                    // Start: Configuration is now handled in @/src/config/firestore.ts
+                    // We do not re-apply settings here to avoid "Settings already locked" errors
+                    // or native race conditions.
+                    console.log('[FirebaseInit] Firestore instance detected. Using global config.');
+                    // End: Configuration handling
 
                     isFirestoreReady = true;
                     console.log(`[FirebaseInit] ✅ Firestore is ready (after ${attempts} attempts)`);
