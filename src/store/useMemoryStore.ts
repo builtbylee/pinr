@@ -91,6 +91,10 @@ interface MemoryStore {
     };
     showToast: (message: string, type?: 'success' | 'error' | 'info') => void;
     hideToast: () => void;
+
+    // Recent Explore Locations
+    recentExploreLocations: Array<{ id: string; text: string; place_name: string; center: [number, number]; image?: string }>;
+    addRecentExploreLocation: (location: { id: string; text: string; place_name: string; center: [number, number]; image?: string }) => void;
 }
 
 export const useMemoryStore = create<MemoryStore>()(
@@ -198,14 +202,23 @@ export const useMemoryStore = create<MemoryStore>()(
                 hiddenFriendIds: [],
                 hiddenPinIds: [],
                 bucketList: [],
-                bucketList: [],
                 stories: [],
                 userCache: {},
+                recentExploreLocations: [],
                 toast: { visible: false, message: '', type: 'info' }
             }),
 
             showToast: (message, type = 'info') => set({ toast: { visible: true, message, type } }),
             hideToast: () => set((state) => ({ toast: { ...state.toast, visible: false } })),
+
+            // Recent Explore Locations
+            addRecentExploreLocation: (location) => set((state) => {
+                // Remove duplicate if exists
+                const filtered = state.recentExploreLocations.filter(l => l.id !== location.id);
+                // Add to front, limit to 5
+                const updated = [location, ...filtered].slice(0, 5);
+                return { recentExploreLocations: updated };
+            }),
         }),
         {
             name: 'memory-storage',
@@ -223,6 +236,7 @@ export const useMemoryStore = create<MemoryStore>()(
                 bucketList: state.bucketList,
                 stories: state.stories,
                 userCache: state.userCache,
+                recentExploreLocations: state.recentExploreLocations,
                 // Persist memories (pins) for instant map load
                 memories: state.memories
             }),

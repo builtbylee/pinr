@@ -106,6 +106,7 @@ export default function App() {
     const [isExploreInfoVisible, setIsExploreInfoVisible] = useState(false);
     const [showStreakCelebration, setShowStreakCelebration] = useState(false);
     const [celebrationStreak, setCelebrationStreak] = useState(0);
+    const [pendingStreakCelebration, setPendingStreakCelebration] = useState(false); // Deferred celebration
     const [highlightedPinId, setHighlightedPinId] = useState<string | null>(null);
     const isCameraAnimating = useRef(false);
 
@@ -1080,24 +1081,20 @@ export default function App() {
                 isCameraAnimating.current = false;
             }, 2000);
 
-            // Show info card immediately after globe spin (2000ms) + glow animation (800ms)
-            // Relative to this timeout block start
-            // STAGGER FIX: Delay slightly to 2900ms to match safe timing
+            // Show info card after globe spin - reduced from 2900ms to 2200ms for snappier UX
             setTimeout(() => {
                 setIsExploreInfoVisible(true);
-            }, 2900);
+            }, 2200);
 
         }, 500); // 500ms Safety Delay
 
         // Track exploration streak (Background task, can run immediately)
+        // Defer celebration to AFTER info card closes to avoid UI clash
         if (currentUserId) {
             const streakResult = await checkExplorationStreak(currentUserId);
             if (streakResult.increased) {
                 setCelebrationStreak(streakResult.streak);
-                // Delay celebration to after info card is shown (2500 + 500 = 3000ms effective)
-                setTimeout(() => {
-                    setShowStreakCelebration(true);
-                }, 3000);
+                setPendingStreakCelebration(true); // Will trigger when card closes
             }
         }
     };
@@ -1424,6 +1421,11 @@ export default function App() {
                         onClose={() => {
                             setIsExploreInfoVisible(false);
                             setSelectedExplorePlace(null);
+                            // Trigger deferred streak celebration after card closes
+                            if (pendingStreakCelebration) {
+                                setTimeout(() => setShowStreakCelebration(true), 300);
+                                setPendingStreakCelebration(false);
+                            }
                         }}
                     />
                 )}

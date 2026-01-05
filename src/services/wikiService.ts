@@ -106,7 +106,26 @@ export const searchWikiPlaces = async (query: string): Promise<GeocodingResult[]
 
         // Filter out items WITHOUT coordinates (Critical for map placement)
         // Wiki returns many pages without coords. We must discard them for Geocoding purposes.
-        const validPages = pages.filter((p: any) => p.coordinates && p.coordinates.length > 0);
+        // Also exclude non-place results (companies, people, events, universities)
+        const excludePatterns = [
+            'company', 'corporation', 'brand', 'manufacturer', 'conglomerate',
+            'person', 'singer', 'actor', 'musician', 'politician', 'athlete', 'bandleader', 'violinist',
+            'flight', 'disaster', 'incident', 'event', 'bombing', 'crash',
+            'university', 'college', 'school', 'institute', 'academy'
+        ];
+
+        const validPages = pages.filter((p: any) => {
+            // Must have coordinates for map placement
+            if (!p.coordinates || p.coordinates.length === 0) return false;
+
+            // Check description for non-place patterns
+            const desc = (p.description || '').toLowerCase();
+            const isExcluded = excludePatterns.some(pattern => desc.includes(pattern));
+            if (isExcluded) {
+                console.log(`[WikiService] Filtered out non-place: ${p.title} (${desc})`);
+            }
+            return !isExcluded;
+        });
 
         const results = validPages.map((p: any) => ({
             id: `wiki-${p.pageid}`,

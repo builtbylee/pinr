@@ -198,8 +198,8 @@ const styles = StyleSheet.create({
         backgroundColor: 'rgba(0, 0, 0, 0.6)',
     },
     card: {
-        width: width * 0.8,
-        maxWidth: 320,
+        width: width * 0.9,
+        maxWidth: 380,
         backgroundColor: 'rgba(255, 255, 255, 0.98)',
         borderRadius: 28,
         paddingVertical: 36,
@@ -227,9 +227,9 @@ const styles = StyleSheet.create({
         color: '#FFB800',
     },
     badge: {
-        width: 100,
-        height: 100,
-        borderRadius: 50,
+        width: 120,
+        height: 120,
+        borderRadius: 60,
         backgroundColor: '#FFF8E7',
         borderWidth: 3,
         borderColor: '#FF8C00',

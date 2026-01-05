@@ -5,6 +5,7 @@ import { Feather } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import { GeocodingResult } from '../services/geocodingService';
 import { searchWikiPlaces } from '../services/wikiService';
+import { useMemoryStore } from '../store/useMemoryStore';
 
 const { width } = Dimensions.get('window');
 
@@ -18,6 +19,10 @@ export const ExploreSearchBar: React.FC<ExploreSearchBarProps> = ({ visible, onC
     const [query, setQuery] = useState('');
     const [results, setResults] = useState<GeocodingResult[]>([]);
     const [loading, setLoading] = useState(false);
+
+    // Recent searches from persisted store
+    const recentExploreLocations = useMemoryStore((state) => state.recentExploreLocations);
+    const addRecentExploreLocation = useMemoryStore((state) => state.addRecentExploreLocation);
 
     // Handle Hardware Back Button (Android)
     useEffect(() => {
@@ -50,7 +55,27 @@ export const ExploreSearchBar: React.FC<ExploreSearchBarProps> = ({ visible, onC
         return () => clearTimeout(timer);
     }, [query]);
 
+    // Handle location selection
+    const handleSelectLocation = (item: GeocodingResult) => {
+        // Save to recent searches
+        addRecentExploreLocation({
+            id: item.id,
+            text: item.text,
+            place_name: item.place_name,
+            center: item.center,
+            image: item.image,
+        });
+
+        onSelectLocation(item);
+        setQuery('');
+        setResults([]);
+    };
+
     if (!visible) return null;
+
+    // Show recents when query is empty
+    const showRecents = query.length === 0 && recentExploreLocations.length > 0;
+    const showResults = results.length > 0 || loading;
 
     return (
         <View style={styles.container} pointerEvents="box-none">
@@ -83,8 +108,44 @@ export const ExploreSearchBar: React.FC<ExploreSearchBarProps> = ({ visible, onC
                     </TouchableOpacity>
                 </View>
 
-                {/* Results List */}
-                {(results.length > 0 || loading) && (
+                {/* Recent Searches */}
+                {showRecents && (
+                    <View style={styles.resultsContainer}>
+                        <Text style={styles.sectionTitle}>Recent</Text>
+                        <ScrollView
+                            keyboardShouldPersistTaps="handled"
+                            style={{ maxHeight: 250 }}
+                        >
+                            {recentExploreLocations.map((item) => (
+                                <Pressable
+                                    key={`recent-${item.id}`}
+                                    style={({ pressed }) => [styles.resultItem, pressed && { backgroundColor: '#f5f5f5' }]}
+                                    onPress={() => handleSelectLocation(item as GeocodingResult)}
+                                >
+                                    {item.image ? (
+                                        <Image
+                                            source={item.image}
+                                            style={{ width: 40, height: 40, borderRadius: 8, marginRight: 10, backgroundColor: '#eee' }}
+                                            contentFit="cover"
+                                            transition={200}
+                                        />
+                                    ) : (
+                                        <View style={{ width: 40, height: 40, borderRadius: 8, marginRight: 10, backgroundColor: '#f0f0f0', justifyContent: 'center', alignItems: 'center' }}>
+                                            <Feather name="clock" size={16} color="#888" />
+                                        </View>
+                                    )}
+                                    <View style={{ flex: 1, justifyContent: 'center' }}>
+                                        <Text style={styles.resultTitle}>{item.text}</Text>
+                                        <Text style={styles.resultSubtitle}>{item.place_name}</Text>
+                                    </View>
+                                </Pressable>
+                            ))}
+                        </ScrollView>
+                    </View>
+                )}
+
+                {/* Search Results List */}
+                {showResults && (
                     <View style={styles.resultsContainer}>
                         {loading ? (
                             <ActivityIndicator color="#1a1a1a" style={{ padding: 20 }} />
@@ -98,13 +159,7 @@ export const ExploreSearchBar: React.FC<ExploreSearchBarProps> = ({ visible, onC
                                     <Pressable
                                         key={item.id}
                                         style={({ pressed }) => [styles.resultItem, pressed && { backgroundColor: '#f5f5f5' }]}
-                                        onPress={() => {
-                                            // Delay slightly to ensure ripple shows and keyboard dismisses cleanly
-                                            // Keyboard.dismiss(); // Let unmount handle it or user dismiss
-                                            onSelectLocation(item);
-                                            setQuery('');
-                                            setResults([]);
-                                        }}
+                                        onPress={() => handleSelectLocation(item)}
                                     >
                                         {/* Thumbnail or Fallback Icon */}
                                         {item.image ? (
@@ -200,6 +255,14 @@ const styles = StyleSheet.create({
     resultSubtitle: {
         color: 'rgba(0,0,0,0.5)',
         fontSize: 12,
+    },
+    sectionTitle: {
+        color: '#888',
+        fontSize: 12,
+        fontWeight: '600',
+        marginBottom: 8,
+        textTransform: 'uppercase',
+        letterSpacing: 0.5,
     },
 });
 
