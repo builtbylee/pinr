@@ -973,6 +973,18 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                             </View>
                             <Feather name="external-link" size={22} color="rgba(0,0,0,0.3)" />
                         </TouchableOpacity>
+                        <TouchableOpacity style={styles.settingRow} onPress={() => {
+                            Linking.openURL('https://unsplash.com');
+                        }}>
+                            <View style={styles.settingInfo}>
+                                <Feather name="camera" size={22} color="#1a1a1a" />
+                                <View style={styles.settingText}>
+                                    <Text style={styles.settingLabel}>Explore Photos</Text>
+                                    <Text style={styles.settingValue}>Powered by Unsplash</Text>
+                                </View>
+                            </View>
+                            <Feather name="external-link" size={22} color="rgba(0,0,0,0.3)" />
+                        </TouchableOpacity>
                     </View>
 
                     {/* Help & Legal */}
