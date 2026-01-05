@@ -436,8 +436,22 @@ export default function GameSandbox() {
                 showsVerticalScrollIndicator={false}
             >
 
-                {/* Page Header */}
+                {/* Page Header with Back Button */}
                 <View style={{ paddingHorizontal: 20, paddingTop: 8, paddingBottom: 8 }}>
+                    {/* Back Button Row */}
+                    <TouchableOpacity
+                        onPress={() => router.back()}
+                        style={{
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            marginBottom: 12,
+                            alignSelf: 'flex-start',
+                        }}
+                    >
+                        <Feather name="arrow-left" size={20} color="#3B82F6" />
+                        <Text style={{ fontSize: 16, color: '#3B82F6', marginLeft: 4, fontWeight: '500' }}>Back</Text>
+                    </TouchableOpacity>
+
                     <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                         <View>
                             <Text style={{ fontSize: 24, fontWeight: '800', color: '#1F2937' }}>🎮 Games</Text>
