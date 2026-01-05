@@ -53,7 +53,9 @@ export default function GameSandbox() {
     const [authDebug, setAuthDebug] = useState<string>('Initializing...');
     const [currentUserId, setCurrentUserId] = useState<string | null>(null);
     const [selfUsername, setSelfUsername] = useState<string>('Loading...');
+    const [selfUsername, setSelfUsername] = useState<string>('Loading...');
     const [errorInfo, setErrorInfo] = useState<string | null>(null);
+    const [debugDirectCount, setDebugDirectCount] = useState<number | null>(null);
 
     const [state, setState] = useState<GameState>({
         isPlaying: false,
@@ -187,6 +189,15 @@ export default function GameSandbox() {
             getUserProfile(uid).then(p => {
                 setSelfUsername(p?.username || 'Unknown User');
             }).catch(() => setSelfUsername('Fetch Error'));
+
+            // Diagnostic: Direct Fetch
+            challengeService.getActiveChallenges().then(res => {
+                console.log('[GameSandbox] Direct fetch result:', res.length);
+                setDebugDirectCount(res.length);
+            }).catch(e => {
+                console.error('[GameSandbox] Direct fetch failed:', e);
+                setDebugDirectCount(-1);
+            });
 
             // A. Active Games
             unsubChallenges = challengeService.subscribeToActiveChallenges(uid, async (games) => {
