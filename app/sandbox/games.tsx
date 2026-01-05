@@ -52,6 +52,7 @@ export default function GameSandbox() {
     // Auth Debug State
     const [authDebug, setAuthDebug] = useState<string>('Initializing...');
     const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+    const [errorInfo, setErrorInfo] = useState<string | null>(null);
 
     const [state, setState] = useState<GameState>({
         isPlaying: false,
@@ -179,6 +180,7 @@ export default function GameSandbox() {
 
         function setupUserSubscriptions(uid: string) {
             console.log('[GameSandbox] Setting up subscriptions for user:', uid);
+            setErrorInfo(null); // Clear previous errors
 
             // A. Active Games
             unsubChallenges = challengeService.subscribeToActiveChallenges(uid, async (games) => {
@@ -209,6 +211,10 @@ export default function GameSandbox() {
                     console.error('[GameSandbox] Error in challenge subscription:', error);
                     setErrorInfo('Failed to load games: ' + (error.message || 'Unknown error'));
                 }
+            }, (error) => {
+                console.error('[GameSandbox] Firestore Subscription Error:', error);
+                setErrorInfo(`Firestore Error: ${error.code || error.message}`);
+                // Could be 'permission-denied', 'unavailable', etc.
             });
 
             // B. Pending Challenges
@@ -482,6 +488,15 @@ export default function GameSandbox() {
                 contentContainerStyle={{ paddingBottom: 100 }}
                 showsVerticalScrollIndicator={false}
             >
+                {/* Debug Footer for verification */}
+                <View style={{ alignItems: 'center', marginVertical: 10, opacity: 0.7 }}>
+                    <Text style={{ fontSize: 10, color: '#9CA3AF' }}>
+                        UID: {currentUserId ? currentUserId.slice(-5) : 'None'} | Games: {activeGames.length} | TS: {new Date().toLocaleTimeString()}
+                    </Text>
+                    {errorInfo && (
+                        <Text style={{ fontSize: 10, color: 'red', fontWeight: 'bold' }}>{errorInfo}</Text>
+                    )}
+                </View>
 
                 {/* Page Header with Back Button */}
                 <View style={{ paddingHorizontal: 20, paddingTop: 8, paddingBottom: 8 }}>

@@ -315,7 +315,7 @@ class ChallengeService {
     /**
      * Subscribe to active games (Real-time)
      */
-    subscribeToActiveChallenges(uid: string, onUpdate: (challenges: GameChallenge[]) => void): () => void {
+    subscribeToActiveChallenges(uid: string, onUpdate: (challenges: GameChallenge[]) => void, onError?: (error: any) => void): () => void {
         let c1: GameChallenge[] = [];
         let c2: GameChallenge[] = [];
 
@@ -332,7 +332,10 @@ class ChallengeService {
             .onSnapshot(snap => {
                 c1 = snap.docs.map(d => ({ id: d.id, ...d.data() } as GameChallenge));
                 merge();
-            }, e => console.log('Sub1 error', e));
+            }, e => {
+                console.log('Sub1 error', e);
+                if (onError) onError(e);
+            });
 
         const unsub2 = firestore().collection(CHALLENGES_COLLECTION)
             .where('opponentId', '==', uid)
@@ -340,7 +343,11 @@ class ChallengeService {
             .onSnapshot(snap => {
                 c2 = snap.docs.map(d => ({ id: d.id, ...d.data() } as GameChallenge));
                 merge();
-            }, e => console.log('Sub2 error', e));
+            }, e => {
+                console.log('Sub2 error', e);
+                // We only report error if both fail? Or report all? Reporting all is safer for debug.
+                if (onError) onError(e);
+            });
 
         return () => {
             unsub1();
