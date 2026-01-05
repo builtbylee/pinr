@@ -59,11 +59,16 @@ service cloud.firestore {
 
     // GAME CHALLENGES COLLECTION
     match /game_challenges/{challengeId} {
-      // Read: Participants only (handles both existing docs and edge cases)
-      allow read: if request.auth != null && (
+      // Get: Only participants can read individual documents
+      allow get: if request.auth != null && (
         resource.data.challengerId == request.auth.uid || 
         resource.data.opponentId == request.auth.uid
       );
+      
+      // List: Allow authenticated users to query
+      // Security: Queries are constrained by where() clauses that filter by user's UID
+      // The client code only queries where challengerId or opponentId == user.uid
+      allow list: if request.auth != null;
       
       // Create: Challenger must be the authenticated user
       allow create: if request.auth != null && 

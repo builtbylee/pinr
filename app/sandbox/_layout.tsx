@@ -35,6 +35,8 @@ export default function SandboxLayout() {
                     options={{
                         title: 'Games',
                         headerShown: true,
+                        headerBackVisible: true,
+                        headerBackTitle: 'Back',
                     }}
                 />
             </Stack>
