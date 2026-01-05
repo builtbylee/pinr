@@ -137,16 +137,16 @@ export const DestinationCard: React.FC<DestinationCardProps> = ({ memory, onClos
                     <View style={styles.frostedPill}>
                         <Text style={styles.pillTitle} numberOfLines={1}>{memory.title}</Text>
                         <Text style={styles.pillSeparator}>|</Text>
-                        <Feather name="map-pin" size={12} color="rgba(255,255,255,0.8)" />
+                        <Feather name="map-pin" size={12} color="rgba(0,0,0,0.5)" />
                         <Text style={styles.pillDetail} numberOfLines={1}>{memory.locationName?.split(',')[0] || 'Unknown'}</Text>
-                        <Feather name="calendar" size={12} color="rgba(255,255,255,0.8)" />
+                        <Feather name="calendar" size={12} color="rgba(0,0,0,0.5)" />
                         <Text style={styles.pillDetail}>{formatMemoryDate(memory.date)}</Text>
                         {/* Expiry Badge if needed */}
                         {remainingTime && (
                             <>
                                 <Text style={styles.pillSeparator}>|</Text>
-                                <Feather name="clock" size={12} color="#FBBF24" />
-                                <Text style={[styles.pillDetail, { color: '#FBBF24' }]}>{remainingTime}</Text>
+                                <Feather name="clock" size={12} color="#D97706" />
+                                <Text style={[styles.pillDetail, { color: '#D97706' }]}>{remainingTime}</Text>
                             </>
                         )}
                     </View>
@@ -225,7 +225,7 @@ const styles = StyleSheet.create({
     frostedPill: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: 'rgba(0, 0, 0, 0.55)',
+        backgroundColor: 'rgba(255, 255, 255, 0.2)',
         paddingHorizontal: 14,
         paddingVertical: 10,
         borderRadius: 24,
@@ -233,21 +233,21 @@ const styles = StyleSheet.create({
         maxWidth: '90%',
         // iOS blur effect simulation via backdrop
         borderWidth: 1,
-        borderColor: 'rgba(255, 255, 255, 0.15)',
+        borderColor: 'rgba(255, 255, 255, 0.3)',
     },
     pillTitle: {
-        color: 'white',
+        color: '#1a1a1a',
         fontSize: 14,
         fontWeight: 'bold',
         maxWidth: 120,
     },
     pillSeparator: {
-        color: 'rgba(255, 255, 255, 0.4)',
+        color: 'rgba(0, 0, 0, 0.3)',
         fontSize: 14,
         marginHorizontal: 2,
     },
     pillDetail: {
-        color: 'rgba(255, 255, 255, 0.85)',
+        color: 'rgba(0, 0, 0, 0.7)',
         fontSize: 12,
         fontWeight: '500',
         maxWidth: 80,
