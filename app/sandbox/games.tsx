@@ -507,10 +507,16 @@ export default function GameSandbox() {
             >
                 {/* Debug Footer for verification */}
                 <View style={{ alignItems: 'center', marginVertical: 10, opacity: 0.7 }}>
-                    <Text style={{ fontSize: 10, color: '#9CA3AF' }}>
-                        User: {selfUsername} | Active: {activeGames.length} | Pending: {pendingChallenges.length}
+                    <Text style={{ fontSize: 13, color: 'black', fontWeight: 'bold' }}>
+                        User: "{selfUsername}"
                     </Text>
-                    <Text style={{ fontSize: 10, color: '#d1d5db' }}>UID: {currentUserId ? currentUserId.slice(-5) : 'None'} | PID: {firestore().app.options.projectId}</Text>
+                    <Text style={{ fontSize: 13, color: 'black', fontWeight: 'bold' }}>
+                        UID: "{currentUserId ? currentUserId.slice(-5) : 'None'}"
+                    </Text>
+                    <Text style={{ fontSize: 13, color: 'black', fontWeight: 'bold' }}>
+                        Sub: {activeGames.length} | Get: {debugDirectCount === null ? '...' : debugDirectCount}
+                    </Text>
+                    <Text style={{ fontSize: 11, color: '#333' }}>PID: {firestore().app.options.projectId}</Text>
                     {errorInfo && (
                         <Text style={{ fontSize: 10, color: 'red', fontWeight: 'bold' }}>{errorInfo}</Text>
                     )}
