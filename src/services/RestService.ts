@@ -14,7 +14,7 @@ export const RestService = {
             const token = await auth().currentUser?.getIdToken();
             if (!token) {
                 console.warn('[RestService] No auth token available');
-                return [];
+                return { active: [], pending: [] };
             }
 
             // Query: status IN ['accepted'] AND (challengerId == uid OR opponentId == uid)
@@ -83,7 +83,7 @@ export const RestService = {
 
         } catch (error) {
             console.error('[RestService] REST fetch failed:', error);
-            return [];
+            return { active: [], pending: [] };
         }
     }
 };
