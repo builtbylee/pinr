@@ -135,20 +135,22 @@ export const DestinationCard: React.FC<DestinationCardProps> = ({ memory, onClos
                 {/* 3. Compact Frosted Pill (Bottom) */}
                 <View style={styles.pillContainer}>
                     <View style={styles.frostedPill}>
+                        {/* Line 1: Title */}
                         <Text style={styles.pillTitle} numberOfLines={1}>{memory.title}</Text>
-                        <Text style={styles.pillSeparator}>|</Text>
-                        <Feather name="map-pin" size={12} color="rgba(0,0,0,0.5)" />
-                        <Text style={styles.pillDetail} numberOfLines={1}>{memory.locationName?.split(',')[0] || 'Unknown'}</Text>
-                        <Feather name="calendar" size={12} color="rgba(0,0,0,0.5)" />
-                        <Text style={styles.pillDetail}>{formatMemoryDate(memory.date)}</Text>
-                        {/* Expiry Badge if needed */}
-                        {remainingTime && (
-                            <>
-                                <Text style={styles.pillSeparator}>|</Text>
-                                <Feather name="clock" size={12} color="#D97706" />
-                                <Text style={[styles.pillDetail, { color: '#D97706' }]}>{remainingTime}</Text>
-                            </>
-                        )}
+                        {/* Line 2: Location & Date */}
+                        <View style={styles.pillDetailsRow}>
+                            <Feather name="map-pin" size={12} color="rgba(0,0,0,0.5)" />
+                            <Text style={styles.pillDetail} numberOfLines={1}>{memory.locationName?.split(',')[0] || 'Unknown'}</Text>
+                            <Feather name="calendar" size={12} color="rgba(0,0,0,0.5)" />
+                            <Text style={styles.pillDetail}>{formatMemoryDate(memory.date)}</Text>
+                            {/* Expiry Badge if needed */}
+                            {remainingTime && (
+                                <>
+                                    <Feather name="clock" size={12} color="#D97706" />
+                                    <Text style={[styles.pillDetail, { color: '#D97706' }]}>{remainingTime}</Text>
+                                </>
+                            )}
+                        </View>
                     </View>
                 </View>
             </View>
@@ -223,13 +225,13 @@ const styles = StyleSheet.create({
         zIndex: 10,
     },
     frostedPill: {
-        flexDirection: 'row',
+        flexDirection: 'column',
         alignItems: 'center',
         backgroundColor: 'rgba(245, 245, 245, 0.92)',
-        paddingHorizontal: 16,
+        paddingHorizontal: 20,
         paddingVertical: 10,
-        borderRadius: 24,
-        gap: 8,
+        borderRadius: 20,
+        gap: 4,
         maxWidth: '90%',
         // Subtle shadow for depth
         shadowColor: '#000',
@@ -240,19 +242,18 @@ const styles = StyleSheet.create({
     },
     pillTitle: {
         color: '#1a1a1a',
-        fontSize: 14,
+        fontSize: 16,
         fontWeight: 'bold',
-        maxWidth: 120,
+        textAlign: 'center',
     },
-    pillSeparator: {
-        color: 'rgba(0, 0, 0, 0.3)',
-        fontSize: 14,
-        marginHorizontal: 2,
+    pillDetailsRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
     },
     pillDetail: {
-        color: 'rgba(0, 0, 0, 0.7)',
+        color: 'rgba(0, 0, 0, 0.6)',
         fontSize: 12,
         fontWeight: '500',
-        maxWidth: 80,
     },
 });
