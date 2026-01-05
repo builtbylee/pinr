@@ -816,25 +816,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                             />
                         </View>
 
-                        {/* Biometric Toggle (Only if available) */}
-                        {biometricAvailable && (
-                            <View style={styles.settingRow}>
-                                <View style={styles.settingInfo}>
-                                    <Feather name={biometricType.includes('Face') ? "smile" : "fingerprint"} size={22} color="#1a1a1a" />
-                                    <View style={styles.settingText}>
-                                        <Text style={styles.settingLabel}>{biometricType} Login</Text>
-                                        <Text style={styles.settingValue}>{biometricsEnabled ? 'Enabled' : 'Disabled'}</Text>
-                                    </View>
-                                </View>
-                                <Switch
-                                    value={biometricsEnabled}
-                                    onValueChange={handleToggleBiometrics}
-                                    trackColor={{ false: '#767577', true: '#34C759' }}
-                                    thumbColor={'#f4f3f4'}
-                                />
-                            </View>
-                        )}
-
                         {/* Notification Types - only show if push is enabled */}
                         {pushEnabled && (
                             <>
@@ -905,9 +886,29 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                         )}
                     </View>
 
-                    {/* Privacy Section */}
+                    {/* Privacy & Security Section */}
                     <View style={styles.section}>
-                        <Text style={styles.sectionTitle}>Privacy</Text>
+                        <Text style={styles.sectionTitle}>Privacy & Security</Text>
+
+                        {/* Biometric Toggle (Only if available) */}
+                        {biometricAvailable && (
+                            <View style={styles.settingRow}>
+                                <View style={styles.settingInfo}>
+                                    <Feather name={biometricType.includes('Face') ? "smile" : "fingerprint"} size={22} color="#1a1a1a" />
+                                    <View style={styles.settingText}>
+                                        <Text style={styles.settingLabel}>{biometricType} Login</Text>
+                                        <Text style={styles.settingValue}>{biometricsEnabled ? 'Enabled' : 'Disabled'}</Text>
+                                    </View>
+                                </View>
+                                <Switch
+                                    value={biometricsEnabled}
+                                    onValueChange={handleToggleBiometrics}
+                                    trackColor={{ false: '#767577', true: '#34C759' }}
+                                    thumbColor={'#f4f3f4'}
+                                />
+                            </View>
+                        )}
+
                         <View style={styles.settingRow}>
                             <View style={styles.settingInfo}>
                                 <Feather name="eye-off" size={22} color="#1a1a1a" />
