@@ -283,7 +283,11 @@ export async function waitForFirestore(): Promise<void> {
                         const settingsProp = (firestoreInstance as any).settings;
 
                         if (typeof settingsProp === 'function') {
-                            // await firestoreInstance.settings({ experimentalForceLongPolling: true });
+                            try {
+                                await firestoreInstance.settings({ experimentalForceLongPolling: true });
+                            } catch (e) {
+                                console.warn('[FirebaseInit] Failed to set long polling via method:', e);
+                            }
                             console.log('[FirebaseInit] ✅ experimentalForceLongPolling enabled (via Method)');
                         } else {
                             (firestoreInstance as any).settings = { experimentalForceLongPolling: true };

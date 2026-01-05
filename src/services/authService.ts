@@ -8,9 +8,13 @@ if (!GOOGLE_WEB_CLIENT_ID) {
 }
 
 
-// GoogleSignin.configure({
-//     webClientId: GOOGLE_WEB_CLIENT_ID,
-// });
+try {
+    GoogleSignin.configure({
+        webClientId: GOOGLE_WEB_CLIENT_ID,
+    });
+} catch (error) {
+    console.warn('[AuthService] Failed to configure Google Sign-In:', error);
+}
 
 
 // Helper function to ensure Firebase is ready before using auth
