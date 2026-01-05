@@ -132,42 +132,23 @@ export const DestinationCard: React.FC<DestinationCardProps> = ({ memory, onClos
                     </TouchableOpacity>
                 </View>
 
-                {/* 3. Gradient & Text Overlay (Bottom) */}
-                <View style={styles.gradientOverlay}>
-                    <View style={styles.textContainer}>
-                        {/* Title Row */}
-                        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                            <Text style={styles.title} numberOfLines={2}>{memory.title}</Text>
-                            {/* Expiry Badge if needed */}
-                            {remainingTime && (
-                                <View style={styles.expiryBadge}>
-                                    <Feather name="clock" size={12} color="#D97706" />
-                                    <Text style={styles.expiryText}>{remainingTime}</Text>
-                                </View>
-                            )}
-                        </View>
-
-                        {/* Details Row */}
-                        <View style={styles.detailsRow}>
-                            <View style={styles.detailItem}>
-                                <Feather
-                                    name="map-pin"
-                                    size={14}
-                                    color="white"
-                                    style={{ textShadowColor: 'black', textShadowOffset: { width: 1, height: 1 }, textShadowRadius: 2 }}
-                                />
-                                <Text style={styles.detailText} numberOfLines={1}>{memory.locationName}</Text>
-                            </View>
-                            <View style={styles.detailItem}>
-                                <Feather
-                                    name="calendar"
-                                    size={14}
-                                    color="white"
-                                    style={{ textShadowColor: 'black', textShadowOffset: { width: 1, height: 1 }, textShadowRadius: 2 }}
-                                />
-                                <Text style={styles.detailText}>{formatMemoryDate(memory.date)}</Text>
-                            </View>
-                        </View>
+                {/* 3. Compact Frosted Pill (Bottom) */}
+                <View style={styles.pillContainer}>
+                    <View style={styles.frostedPill}>
+                        <Text style={styles.pillTitle} numberOfLines={1}>{memory.title}</Text>
+                        <Text style={styles.pillSeparator}>|</Text>
+                        <Feather name="map-pin" size={12} color="rgba(255,255,255,0.8)" />
+                        <Text style={styles.pillDetail} numberOfLines={1}>{memory.locationName?.split(',')[0] || 'Unknown'}</Text>
+                        <Feather name="calendar" size={12} color="rgba(255,255,255,0.8)" />
+                        <Text style={styles.pillDetail}>{formatMemoryDate(memory.date)}</Text>
+                        {/* Expiry Badge if needed */}
+                        {remainingTime && (
+                            <>
+                                <Text style={styles.pillSeparator}>|</Text>
+                                <Feather name="clock" size={12} color="#FBBF24" />
+                                <Text style={[styles.pillDetail, { color: '#FBBF24' }]}>{remainingTime}</Text>
+                            </>
+                        )}
                     </View>
                 </View>
             </View>
@@ -233,65 +214,42 @@ const styles = StyleSheet.create({
         borderColor: 'rgba(255,255,255,0.2)',
         backdropFilter: 'blur(10px)', // Works on iOS
     },
-    gradientOverlay: {
+    pillContainer: {
         position: 'absolute',
-        bottom: 0,
+        bottom: 20,
         left: 0,
         right: 0,
-        height: '40%', // Cover bottom 40%
-        justifyContent: 'flex-end',
-        paddingHorizontal: 24,
-        paddingBottom: 32,
-        // Removed dark background, replaced with text shadows
-        backgroundColor: 'transparent',
+        alignItems: 'center',
+        zIndex: 10,
     },
-    textContainer: {
-        width: '100%',
-        gap: 8,
-    },
-    title: {
-        fontSize: 32,
-        fontWeight: 'bold',
-        color: 'white',
-        // Strong "Outline" Shadow
-        textShadowColor: 'black',
-        textShadowOffset: { width: 1, height: 1 },
-        textShadowRadius: 3,
-        flex: 1,
-        marginRight: 8,
-    },
-    detailsRow: {
+    frostedPill: {
         flexDirection: 'row',
         alignItems: 'center',
-        flexWrap: 'wrap',
-        gap: 16,
-    },
-    detailItem: {
-        flexDirection: 'row',
-        alignItems: 'center',
+        backgroundColor: 'rgba(0, 0, 0, 0.55)',
+        paddingHorizontal: 14,
+        paddingVertical: 10,
+        borderRadius: 24,
         gap: 6,
+        maxWidth: '90%',
+        // iOS blur effect simulation via backdrop
+        borderWidth: 1,
+        borderColor: 'rgba(255, 255, 255, 0.15)',
     },
-    detailText: {
+    pillTitle: {
         color: 'white',
         fontSize: 14,
-        fontWeight: '600',
-        // Strong "Outline" Shadow
-        textShadowColor: 'black',
-        textShadowOffset: { width: 1, height: 1 },
-        textShadowRadius: 2,
+        fontWeight: 'bold',
+        maxWidth: 120,
     },
-    expiryBadge: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: 'rgba(254, 243, 199, 0.9)', // Light yellow
-        paddingHorizontal: 8,
-        paddingVertical: 4,
-        borderRadius: 12,
-        gap: 4,
+    pillSeparator: {
+        color: 'rgba(255, 255, 255, 0.4)',
+        fontSize: 14,
+        marginHorizontal: 2,
     },
-    expiryText: {
+    pillDetail: {
+        color: 'rgba(255, 255, 255, 0.85)',
         fontSize: 12,
-        color: '#D97706',
-        fontWeight: '700',
+        fontWeight: '500',
+        maxWidth: 80,
     },
 });
