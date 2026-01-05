@@ -8,7 +8,7 @@ export const RestService = {
     /**
      * Fetch active games using raw REST API to bypass gRPC hang
      */
-    async fetchActiveGames(uid: string): Promise<GameChallenge[]> {
+    async fetchActiveGames(uid: string): Promise<{ active: GameChallenge[], pending: GameChallenge[] }> {
         try {
             console.log('[RestService] Fetching games via REST for:', uid);
             const token = await auth().currentUser?.getIdToken();
@@ -52,14 +52,34 @@ export const RestService = {
                 }
             });
 
+            // 3. Pending Challenges (For badges)
+            const pending = await runQuery(token, {
+                structuredQuery: {
+                    from: [{ collectionId: 'game_challenges' }],
+                    where: {
+                        compositeFilter: {
+                            op: 'AND',
+                            filters: [
+                                { fieldFilter: { field: { fieldPath: 'opponentId' }, op: 'EQUAL', value: { stringValue: uid } } },
+                                { fieldFilter: { field: { fieldPath: 'status' }, op: 'EQUAL', value: { stringValue: 'pending' } } }
+                            ]
+                        }
+                    }
+                }
+            });
+
             const merged = [...games1, ...games2];
             // Deduplicate by ID just in case
             const unique = new Map();
             merged.forEach(g => unique.set(g.id, g));
 
             const results = Array.from(unique.values());
-            console.log(`[RestService] Found ${results.length} games via REST`);
-            return results;
+            console.log(`[RestService] Found ${results.length} active and ${pending.length} pending games via REST`);
+
+            return {
+                active: results,
+                pending: pending
+            };
 
         } catch (error) {
             console.error('[RestService] REST fetch failed:', error);
