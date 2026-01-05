@@ -113,6 +113,19 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
         }
     };
 
+    // Sync ScrollView position with activeTab when modal becomes visible
+    // This fixes the bug where returning to profile after viewing bucket list item
+    // shows pins instead of bucket list due to ScrollView position resetting
+    useEffect(() => {
+        if (visible && tabScrollViewRef.current) {
+            const index = activeTab === 'pins' ? 0 : activeTab === 'journeys' ? 1 : 2;
+            // Use setTimeout to ensure ScrollView is mounted before scrolling
+            setTimeout(() => {
+                tabScrollViewRef.current?.scrollTo({ x: index * modalContentWidth, animated: false });
+            }, 100);
+        }
+    }, [visible]);
+
     // Fetch profile data
     useEffect(() => {
         if (visible && userId) {
