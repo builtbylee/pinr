@@ -82,7 +82,7 @@ target 'Pinr' do
       # Patch 1: When size is 0, use 100MB instead of firestore.settings.cacheSizeBytes (which may be invalid)
       content.gsub!(
         /firestoreSettings\.cacheSizeBytes = firestore\.settings\.cacheSizeBytes;/,
-        'firestoreSettings.cacheSizeBytes = 100 * 1024 * 1024; firestoreSettings.experimentalForceLongPolling = YES; // Force Long Polling (iOS Fix)'
+        'firestoreSettings.cacheSizeBytes = 100 * 1024 * 1024; [firestoreSettings setValue:@YES forKey:@"experimentalForceLongPolling"]; // Force Long Polling (iOS Fix)'
       )
       
       File.write(firestore_common_path, content)
