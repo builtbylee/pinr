@@ -1308,3 +1308,82 @@ export const rejectReportedPin = functions.https.onCall(async (data, context) =>
         throw new functions.https.HttpsError('internal', 'Failed to reject pin.');
     }
 });
+// ============================================
+// DATA FETCHING PROXY (iOS Connectivity Bypass)
+// ============================================
+
+/**
+ * Fetch active games and pending challenges via HTTPS
+ * Bypasses client-side gRPC connection issues on iOS
+ */
+export const fetchActiveGames = functions.https.onCall(async (data, context) => {
+    // 1. Verify authentication
+    if (!context.auth) {
+        throw new functions.https.HttpsError(
+            'unauthenticated',
+            'User must be authenticated to fetch games.'
+        );
+    }
+
+    const uid = context.auth.uid;
+    console.log(`[fetchActiveGames] Fetching games for user: ${uid}`);
+
+    try {
+        const challengesRef = db.collection(CHALLENGES_COLLECTION);
+
+        // Parallel queries for performance
+        const [challengerGames, opponentGames, pendingChallenges] = await Promise.all([
+            // 1. Active games where I am challenger
+            challengesRef
+                .where('challengerId', '==', uid)
+                .where('status', 'in', ['accepted'])
+                .get(),
+
+            // 2. Active games where I am opponent
+            challengesRef
+                .where('opponentId', '==', uid)
+                .where('status', 'in', ['accepted'])
+                .get(),
+
+            // 3. Pending challenges (for "Your Turn" badge logic)
+            challengesRef
+                .where('opponentId', '==', uid)
+                .where('status', '==', 'pending')
+                .get()
+        ]);
+
+        const formatGame = (doc: admin.firestore.QueryDocumentSnapshot) => {
+            const data = doc.data();
+            return {
+                id: doc.id,
+                ...data,
+                // Ensure timestamps are numbers, not Firestore objects
+                createdAt: data.createdAt instanceof admin.firestore.Timestamp ? data.createdAt.toMillis() : data.createdAt,
+                expiresAt: data.expiresAt instanceof admin.firestore.Timestamp ? data.expiresAt.toMillis() : data.expiresAt,
+            };
+        };
+
+        const activeGames = [
+            ...challengerGames.docs.map(formatGame),
+            ...opponentGames.docs.map(formatGame)
+        ];
+
+        const pending = pendingChallenges.docs.map(formatGame);
+
+        console.log(`[fetchActiveGames] Found ${activeGames.length} active and ${pending.length} pending for ${uid}`);
+
+        return {
+            success: true,
+            activeGames,
+            pendingChallenges: pending,
+            timestamp: Date.now()
+        };
+
+    } catch (error: any) {
+        console.error('[fetchActiveGames] Error:', error);
+        throw new functions.https.HttpsError(
+            'internal',
+            error.message || 'Failed to fetch games.'
+        );
+    }
+});

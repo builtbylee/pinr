@@ -190,14 +190,17 @@ export default function GameSandbox() {
                 setSelfUsername(p?.username || 'Unknown User');
             }).catch(() => setSelfUsername('Fetch Error'));
 
-            // Diagnostic: Direct Fetch
-            challengeService.getActiveChallenges().then(res => {
-                console.log('[GameSandbox] Direct fetch result:', res.length);
-                setDebugDirectCount(res.length);
-            }).catch(e => {
-                console.error('[GameSandbox] Direct fetch failed:', e);
-                setDebugDirectCount(-1);
-            });
+            // Diagnostic: REST Fetch (Bypassing gRPC)
+            if (uid) {
+                const { RestService } = require('@/src/services/RestService');
+                RestService.fetchActiveGames(uid).then((res: any[]) => {
+                    console.log('[GameSandbox] REST fetch result:', res.length);
+                    setDebugDirectCount(res.length);
+                }).catch((e: any) => {
+                    console.error('[GameSandbox] REST fetch failed:', e);
+                    setDebugDirectCount(-2); // -2 indicates REST failure
+                });
+            }
 
             // A. Active Games
             unsubChallenges = challengeService.subscribeToActiveChallenges(uid, async (games) => {

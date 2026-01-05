@@ -43,7 +43,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.rejectReportedPin = exports.approveReportedPin = exports.onReportCreated = exports.moderateImage = exports.adminDeletePin = exports.checkBanStatus = exports.unbanUser = exports.banUser = exports.onWaitlistSignup = exports.createStory = exports.submitChallengeScore = exports.submitGameScore = exports.acceptFriendRequest = exports.removeFriend = exports.addFriend = void 0;
+exports.fetchActiveGames = exports.rejectReportedPin = exports.approveReportedPin = exports.onReportCreated = exports.moderateImage = exports.adminDeletePin = exports.checkBanStatus = exports.unbanUser = exports.banUser = exports.onWaitlistSignup = exports.createStory = exports.submitChallengeScore = exports.submitGameScore = exports.acceptFriendRequest = exports.removeFriend = exports.addFriend = void 0;
 const functions = __importStar(require("firebase-functions"));
 const admin = __importStar(require("firebase-admin"));
 admin.initializeApp();
@@ -998,6 +998,64 @@ exports.rejectReportedPin = functions.https.onCall(async (data, context) => {
     catch (error) {
         console.error('[rejectReportedPin] Error:', error.message);
         throw new functions.https.HttpsError('internal', 'Failed to reject pin.');
+    }
+});
+// ============================================
+// DATA FETCHING PROXY (iOS Connectivity Bypass)
+// ============================================
+/**
+ * Fetch active games and pending challenges via HTTPS
+ * Bypasses client-side gRPC connection issues on iOS
+ */
+exports.fetchActiveGames = functions.https.onCall(async (data, context) => {
+    // 1. Verify authentication
+    if (!context.auth) {
+        throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated to fetch games.');
+    }
+    const uid = context.auth.uid;
+    console.log(`[fetchActiveGames] Fetching games for user: ${uid}`);
+    try {
+        const challengesRef = db.collection(CHALLENGES_COLLECTION);
+        // Parallel queries for performance
+        const [challengerGames, opponentGames, pendingChallenges] = await Promise.all([
+            // 1. Active games where I am challenger
+            challengesRef
+                .where('challengerId', '==', uid)
+                .where('status', 'in', ['accepted'])
+                .get(),
+            // 2. Active games where I am opponent
+            challengesRef
+                .where('opponentId', '==', uid)
+                .where('status', 'in', ['accepted'])
+                .get(),
+            // 3. Pending challenges (for "Your Turn" badge logic)
+            challengesRef
+                .where('opponentId', '==', uid)
+                .where('status', '==', 'pending')
+                .get()
+        ]);
+        const formatGame = (doc) => {
+            const data = doc.data();
+            return Object.assign(Object.assign({ id: doc.id }, data), { 
+                // Ensure timestamps are numbers, not Firestore objects
+                createdAt: data.createdAt instanceof admin.firestore.Timestamp ? data.createdAt.toMillis() : data.createdAt, expiresAt: data.expiresAt instanceof admin.firestore.Timestamp ? data.expiresAt.toMillis() : data.expiresAt });
+        };
+        const activeGames = [
+            ...challengerGames.docs.map(formatGame),
+            ...opponentGames.docs.map(formatGame)
+        ];
+        const pending = pendingChallenges.docs.map(formatGame);
+        console.log(`[fetchActiveGames] Found ${activeGames.length} active and ${pending.length} pending for ${uid}`);
+        return {
+            success: true,
+            activeGames,
+            pendingChallenges: pending,
+            timestamp: Date.now()
+        };
+    }
+    catch (error) {
+        console.error('[fetchActiveGames] Error:', error);
+        throw new functions.https.HttpsError('internal', error.message || 'Failed to fetch games.');
     }
 });
 //# sourceMappingURL=index.js.map
