@@ -482,6 +482,9 @@ export default function GameSandbox() {
                 contentContainerStyle={{ paddingBottom: 100 }}
                 showsVerticalScrollIndicator={false}
             >
+                <View style={{ backgroundColor: 'red', padding: 10, margin: 10, borderRadius: 8 }}>
+                    <Text style={{ color: 'white', fontWeight: 'bold', textAlign: 'center' }}>DIAGNOSTIC: AUTH DISABLED</Text>
+                </View>
 
                 {/* Page Header with Back Button */}
                 <View style={{ paddingHorizontal: 20, paddingTop: 8, paddingBottom: 8 }}>

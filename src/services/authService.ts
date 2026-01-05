@@ -7,15 +7,17 @@ if (!GOOGLE_WEB_CLIENT_ID) {
     console.error('[AuthService] CRITICAL: EXPO_PUBLIC_GOOGLE_CLIENT_ID environment variable is not set!');
 }
 
-GoogleSignin.configure({
-    webClientId: GOOGLE_WEB_CLIENT_ID,
-});
+
+// GoogleSignin.configure({
+//     webClientId: GOOGLE_WEB_CLIENT_ID,
+// });
+
 
 // Helper function to ensure Firebase is ready before using auth
 // Retries with exponential backoff if Firebase isn't ready
 async function ensureFirebaseReady() {
     const { waitForFirebase } = require('./firebaseInitService');
-    
+
     // Try waiting for Firebase
     try {
         await waitForFirebase();
@@ -25,12 +27,12 @@ async function ensureFirebaseReady() {
         console.warn('[AuthService] Firebase wait failed, will retry on actual call:', error);
         // Don't throw yet - we'll retry when actually calling Firebase
     }
-    
+
     // If waitForFirebase failed, try a few more times with delays
     // Sometimes Firebase just needs a bit more time
     for (let attempt = 0; attempt < 5; attempt++) {
         await new Promise(resolve => setTimeout(resolve, 500 * (attempt + 1)));
-        
+
         try {
             // Try to actually use auth() to see if Firebase is ready
             const authInstance = auth();
@@ -53,7 +55,7 @@ async function ensureFirebaseReady() {
  */
 export const signInWithGoogle = async (): Promise<{ uid: string; email: string | null; displayName: string | null; isNewUser: boolean }> => {
     console.log('[AuthService] ========== signInWithGoogle START ==========');
-    
+
     // Try to ensure Firebase is ready, but don't block if it fails
     console.log('[AuthService] 🔍 Checking Firebase readiness...');
     try {
@@ -62,7 +64,7 @@ export const signInWithGoogle = async (): Promise<{ uid: string; email: string |
     } catch (error) {
         console.warn('[AuthService] ⚠️ Firebase wait failed, will retry on actual call');
     }
-    
+
     // Retry the actual Firebase operations with exponential backoff
     let lastError: any = null;
     for (let attempt = 0; attempt < 5; attempt++) {
@@ -120,7 +122,7 @@ export const signInWithGoogle = async (): Promise<{ uid: string; email: string |
             };
         } catch (error: any) {
             lastError = error;
-            
+
             // Check if it's a Firebase initialization error
             if (error.message?.includes('No Firebase App') || error.message?.includes('initializeApp')) {
                 if (attempt < 4) {
@@ -133,7 +135,7 @@ export const signInWithGoogle = async (): Promise<{ uid: string; email: string |
                     throw new Error('Firebase is still initializing. Please wait a moment and try again.');
                 }
             }
-            
+
             // Handle Google Sign-In specific errors
             if (error.code === statusCodes.SIGN_IN_CANCELLED) {
                 throw new Error('Sign-in was cancelled');
@@ -147,7 +149,7 @@ export const signInWithGoogle = async (): Promise<{ uid: string; email: string |
             throw error;
         }
     }
-    
+
     // If we get here, all retries failed
     throw lastError || new Error('Google sign-in failed after retries');
 };
@@ -159,7 +161,7 @@ export const linkEmailPassword = async (email: string, password: string): Promis
     try {
         // Ensure Firebase is ready
         await ensureFirebaseReady();
-        
+
         const credential = auth.EmailAuthProvider.credential(email, password);
         const currentUser = auth().currentUser;
 
@@ -192,7 +194,7 @@ export const signInEmailPassword = async (email: string, password: string): Prom
     console.log('[AuthService] ========== signInEmailPassword START ==========');
     console.log('[AuthService] Email:', email);
     console.log('[AuthService] Password length:', password.length);
-    
+
     // Try to ensure Firebase is ready, but don't block if it fails
     console.log('[AuthService] 🔍 Checking Firebase readiness...');
     try {
@@ -201,7 +203,7 @@ export const signInEmailPassword = async (email: string, password: string): Prom
     } catch (error) {
         console.warn('[AuthService] ⚠️ Firebase wait failed, will retry on actual call');
     }
-    
+
     // Retry the actual Firebase call with exponential backoff
     let lastError: any = null;
     for (let attempt = 0; attempt < 5; attempt++) {
@@ -215,28 +217,28 @@ export const signInEmailPassword = async (email: string, password: string): Prom
             console.log('[AuthService] Sign-in duration:', signInDuration + 'ms');
             console.log('[AuthService] User ID:', userId);
             console.log('[AuthService] User email:', userCredential.user.email);
-            
+
             // Wait a moment for auth state to propagate
             console.log('[AuthService] ⏳ Waiting 100ms for auth state to propagate...');
             await new Promise(resolve => setTimeout(resolve, 100));
-            
+
             // Verify user is still available
             const currentUser = auth().currentUser;
             console.log('[AuthService] Current user after wait:', currentUser ? `Found ${currentUser.uid}` : 'NOT FOUND');
-            
+
             if (!currentUser || currentUser.uid !== userId) {
                 console.warn('[AuthService] ⚠️ User not immediately available after sign-in, waiting 200ms more...');
                 // Wait a bit more and check again
                 await new Promise(resolve => setTimeout(resolve, 200));
                 const retryUser = auth().currentUser;
                 console.log('[AuthService] Current user after second wait:', retryUser ? `Found ${retryUser.uid}` : 'NOT FOUND');
-                
+
                 if (!retryUser || retryUser.uid !== userId) {
                     console.error('[AuthService] ❌ User state not available after sign-in');
                     throw new Error('Sign-in succeeded but user state not available');
                 }
             }
-            
+
             console.log('[AuthService] ✅ User verified, returning user ID');
             console.log('[AuthService] ========== signInEmailPassword SUCCESS ==========');
             return userId; // Return user ID
@@ -245,7 +247,7 @@ export const signInEmailPassword = async (email: string, password: string): Prom
             console.error(`[AuthService] ❌ Sign-in attempt ${attempt + 1} failed`);
             console.error('[AuthService] Error code:', error.code);
             console.error('[AuthService] Error message:', error.message);
-            
+
             // Check if it's a Firebase initialization error
             if (error.message?.includes('No Firebase App') || error.message?.includes('initializeApp')) {
                 if (attempt < 4) {
@@ -259,7 +261,7 @@ export const signInEmailPassword = async (email: string, password: string): Prom
                     throw new Error('Firebase is still initializing. Please wait a moment and try again.');
                 }
             }
-            
+
             // Handle auth errors
             if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
                 console.error('[AuthService] ❌ Invalid credentials');
@@ -268,13 +270,13 @@ export const signInEmailPassword = async (email: string, password: string): Prom
                 console.error('[AuthService] ❌ Invalid email format');
                 throw new Error('Invalid email address.');
             }
-            
+
             // For other errors, throw immediately
             console.error('[AuthService] ❌ Unexpected error, throwing immediately');
             throw error;
         }
     }
-    
+
     // If we get here, all retries failed
     console.error('[AuthService] ❌ All sign-in attempts failed');
     console.error('[AuthService] ========== signInEmailPassword FAILED ==========');
@@ -288,7 +290,7 @@ export const sendPasswordReset = async (email: string): Promise<void> => {
     try {
         // Ensure Firebase is ready
         await ensureFirebaseReady();
-        
+
         await auth().sendPasswordResetEmail(email);
         console.log('[AuthService] Password reset email sent to:', email);
     } catch (error: any) {
@@ -311,7 +313,7 @@ export const updatePassword = async (newPassword: string): Promise<void> => {
     try {
         // Ensure Firebase is ready
         await ensureFirebaseReady();
-        
+
         const currentUser = auth().currentUser;
         if (currentUser) {
             await currentUser.updatePassword(newPassword);
@@ -349,7 +351,7 @@ export const signOut = async (): Promise<void> => {
             console.log('[AuthService] ℹ️ No user currently signed in, sign out not needed');
             return;
         }
-        
+
         await auth().signOut();
         console.log('[AuthService] ✅ User signed out successfully');
     } catch (error: any) {
@@ -385,7 +387,7 @@ export const signInAnonymously = async (): Promise<string | null> => {
     try {
         // Ensure Firebase is ready
         await ensureFirebaseReady();
-        
+
         const userCredential = await auth().signInAnonymously();
         return userCredential.user.uid;
     } catch (error) {
@@ -402,7 +404,7 @@ export const signUpWithEmail = async (email: string, password: string): Promise<
     try {
         // Ensure Firebase is ready
         await ensureFirebaseReady();
-        
+
         const userCredential = await auth().createUserWithEmailAndPassword(email, password);
         return userCredential.user.uid;
     } catch (error: any) {
@@ -426,14 +428,14 @@ export const signUpWithEmail = async (email: string, password: string): Promise<
 export const onAuthStateChanged = async (callback: (userId: string | null) => void): Promise<() => void> => {
     // Import here to avoid circular dependency
     const { waitForFirebase } = require('./firebaseInitService');
-    
+
     // Try to wait for Firebase, but don't block forever
     try {
         await waitForFirebase();
     } catch (error) {
         console.warn('[AuthService] Firebase wait failed, will retry on actual call:', error);
     }
-    
+
     // Retry subscribing to auth state with exponential backoff
     let lastError: any = null;
     for (let attempt = 0; attempt < 5; attempt++) {
@@ -442,13 +444,13 @@ export const onAuthStateChanged = async (callback: (userId: string | null) => vo
             const unsubscribe = auth().onAuthStateChanged(user => {
                 callback(user ? user.uid : null);
             });
-            
+
             console.log('[AuthService] Successfully subscribed to auth state changes');
             return unsubscribe;
         } catch (error: any) {
             lastError = error;
             console.error(`[AuthService] Failed to subscribe to auth state (attempt ${attempt + 1}/5):`, error);
-            
+
             // Check if it's a Firebase initialization error
             if (error.message?.includes('No Firebase App') || error.message?.includes('initializeApp')) {
                 if (attempt < 4) {
@@ -460,18 +462,18 @@ export const onAuthStateChanged = async (callback: (userId: string | null) => vo
                 } else {
                     // Last attempt failed - return a no-op function
                     console.error('[AuthService] Firebase still not ready after retries, returning no-op unsubscribe');
-                    return () => {};
+                    return () => { };
                 }
             }
-            
+
             // For other errors, throw immediately
             throw error;
         }
     }
-    
+
     // If all retries failed, return a no-op function
     console.error('[AuthService] All retries failed, returning no-op unsubscribe');
-    return () => {};
+    return () => { };
 };
 
 /**
