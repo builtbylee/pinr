@@ -138,13 +138,22 @@ export const ExploreInfoCard: React.FC<ExploreInfoCardProps> = ({ placeName, loc
                                             source={{ uri: imageSource }}
                                             style={styles.image}
                                             contentFit="cover"
-                                            transition={500}
                                         />
                                         {/* Unsplash Attribution Overlay */}
-                                        {unsplashImage && (
+                                        {unsplashImage?.photographer?.url && (
                                             <TouchableOpacity
                                                 style={styles.attribution}
-                                                onPress={() => Linking.openURL(unsplashImage.photographer.url)}
+                                                onPress={async () => {
+                                                    try {
+                                                        const url = unsplashImage.photographer.url;
+                                                        const canOpen = await Linking.canOpenURL(url);
+                                                        if (canOpen) {
+                                                            await Linking.openURL(url);
+                                                        }
+                                                    } catch (e) {
+                                                        console.warn('[ExploreInfoCard] Attribution link failed:', e);
+                                                    }
+                                                }}
                                             >
                                                 <Text style={styles.attributionText}>
                                                     Photo by {unsplashImage.photographer.name}

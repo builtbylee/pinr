@@ -106,13 +106,29 @@ export const searchWikiPlaces = async (query: string): Promise<GeocodingResult[]
 
         // Filter out items WITHOUT coordinates (Critical for map placement)
         // Wiki returns many pages without coords. We must discard them for Geocoding purposes.
-        // Also exclude non-place results (companies, people, events, universities)
+        // Also exclude non-place results (companies, people, events, universities, media, accidents)
         const excludePatterns = [
-            'company', 'corporation', 'brand', 'manufacturer', 'conglomerate',
-            'person', 'singer', 'actor', 'musician', 'politician', 'athlete', 'bandleader', 'violinist',
-            'flight', 'disaster', 'incident', 'event', 'bombing', 'crash',
-            'university', 'college', 'school', 'institute', 'academy'
+            // Companies & Brands
+            'company', 'corporation', 'brand', 'manufacturer', 'conglomerate', 'subsidiary',
+            // People
+            'person', 'singer', 'actor', 'musician', 'politician', 'athlete', 'bandleader',
+            'violinist', 'writer', 'director', 'entrepreneur', 'executive',
+            // Events & Incidents
+            'flight', 'disaster', 'incident', 'event', 'bombing', 'crash', 'accident',
+            'attack', 'war', 'battle', 'massacre', 'riot', 'coup', 'revolution',
+            // Education
+            'university', 'college', 'school', 'institute', 'academy',
+            // Media & Organizations
+            'television', 'network', 'channel', 'radio', 'newspaper', 'magazine',
+            'organization', 'association', 'foundation', 'agency',
+            // Military & Vehicles
+            'helicopter', 'aircraft', 'ship', 'submarine', 'tank', 'military operation',
+            // Nuclear/Industrial
+            'nuclear', 'reactor', 'power plant'
         ];
+
+        // Title-based exclusions for edge cases where description might not catch it
+        const titleExcludePatterns = ['accident', 'incident', 'crash', 'disaster', 'bombing', 'attack'];
 
         const validPages = pages.filter((p: any) => {
             // Must have coordinates for map placement
@@ -120,11 +136,18 @@ export const searchWikiPlaces = async (query: string): Promise<GeocodingResult[]
 
             // Check description for non-place patterns
             const desc = (p.description || '').toLowerCase();
-            const isExcluded = excludePatterns.some(pattern => desc.includes(pattern));
-            if (isExcluded) {
+            const title = (p.title || '').toLowerCase();
+
+            // Check description
+            const isDescExcluded = excludePatterns.some(pattern => desc.includes(pattern));
+            // Check title for obvious event keywords
+            const isTitleExcluded = titleExcludePatterns.some(pattern => title.includes(pattern));
+
+            if (isDescExcluded || isTitleExcluded) {
                 console.log(`[WikiService] Filtered out non-place: ${p.title} (${desc})`);
+                return false;
             }
-            return !isExcluded;
+            return true;
         });
 
         const results = validPages.map((p: any) => ({
