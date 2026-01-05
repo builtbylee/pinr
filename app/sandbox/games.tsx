@@ -438,18 +438,21 @@ export default function GameSandbox() {
 
                 {/* Page Header with Back Button */}
                 <View style={{ paddingHorizontal: 20, paddingTop: 8, paddingBottom: 8 }}>
-                    {/* Back Button Row */}
+                    {/* Back Button */}
                     <TouchableOpacity
                         onPress={() => router.back()}
                         style={{
-                            flexDirection: 'row',
+                            width: 36,
+                            height: 36,
+                            borderRadius: 18,
+                            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                            justifyContent: 'center',
                             alignItems: 'center',
                             marginBottom: 12,
                             alignSelf: 'flex-start',
                         }}
                     >
                         <Feather name="arrow-left" size={20} color="#3B82F6" />
-                        <Text style={{ fontSize: 16, color: '#3B82F6', marginLeft: 4, fontWeight: '500' }}>Back</Text>
                     </TouchableOpacity>
 
                     <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
