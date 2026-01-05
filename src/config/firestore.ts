@@ -9,8 +9,7 @@ const configureFirestore = () => {
     try {
         const settings = {
             cacheSizeBytes: 10 * 1024 * 1024, // 10MB cache (reduced from 100MB for faster cold start)
-            // Note: experimentalForceLongPolling is not a valid setting in React Native Firebase
-            // Long polling is configured via the Podfile patch instead
+            experimentalForceLongPolling: true, // CRITICAL: Enable Long Polling to fix iOS gRPC Hangs
         };
 
         firestore().settings(settings);
