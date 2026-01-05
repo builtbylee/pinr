@@ -80,7 +80,7 @@ export default function GameSandbox() {
     const [selectedGameType, setSelectedGameType] = useState<'flagdash' | 'pindrop' | 'travelbattle' | null>(null);
     const [previewGame, setPreviewGame] = useState<'flagdash' | 'pindrop' | 'travelbattle' | null>(null); // For bottom sheet
     const [pinDropDifficulty, setPinDropDifficulty] = useState<PinDropDifficulty>('medium');
-    const [errorInfo, setErrorInfo] = useState<string | null>(null);
+
 
     // Challenge state
     const [showChallengePicker, setShowChallengePicker] = useState(false);
