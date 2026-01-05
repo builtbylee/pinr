@@ -190,16 +190,41 @@ export default function GameSandbox() {
                 setSelfUsername(p?.username || 'Unknown User');
             }).catch(() => setSelfUsername('Fetch Error'));
 
-            // Diagnostic: REST Fetch (Bypassing gRPC)
+            // Diagnostic: REST Fetch (Bypassing gRPC) & UI Wiring
+            // Since native subscriptions are broken on iOS, we use this Polling Fallback
             if (uid) {
                 const { RestService } = require('@/src/services/RestService');
-                RestService.fetchActiveGames(uid).then((res: any[]) => {
-                    console.log('[GameSandbox] REST fetch result:', res.length);
-                    setDebugDirectCount(res.length);
-                }).catch((e: any) => {
-                    console.error('[GameSandbox] REST fetch failed:', e);
-                    setDebugDirectCount(-2); // -2 indicates REST failure
-                });
+
+                const pollGames = () => {
+                    console.log('[GameSandbox] 🔄 Polling REST API...');
+                    RestService.fetchActiveGames(uid).then((res: { active: any[], pending: any[] }) => {
+                        console.log(`[GameSandbox] REST Success: ${res.active.length} active, ${res.pending.length} pending`);
+
+                        // Update Debug Footer
+                        setDebugDirectCount(res.active.length);
+
+                        // HYDRATE UI STATE (Fixes missing tiles)
+                        setActiveChallenges(res.active);
+                        setPendingChallenges(res.pending);
+
+                    }).catch((e: any) => {
+                        console.error('[GameSandbox] REST fetch failed:', e);
+                        setDebugDirectCount(-2);
+                    });
+                };
+
+                // Initial Fetch
+                pollGames();
+
+                // Poll every 10 seconds to simulate real-time
+                const intervalId = setInterval(pollGames, 10000);
+
+                // Cleanup polling on unmount/auth change
+                const originalUnsub = unsubChallenges; // Keep ref to any native unsub if it exists
+                unsubChallenges = () => {
+                    clearInterval(intervalId);
+                    if (originalUnsub) originalUnsub();
+                };
             }
 
             // A. Active Games
