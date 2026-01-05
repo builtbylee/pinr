@@ -12,10 +12,115 @@ import { challengeService, GameChallenge } from '../../src/services/ChallengeSer
 import { getUserProfile, getFriends } from '../../src/services/userService';
 import { getCurrentUser, onAuthStateChanged } from '../../src/services/authService';
 
-import { PinDropDifficulty } from '../../src/services/PinDropService';
-import { streakService } from '../../src/services/StreakService';
-import { useMemoryStore } from '../../src/store/useMemoryStore';
+// ... imports ...
 
+export default function GameSandbox() {
+    // ... existing state ...
+    const [authDebug, setAuthDebug] = useState<string>('Initializing...');
+    const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+
+    // ... existing code ...
+
+    useEffect(() => {
+        let unsubAuth = () => { };
+        let unsubChallenges = () => { };
+        let unsubPending = () => { };
+
+        const setupSubscriptions = (uid: string) => {
+            setAuthDebug(`User ready: ${uid.slice(0, 5)}...`);
+            console.log('[GameSandbox] Setting up subscriptions for user:', uid);
+
+            // A. Active Games
+            unsubChallenges = challengeService.subscribeToActiveChallenges(uid, async (games) => {
+                try {
+                    console.log('[GameSandbox] Active games updated:', games.length);
+                    setActiveGames(games);
+
+                    // Fetch avatars/pins for opponents
+                    const dataUpdates: Record<string, { avatarUrl: string | null; pinColor: string | null }> = {};
+                    for (const game of games) {
+                        const opponentId = game.challengerId === uid ? game.opponentId : game.challengerId;
+                        if (!opponentData[opponentId]) {
+                            try {
+                                const profile = await getUserProfile(opponentId);
+                                dataUpdates[opponentId] = {
+                                    avatarUrl: profile?.avatarUrl || null,
+                                    pinColor: profile?.pinColor || null
+                                };
+                            } catch (e) {
+                                dataUpdates[opponentId] = { avatarUrl: null, pinColor: null };
+                            }
+                        }
+                    }
+                    if (Object.keys(dataUpdates).length > 0) {
+                        setOpponentData(prev => ({ ...prev, ...dataUpdates }));
+                    }
+                } catch (error: any) {
+                    console.error('[GameSandbox] Error in challenge subscription:', error);
+                    setErrorInfo('Failed to load games: ' + (error.message || 'Unknown error'));
+                    setAuthDebug(`Error: ${error.message}`);
+                }
+            });
+
+            // B. Pending Challenges
+            unsubPending = challengeService.subscribeToPendingChallenges(uid, (challenges) => {
+                console.log('[GameSandbox] Received pending challenges update:', challenges.length);
+                setPendingChallenges(challenges);
+            });
+
+            // C. Initial Leaderboard Fetch
+            fetchLeaderboard();
+        };
+
+        const init = async () => {
+            setAuthDebug('Waiting for auth...');
+            try {
+                // Use observer to handle async auth restoration
+                unsubAuth = await onAuthStateChanged((uid) => {
+                    if (uid) {
+                        if (uid !== currentUserId) {
+                            setCurrentUserId(uid);
+                            setupSubscriptions(uid);
+                        }
+                    } else {
+                        setAuthDebug('User not logged in');
+                        setCurrentUserId(null);
+                    }
+                });
+            } catch (e) {
+                setAuthDebug(`Auth init failed: ${e}`);
+            }
+        };
+
+        init();
+
+        return () => {
+            gameService.stopGame();
+            if (unsubAuth) unsubAuth();
+            if (unsubChallenges) unsubChallenges();
+            if (unsubPending) unsubPending();
+        };
+    }, []);
+
+    // ... existing code ...
+
+    // Add debug text at the bottom of the render
+    return (
+        <View style={styles.container}>
+            {/* ... inside return ... */}
+
+            {/* Debug Footer */}
+            {/* <View style={{ padding: 10, alignItems: 'center', opacity: 0.5 }}>
+                 <Text style={{ fontSize: 10, color: '#999' }}>Debug: {authDebug}</Text>
+                 <Text style={{ fontSize: 10, color: '#999' }}>Games: {activeGames.length} | Pending: {pendingChallenges.length}</Text>
+             </View> */}
+
+            {/* Note: I will inject this View at the end of the main View in the actual file */}
+        </View>
+    );
+}
+
+// Lazy load games to isolate crashes (e.g. Mapbox native issues)
 const PinDropGame = React.lazy(async () => {
     const module = await import('../../src/components/PinDropGame');
     return { default: module.PinDropGame };
@@ -48,10 +153,6 @@ export default function GameSandbox() {
     // Persistence
     const activeGameId = useMemoryStore(state => state.activeGameId);
     const setActiveGameId = useMemoryStore(state => state.setActiveGameId);
-
-    // Auth Debug State
-    const [authDebug, setAuthDebug] = useState<string>('Initializing...');
-    const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
     const [state, setState] = useState<GameState>({
         isPlaying: false,
@@ -150,34 +251,21 @@ export default function GameSandbox() {
 
         // 2. Subscribe to Active Challenges (Real-time updates)
         let unsubChallenges = () => { };
-        let unsubPending = () => { };
-        let unsubAuth = () => { };
+        let unsubPending = () => { };  // Also manage pending challenges here
 
-        const init = async () => {
-            setAuthDebug('Waiting for auth...');
-            try {
-                // Use observer to handle async auth restoration
-                unsubAuth = await onAuthStateChanged((uid) => {
-                    if (uid) {
-                        if (uid !== currentUserId) {
-                            console.log('[GameSandbox] Auth State: User found:', uid);
-                            setAuthDebug(`User: ${uid.slice(0, 5)}...`);
-                            setCurrentUserId(uid);
-                            setupUserSubscriptions(uid);
-                        }
-                    } else {
-                        console.log('[GameSandbox] Auth State: No user');
-                        setAuthDebug('User not logged in');
-                        setCurrentUserId(null);
-                    }
-                });
-            } catch (e: any) {
-                console.error('[GameSandbox] Auth init failed:', e);
-                setAuthDebug(`Auth init failed: ${e.message}`);
+        // Listen to auth state changes to ensure we have a user before subscribing
+        const initSubscriptions = async () => {
+            const user = getCurrentUser();
+            if (user) {
+                setupUserSubscriptions(user.uid);
+            } else {
+                console.log('[GameSandbox] Waiting for user to be ready...');
+                // Poll for user if not ready (fallback if onAuthStateChanged logic isn't exposed perfectly)
+                // Better approach: use caching or just retry
             }
         };
 
-        function setupUserSubscriptions(uid: string) {
+        const setupUserSubscriptions = (uid: string) => {
             console.log('[GameSandbox] Setting up subscriptions for user:', uid);
 
             // A. Active Games
@@ -222,17 +310,29 @@ export default function GameSandbox() {
         };
 
         // Initialize
-        init();
+        initSubscriptions();
 
         return () => {
             gameService.stopGame();
-            if (unsubAuth) unsubAuth();
-            if (unsubChallenges) unsubChallenges();
-            if (unsubPending) unsubPending();
+            unsubChallenges();
+            unsubPending();
         };
     }, []);
 
-
+    // 3. EFFECT: Retry subscriptions if user becomes available later (simple polling fallback)
+    useEffect(() => {
+        const checkUserInterval = setInterval(() => {
+            if (!activeGames.length && !pendingChallenges.length) {
+                const user = getCurrentUser();
+                // If we have a user but no games loaded yet, try to trigger a load (by checking console mostly)
+                // This is a safety check. ideally logic above handles it.
+                if (user) {
+                    // We could re-run subscription logic here if we tracked "isSubscribed" state
+                }
+            }
+        }, 3000);
+        return () => clearInterval(checkUserInterval);
+    }, [activeGames.length]);
 
     // Handle Hardware Back Button
     useEffect(() => {
