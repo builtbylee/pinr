@@ -460,16 +460,9 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                                                     </View>
                                                 )}
                                                 <View style={styles.gridCardOverlay}>
-                                                    {/* Floating Pill Title */}
-                                                    {Platform.OS === 'ios' ? (
-                                                        <BlurView style={styles.gridCardTitleContainer} intensity={30} tint="dark">
-                                                            <Text style={styles.gridCardTitle} numberOfLines={2}>{pin.title || pin.locationName}</Text>
-                                                        </BlurView>
-                                                    ) : (
-                                                        <View style={[styles.gridCardTitleContainer, { backgroundColor: 'rgba(0,0,0,0.6)' }]}>
-                                                            <Text style={styles.gridCardTitle} numberOfLines={2}>{pin.title || pin.locationName}</Text>
-                                                        </View>
-                                                    )}
+                                                    <View style={styles.gridCardTitleContainer}>
+                                                        <Text style={styles.gridCardTitle} numberOfLines={2}>{pin.title || pin.locationName}</Text>
+                                                    </View>
                                                 </View>
                                             </Pressable>
                                         ))
@@ -506,15 +499,9 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                                                         contentFit="cover"
                                                     />
                                                     <View style={styles.gridCardOverlay}>
-                                                        {Platform.OS === 'ios' ? (
-                                                            <BlurView style={styles.gridCardTitleContainer} intensity={30} tint="dark">
-                                                                <Text style={styles.gridCardTitle} numberOfLines={1}>{story.title}</Text>
-                                                            </BlurView>
-                                                        ) : (
-                                                            <View style={[styles.gridCardTitleContainer, { backgroundColor: 'rgba(0,0,0,0.6)' }]}>
-                                                                <Text style={styles.gridCardTitle} numberOfLines={1}>{story.title}</Text>
-                                                            </View>
-                                                        )}
+                                                        <View style={styles.gridCardTitleContainer}>
+                                                            <Text style={styles.gridCardTitle} numberOfLines={1}>{story.title}</Text>
+                                                        </View>
                                                     </View>
                                                     {isMe && (
                                                         <TouchableOpacity
@@ -557,15 +544,9 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                                                         contentFit="cover"
                                                     />
                                                     <View style={styles.gridCardOverlay}>
-                                                        {Platform.OS === 'ios' ? (
-                                                            <BlurView style={styles.gridCardTitleContainer} intensity={30} tint="dark">
-                                                                <Text style={styles.gridCardTitle} numberOfLines={2}>{item.locationName}</Text>
-                                                            </BlurView>
-                                                        ) : (
-                                                            <View style={[styles.gridCardTitleContainer, { backgroundColor: 'rgba(0,0,0,0.6)' }]}>
-                                                                <Text style={styles.gridCardTitle} numberOfLines={2}>{item.locationName}</Text>
-                                                            </View>
-                                                        )}
+                                                        <View style={styles.gridCardTitleContainer}>
+                                                            <Text style={styles.gridCardTitle} numberOfLines={2}>{item.locationName}</Text>
+                                                        </View>
                                                     </View>
                                                     {/* Status Badge */}
                                                     {item.status === 'visited' && (
@@ -1128,30 +1109,26 @@ const styles = StyleSheet.create({
     },
     gridCardOverlay: {
         position: 'absolute',
-        bottom: 8, // Floating above bottom edge
+        bottom: 0,
         left: 0,
         right: 0,
-        height: 'auto', // Auto height for text
-        alignItems: 'center', // Center horizontally
-        justifyContent: 'flex-end',
         backgroundColor: 'transparent',
         zIndex: 10,
     },
     gridCardTitleContainer: {
-        // backgroundColor handled by BlurView
-        borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.3)', // Thin light border
-        paddingHorizontal: 16, // Slightly wider for pill shape
+        // Dark bar at bottom of tile
+        backgroundColor: 'rgba(0,0,0,0.6)',
+        paddingHorizontal: 10,
         paddingVertical: 8,
-        borderRadius: 20, // More rounded capsule
-        overflow: 'hidden', // Required for BlurView rounding
-        maxWidth: '90%',
+        borderBottomLeftRadius: 12, // Match card corner radius
+        borderBottomRightRadius: 12,
+        overflow: 'hidden',
     },
     gridCardTitle: {
-        color: 'white', // White text
-        fontWeight: 'bold',
+        color: 'white',
+        fontWeight: '600',
         fontSize: 12,
-        textAlign: 'center',
+        textAlign: 'left',
     },
     gridCardSubtitle: {
         color: '#ccc', // Light grey for subtitle
