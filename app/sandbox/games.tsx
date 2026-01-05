@@ -53,7 +53,7 @@ export default function GameSandbox() {
     const [authDebug, setAuthDebug] = useState<string>('Initializing...');
     const [currentUserId, setCurrentUserId] = useState<string | null>(null);
     const [selfUsername, setSelfUsername] = useState<string>('Loading...');
-    const [selfUsername, setSelfUsername] = useState<string>('Loading...');
+
     const [errorInfo, setErrorInfo] = useState<string | null>(null);
     const [debugDirectCount, setDebugDirectCount] = useState<number | null>(null);
 
