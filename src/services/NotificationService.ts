@@ -22,9 +22,10 @@ if (!ONE_SIGNAL_REST_API_KEY) {
     }
 }
 
-// Initialize OneSignal
-OneSignal.initialize(ONE_SIGNAL_APP_ID);
-OneSignal.Debug.setLogLevel(LogLevel.Verbose);
+// NOTE: OneSignal initialization happens in _layout.tsx, not here
+// This prevents double-initialization crashes on iOS
+// OneSignal.initialize(ONE_SIGNAL_APP_ID);
+// OneSignal.Debug.setLogLevel(LogLevel.Verbose);
 
 export const notificationService = {
     /**
