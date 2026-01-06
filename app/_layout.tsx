@@ -12,8 +12,8 @@ import * as SplashScreen from 'expo-splash-screen';
 // Instrumentation: Global cold start timestamp
 const COLD_START_TIME = Date.now();
 const log = (tag: string, msg: string) => {
-    const elapsed = Date.now() - COLD_START_TIME;
-    console.log(`[Perf +${elapsed}ms] [Layout:${tag}] ${msg}`);
+  const elapsed = Date.now() - COLD_START_TIME;
+  console.log(`[Perf +${elapsed}ms] [Layout:${tag}] ${msg}`);
 };
 log('Init', 'Layout module loaded');
 
@@ -54,27 +54,8 @@ LogBox.ignoreLogs([
   'RNMapbox: For sponsor-only support'
 ]);
 
-// Set your Mapbox access token here
-Mapbox.setAccessToken(MAPBOX_TOKEN);
-// Debug: Check if token is loaded
-if (!MAPBOX_TOKEN) {
-  console.warn('[Layout] Mapbox token is EMPTY - globe will not load');
-} else {
-  console.log('[Layout] Mapbox token configured, length:', MAPBOX_TOKEN.length);
-}
-
-// Keep the splash screen visible while we fetch resources
-SplashScreen.preventAutoHideAsync();
-
-import { LogLevel, OneSignal } from 'react-native-onesignal';
-
-// Initialize OneSignal
+// Initialize OneSignal - defined outside to keep const reference but init inside component
 const ONE_SIGNAL_APP_ID = '5998e50e-ec2e-49fa-9d3f-9639168487ac';
-OneSignal.Debug.setLogLevel(LogLevel.Verbose);
-OneSignal.initialize(ONE_SIGNAL_APP_ID);
-
-// Request permission immediately (you might want to move this to a more appropriate time specific to your UX)
-OneSignal.Notifications.requestPermission(true);
 
 export default function RootLayout() {
   log('Component', 'RootLayout function called');
@@ -82,6 +63,44 @@ export default function RootLayout() {
   const [session, setSession] = useState<string | null>(null);
   const [profileValidated, setProfileValidated] = useState(false); // Track if profile loaded successfully
   const profileValidationRef = useRef<boolean>(false); // Ref to track validation status for timeout closure
+
+  // Safe Initialization Side Effect
+  useEffect(() => {
+    const performSafeInit = async () => {
+      try {
+        log('Init', 'Starting safe initialization sequence...');
+
+        // 1. Mapbox Init
+        try {
+          if (MAPBOX_TOKEN) {
+            Mapbox.setAccessToken(MAPBOX_TOKEN);
+            console.log('[Layout] Mapbox token configured');
+          } else {
+            console.warn('[Layout] Mapbox token is MISSING');
+          }
+        } catch (e) {
+          console.error('[Layout] Failed to set Mapbox token:', e);
+        }
+
+        // 2. OneSignal Init
+        try {
+          OneSignal.Debug.setLogLevel(LogLevel.Verbose);
+          OneSignal.initialize(ONE_SIGNAL_APP_ID);
+          // Deliberately delaying permission request until later/user action or keeping it here if essential
+          OneSignal.Notifications.requestPermission(true);
+          console.log('[Layout] OneSignal initialized');
+        } catch (e) {
+          console.error('[Layout] Failed to initialize OneSignal:', e);
+        }
+
+      } catch (error) {
+        console.error('[Layout] Critical initialization error:', error);
+      }
+    };
+
+    performSafeInit();
+  }, []);
+
 
   // Safe font loading with fallback if useFonts is unavailable
   const [fontsLoaded] = useFonts
