@@ -58,6 +58,16 @@ LogBox.ignoreLogs([
 // Initialize OneSignal - defined outside to keep const reference but init inside component
 const ONE_SIGNAL_APP_ID = '5998e50e-ec2e-49fa-9d3f-9639168487ac';
 
+// CRITICAL: Initialize OneSignal at module scope to ensure it runs before any child useEffects
+// This prevents race conditions where index.tsx calls notificationService.login() before init
+try {
+  OneSignal.Debug.setLogLevel(LogLevel.Verbose);
+  OneSignal.initialize(ONE_SIGNAL_APP_ID);
+  console.log('[Layout] OneSignal initialized at module scope');
+} catch (e) {
+  console.error('[Layout] Failed to initialize OneSignal at module scope:', e);
+}
+
 import { ErrorBoundary } from '@/src/components/ErrorBoundary';
 
 export default function RootLayout() {
@@ -93,15 +103,12 @@ function RootLayoutContent() {
           console.error('[Layout] Failed to set Mapbox token:', e);
         }
 
-        // 2. OneSignal Init
+        // 2. OneSignal Permission Request (init already happened at module scope)
         try {
-          OneSignal.Debug.setLogLevel(LogLevel.Verbose);
-          OneSignal.initialize(ONE_SIGNAL_APP_ID);
-          // Deliberately delaying permission request until later/user action or keeping it here if essential
           OneSignal.Notifications.requestPermission(true);
-          console.log('[Layout] OneSignal initialized');
+          console.log('[Layout] OneSignal permission requested');
         } catch (e) {
-          console.error('[Layout] Failed to initialize OneSignal:', e);
+          console.error('[Layout] Failed to request OneSignal permission:', e);
         }
 
       } catch (error) {
