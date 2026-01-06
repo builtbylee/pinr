@@ -71,26 +71,7 @@ target 'Pinr' do
       end
     end
 
-    # ====================================================================================
-    # FIREBASE FIRESTORE iOS FIX: Patch RNFBFirestoreCommon to use safe default settings
-    # ====================================================================================
-    firestore_common_path = File.join(Dir.pwd, '..', 'node_modules', '@react-native-firebase', 'firestore', 'ios', 'RNFBFirestore', 'RNFBFirestoreCommon.m')
-    
-    if File.exist?(firestore_common_path)
-      content = File.read(firestore_common_path)
-      
-      # Patch 1: When size is 0, use 100MB instead of firestore.settings.cacheSizeBytes (which may be invalid)
-      content.gsub!(
-        /firestoreSettings\.cacheSizeBytes = firestore\.settings\.cacheSizeBytes;/,
-        'firestoreSettings.cacheSizeBytes = 100 * 1024 * 1024; [firestoreSettings setValue:@YES forKey:@"experimentalForceLongPolling"]; // Force Long Polling (iOS Fix)'
-      )
-      
-      File.write(firestore_common_path, content)
-      puts "✅ [Podfile] Patched RNFBFirestoreCommon.m with safe Firestore defaults (Cache only)"
-    else
-      puts "⚠️  [Podfile] Warning: RNFBFirestoreCommon.m not found at: #{firestore_common_path}"
-    end
-    # ====================================================================================
+
   end
 end
 

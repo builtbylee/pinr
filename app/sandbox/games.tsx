@@ -190,15 +190,46 @@ export default function GameSandbox() {
                 setSelfUsername(p?.username || 'Unknown User');
             }).catch(() => setSelfUsername('Fetch Error'));
 
-            // Diagnostic: Direct Fetch (Native)
-            // We revert to this to PROVE the native socket is fixed by the new build.
-            challengeService.getActiveChallenges().then(res => {
-                console.log('[GameSandbox] Direct fetch result:', res.length);
-                setDebugDirectCount(res.length);
-            }).catch(e => {
-                console.error('[GameSandbox] Direct fetch failed:', e);
-                setDebugDirectCount(-1);
-            });
+            // Platform-aware data fetching
+            // iOS: Use REST API fallback (gRPC hangs on iOS)
+            // Android: Use native SDK (works correctly)
+            const Platform = require('react-native').Platform;
+
+            if (Platform.OS === 'ios') {
+                // iOS: REST API Fallback
+                const { RestService } = require('@/src/services/RestService');
+
+                const pollGames = () => {
+                    console.log('[GameSandbox] 🔄 iOS: Polling REST API...');
+                    RestService.fetchActiveGames(uid).then((res: { active: any[], pending: any[] }) => {
+                        console.log(`[GameSandbox] REST Success: ${res.active.length} active, ${res.pending.length} pending`);
+                        setDebugDirectCount(res.active.length);
+                        setActiveChallenges(res.active);
+                        setPendingChallenges(res.pending);
+                    }).catch((e: any) => {
+                        console.error('[GameSandbox] REST fetch failed:', e);
+                        setDebugDirectCount(-2);
+                    });
+                };
+
+                // Initial fetch + poll every 10s
+                pollGames();
+                const intervalId = setInterval(pollGames, 10000);
+                const originalUnsub = unsubChallenges;
+                unsubChallenges = () => {
+                    clearInterval(intervalId);
+                    if (originalUnsub) originalUnsub();
+                };
+            } else {
+                // Android: Native SDK (works correctly)
+                challengeService.getActiveChallenges().then(res => {
+                    console.log('[GameSandbox] Direct fetch result:', res.length);
+                    setDebugDirectCount(res.length);
+                }).catch(e => {
+                    console.error('[GameSandbox] Direct fetch failed:', e);
+                    setDebugDirectCount(-1);
+                });
+            }
 
             // A. Active Games
             unsubChallenges = challengeService.subscribeToActiveChallenges(uid, async (games) => {
