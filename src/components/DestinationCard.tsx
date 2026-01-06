@@ -137,27 +137,30 @@ export const DestinationCard: React.FC<DestinationCardProps> = ({ memory, onClos
                 <View style={styles.pillContainer}>
                     {Platform.OS === 'android' ? (
                         <BlurView
-                            intensity={80}
-                            tint="light"
+                            intensity={30}
+                            tint="default"
                             experimentalBlurMethod="dimezisBlurView"
                             style={styles.frostedPillBlur}
                         >
-                            <View style={styles.frostedPillContent}>
-                                {/* Line 1: Title */}
-                                <Text style={styles.pillTitleGlass} numberOfLines={1}>{memory.title}</Text>
-                                {/* Line 2: Location & Date */}
-                                <View style={styles.pillDetailsRow}>
-                                    <Feather name="map-pin" size={12} color="rgba(0,0,0,0.7)" />
-                                    <Text style={styles.pillDetailGlass} numberOfLines={1}>{memory.locationName?.split(',')[0] || 'Unknown'}</Text>
-                                    <Feather name="calendar" size={12} color="rgba(0,0,0,0.7)" />
-                                    <Text style={styles.pillDetailGlass}>{formatMemoryDate(memory.date)}</Text>
-                                    {/* Expiry Badge if needed */}
-                                    {remainingTime && (
-                                        <>
-                                            <Feather name="clock" size={12} color="#D97706" />
-                                            <Text style={[styles.pillDetailGlass, { color: '#D97706' }]}>{remainingTime}</Text>
-                                        </>
-                                    )}
+                            {/* Semi-transparent white overlay for frosted look */}
+                            <View style={styles.glassOverlay}>
+                                <View style={styles.frostedPillContent}>
+                                    {/* Line 1: Title */}
+                                    <Text style={styles.pillTitleGlass} numberOfLines={1}>{memory.title}</Text>
+                                    {/* Line 2: Location & Date */}
+                                    <View style={styles.pillDetailsRow}>
+                                        <Feather name="map-pin" size={12} color="rgba(0,0,0,0.7)" />
+                                        <Text style={styles.pillDetailGlass} numberOfLines={1}>{memory.locationName?.split(',')[0] || 'Unknown'}</Text>
+                                        <Feather name="calendar" size={12} color="rgba(0,0,0,0.7)" />
+                                        <Text style={styles.pillDetailGlass}>{formatMemoryDate(memory.date)}</Text>
+                                        {/* Expiry Badge if needed */}
+                                        {remainingTime && (
+                                            <>
+                                                <Feather name="clock" size={12} color="#D97706" />
+                                                <Text style={[styles.pillDetailGlass, { color: '#D97706' }]}>{remainingTime}</Text>
+                                            </>
+                                        )}
+                                    </View>
                                 </View>
                             </View>
                         </BlurView>
@@ -276,6 +279,10 @@ const styles = StyleSheet.create({
         // Glass edge border
         borderWidth: 1.5,
         borderColor: 'rgba(255, 255, 255, 0.4)',
+    },
+    glassOverlay: {
+        backgroundColor: 'rgba(255, 255, 255, 0.2)', // Semi-transparent white tint
+        width: '100%',
     },
     frostedPillContent: {
         flexDirection: 'column',
