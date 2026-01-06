@@ -136,21 +136,26 @@ export const DestinationCard: React.FC<DestinationCardProps> = ({ memory, onClos
                 {/* 3. Compact Frosted Pill (Bottom) - Liquid Glass on Android */}
                 <View style={styles.pillContainer}>
                     {Platform.OS === 'android' ? (
-                        <BlurView intensity={60} tint="light" style={styles.frostedPillBlur}>
+                        <BlurView
+                            intensity={80}
+                            tint="light"
+                            experimentalBlurMethod="dimezisBlurView"
+                            style={styles.frostedPillBlur}
+                        >
                             <View style={styles.frostedPillContent}>
                                 {/* Line 1: Title */}
-                                <Text style={styles.pillTitle} numberOfLines={1}>{memory.title}</Text>
+                                <Text style={styles.pillTitleGlass} numberOfLines={1}>{memory.title}</Text>
                                 {/* Line 2: Location & Date */}
                                 <View style={styles.pillDetailsRow}>
-                                    <Feather name="map-pin" size={12} color="rgba(0,0,0,0.5)" />
-                                    <Text style={styles.pillDetail} numberOfLines={1}>{memory.locationName?.split(',')[0] || 'Unknown'}</Text>
-                                    <Feather name="calendar" size={12} color="rgba(0,0,0,0.5)" />
-                                    <Text style={styles.pillDetail}>{formatMemoryDate(memory.date)}</Text>
+                                    <Feather name="map-pin" size={12} color="rgba(0,0,0,0.7)" />
+                                    <Text style={styles.pillDetailGlass} numberOfLines={1}>{memory.locationName?.split(',')[0] || 'Unknown'}</Text>
+                                    <Feather name="calendar" size={12} color="rgba(0,0,0,0.7)" />
+                                    <Text style={styles.pillDetailGlass}>{formatMemoryDate(memory.date)}</Text>
                                     {/* Expiry Badge if needed */}
                                     {remainingTime && (
                                         <>
                                             <Feather name="clock" size={12} color="#D97706" />
-                                            <Text style={[styles.pillDetail, { color: '#D97706' }]}>{remainingTime}</Text>
+                                            <Text style={[styles.pillDetailGlass, { color: '#D97706' }]}>{remainingTime}</Text>
                                         </>
                                     )}
                                 </View>
@@ -265,20 +270,34 @@ const styles = StyleSheet.create({
         elevation: 3,
     },
     frostedPillBlur: {
-        borderRadius: 20,
+        borderRadius: 24,
         overflow: 'hidden',
         maxWidth: '90%',
-        // Subtle border for glass edge effect
-        borderWidth: 1,
-        borderColor: 'rgba(255, 255, 255, 0.3)',
+        // Glass edge border
+        borderWidth: 1.5,
+        borderColor: 'rgba(255, 255, 255, 0.4)',
     },
     frostedPillContent: {
         flexDirection: 'column',
         alignItems: 'flex-start',
         paddingHorizontal: 20,
-        paddingVertical: 10,
+        paddingVertical: 12,
         gap: 4,
-        backgroundColor: 'rgba(255, 255, 255, 0.15)', // Slight white overlay for readability
+        // NO backgroundColor - let the blur show through!
+    },
+    pillTitleGlass: {
+        color: '#000',
+        fontSize: 16,
+        fontWeight: 'bold',
+        textAlign: 'left',
+        textShadowColor: 'rgba(255,255,255,0.5)',
+        textShadowOffset: { width: 0, height: 0 },
+        textShadowRadius: 2,
+    },
+    pillDetailGlass: {
+        color: 'rgba(0, 0, 0, 0.8)',
+        fontSize: 12,
+        fontWeight: '600',
     },
     pillTitle: {
         color: '#1a1a1a',
