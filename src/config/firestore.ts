@@ -20,7 +20,7 @@ const configureFirestore = async () => {
         // Basic settings that are safe to apply early
         const settings = {
             cacheSizeBytes: 10 * 1024 * 1024,
-            experimentalForceLongPolling: Platform.OS === 'ios', // Only iOS needs long polling
+            experimentalForceLongPolling: false, // TEMPORARILY DISABLED to test crash fix
         };
 
         console.log('[FirestoreConfig] ⚙️ Applying Firestore settings...');

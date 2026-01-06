@@ -57,7 +57,17 @@ LogBox.ignoreLogs([
 // Initialize OneSignal - defined outside to keep const reference but init inside component
 const ONE_SIGNAL_APP_ID = '5998e50e-ec2e-49fa-9d3f-9639168487ac';
 
+import { ErrorBoundary } from '@/src/components/ErrorBoundary';
+
 export default function RootLayout() {
+  return (
+    <ErrorBoundary>
+      <RootLayoutContent />
+    </ErrorBoundary>
+  );
+}
+
+function RootLayoutContent() {
   log('Component', 'RootLayout function called');
   const [isInitializing, setIsInitializing] = useState(true);
   const [session, setSession] = useState<string | null>(null);
