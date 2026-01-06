@@ -1,40 +1,54 @@
 // Firestore initialization and configuration
 // This must be imported early in the app to configure cache settings
 import firestore from '@react-native-firebase/firestore';
-import { Platform } from 'react-native';
+import { Platform, InteractionManager } from 'react-native';
 
-// Configure Firestore settings ONCE when the module loads
-// This fixes: "Cache size must be set to at least 1048576 bytes"
-// Async configuration to force a clean slate
+// Track if configuration has been attempted
+let configurationAttempted = false;
+let configurationSucceeded = false;
+
+// Configure Firestore settings with proper guards for fresh device launch
 const configureFirestore = async () => {
+    // Prevent double initialization
+    if (configurationAttempted) {
+        console.log('[FirestoreConfig] Already attempted configuration, skipping');
+        return;
+    }
+    configurationAttempted = true;
+
     try {
-        console.log('[FirestoreConfig] 🛑 Terminating existing instance to reset sockets...');
-        await firestore().terminate();
-
-        console.log('[FirestoreConfig] 🧹 Clearing persistence to remove corrupt cache...');
-        await firestore().clearPersistence().catch(e => console.warn('Persistence clear error (benign):', e));
-
+        // Basic settings that are safe to apply early
         const settings = {
             cacheSizeBytes: 10 * 1024 * 1024,
-            experimentalForceLongPolling: true, // CRITICAL
-            host: 'firestore.googleapis.com', // Explicit host to prevent emulator confusion
-            ssl: true,
-            merge: true, // Ensure we don't overwrite other defaults if any
+            experimentalForceLongPolling: Platform.OS === 'ios', // Only iOS needs long polling
         };
 
-        console.log('[FirestoreConfig] ⚙️ Applying settings with Long Polling...');
+        console.log('[FirestoreConfig] ⚙️ Applying Firestore settings...');
         await firestore().settings(settings);
 
-        console.log('[FirestoreConfig] 🚀 Re-enabling network...');
-        await firestore().enableNetwork();
-
-        console.log('[FirestoreConfig] ✅ Aggressive initialization complete.');
-    } catch (error) {
-        console.error('[FirestoreConfig] ❌ Failed to configure Firestore:', error);
+        configurationSucceeded = true;
+        console.log('[FirestoreConfig] ✅ Configuration complete.');
+    } catch (error: any) {
+        // Settings can only be applied once - this error is expected on hot reload
+        if (error?.message?.includes('has already been called')) {
+            console.log('[FirestoreConfig] Settings already applied (ok)');
+            configurationSucceeded = true;
+        } else {
+            console.error('[FirestoreConfig] ❌ Failed to configure Firestore:', error);
+        }
     }
 };
 
-// Configure immediately when this module loads
-configureFirestore();
+// Delayed initialization to ensure native modules are ready
+// Using InteractionManager to run after the JS bridge is stable
+InteractionManager.runAfterInteractions(() => {
+    // Additional delay for fresh device cold starts
+    setTimeout(() => {
+        configureFirestore();
+    }, 100);
+});
+
+// Export helper to check if config succeeded
+export const isFirestoreConfigured = () => configurationSucceeded;
 
 export default firestore;
