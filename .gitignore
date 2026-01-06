@@ -9,7 +9,8 @@ web-build/
 # Sensitive files - DO NOT COMMIT (except android/app/ which EAS needs)
 /google-services.json
 !/android/app/google-services.json
-GoogleService-Info.plist
+/GoogleService-Info.plist
+!ios/Pinr/GoogleService-Info.plist
 .env
 .env.*
 scripts/verify-pin-notification.js
