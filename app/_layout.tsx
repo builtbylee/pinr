@@ -55,17 +55,23 @@ LogBox.ignoreLogs([
   'RNMapbox: For sponsor-only support'
 ]);
 
-// Initialize OneSignal - defined outside to keep const reference but init inside component
+// DIAGNOSTIC: Completely disabling OneSignal to isolate crash source
+// If app works after this, OneSignal native module is the problem
 const ONE_SIGNAL_APP_ID = '5998e50e-ec2e-49fa-9d3f-9639168487ac';
+const ONESIGNAL_DISABLED = true; // Set to false to re-enable
 
 // CRITICAL: Initialize OneSignal at module scope to ensure it runs before any child useEffects
 // This prevents race conditions where index.tsx calls notificationService.login() before init
-try {
-  OneSignal.Debug.setLogLevel(LogLevel.Verbose);
-  OneSignal.initialize(ONE_SIGNAL_APP_ID);
-  console.log('[Layout] OneSignal initialized at module scope');
-} catch (e) {
-  console.error('[Layout] Failed to initialize OneSignal at module scope:', e);
+if (!ONESIGNAL_DISABLED) {
+  try {
+    OneSignal.Debug.setLogLevel(LogLevel.Verbose);
+    OneSignal.initialize(ONE_SIGNAL_APP_ID);
+    console.log('[Layout] OneSignal initialized at module scope');
+  } catch (e) {
+    console.error('[Layout] Failed to initialize OneSignal at module scope:', e);
+  }
+} else {
+  console.log('[Layout] ⚠️ OneSignal is DISABLED for crash diagnosis');
 }
 
 import { ErrorBoundary } from '@/src/components/ErrorBoundary';
@@ -104,11 +110,13 @@ function RootLayoutContent() {
         }
 
         // 2. OneSignal Permission Request (init already happened at module scope)
-        try {
-          OneSignal.Notifications.requestPermission(true);
-          console.log('[Layout] OneSignal permission requested');
-        } catch (e) {
-          console.error('[Layout] Failed to request OneSignal permission:', e);
+        if (!ONESIGNAL_DISABLED) {
+          try {
+            OneSignal.Notifications.requestPermission(true);
+            console.log('[Layout] OneSignal permission requested');
+          } catch (e) {
+            console.error('[Layout] Failed to request OneSignal permission:', e);
+          }
         }
 
       } catch (error) {

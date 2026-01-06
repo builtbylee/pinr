@@ -3,6 +3,9 @@ import { Platform } from 'react-native';
 import { getCurrentUser } from './authService';
 import { getUserProfile } from './userService';
 
+// DIAGNOSTIC FLAG: Set to true to completely disable all OneSignal SDK calls
+const ONESIGNAL_DISABLED = true;
+
 const ONE_SIGNAL_APP_ID = process.env.EXPO_PUBLIC_ONESIGNAL_APP_ID || '5998e50e-ec2e-49fa-9d3f-9639168487ac';
 const ONE_SIGNAL_REST_API_KEY = process.env.EXPO_PUBLIC_ONESIGNAL_REST_API_KEY;
 
@@ -71,6 +74,10 @@ export const notificationService = {
      * Sets the external_id alias so notifications can target users by UID
      */
     async login(uid: string) {
+        if (ONESIGNAL_DISABLED) {
+            console.log('[OneSignal] DISABLED - skipping login');
+            return;
+        }
         console.log('[OneSignal] Logging in user:', uid);
         try {
             // Login sets the user identity and external_id automatically in SDK v5
@@ -99,6 +106,10 @@ export const notificationService = {
      * Logout from OneSignal on sign out
      */
     async logout() {
+        if (ONESIGNAL_DISABLED) {
+            console.log('[OneSignal] DISABLED - skipping logout');
+            return;
+        }
         console.log('[OneSignal] Logging out');
         OneSignal.logout();
     },
@@ -107,6 +118,10 @@ export const notificationService = {
      * Request permissions manually
      */
     async requestPermissions() {
+        if (ONESIGNAL_DISABLED) {
+            console.log('[OneSignal] DISABLED - skipping permission request');
+            return false;
+        }
         console.log('[OneSignal] Requesting permissions');
         return OneSignal.Notifications.requestPermission(true);
     },
@@ -115,6 +130,10 @@ export const notificationService = {
      * Listen for notification clicks (Deep Linking)
      */
     addClickListener(handler: (data: any) => void) {
+        if (ONESIGNAL_DISABLED) {
+            console.log('[OneSignal] DISABLED - skipping click listener');
+            return;
+        }
         console.log('[OneSignal] Adding click listener');
         OneSignal.Notifications.addEventListener('click', (event) => {
             console.log('[OneSignal] Notification clicked:', event);
@@ -128,6 +147,10 @@ export const notificationService = {
      * Mock for app/index.tsx compatibility
      */
     async registerForPushNotificationsAsync() {
+        if (ONESIGNAL_DISABLED) {
+            console.log('[OneSignal] DISABLED - returning null token');
+            return null;
+        }
         console.log('[OneSignal] Registering for push (Mock -> Real)');
         return OneSignal.User.pushSubscription.getPushSubscriptionId();
     },
