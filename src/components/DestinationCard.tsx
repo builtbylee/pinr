@@ -1,8 +1,9 @@
 import { Feather } from '@expo/vector-icons';
+import { BlurView } from 'expo-blur';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import React, { useEffect, useState } from 'react';
-import { Alert, Dimensions, StyleSheet, Text, TouchableOpacity, View, Image as RNImage } from 'react-native';
+import { Alert, Dimensions, Platform, StyleSheet, Text, TouchableOpacity, View, Image as RNImage } from 'react-native';
 // Note: ViewShot removed until native rebuild - using text sharing fallback
 import { Memory, useMemoryStore } from '../store/useMemoryStore';
 import { deletePin } from '../services/firestoreService';
@@ -132,26 +133,49 @@ export const DestinationCard: React.FC<DestinationCardProps> = ({ memory, onClos
                     </TouchableOpacity>
                 </View>
 
-                {/* 3. Compact Frosted Pill (Bottom) */}
+                {/* 3. Compact Frosted Pill (Bottom) - Liquid Glass on Android */}
                 <View style={styles.pillContainer}>
-                    <View style={styles.frostedPill}>
-                        {/* Line 1: Title */}
-                        <Text style={styles.pillTitle} numberOfLines={1}>{memory.title}</Text>
-                        {/* Line 2: Location & Date */}
-                        <View style={styles.pillDetailsRow}>
-                            <Feather name="map-pin" size={12} color="rgba(0,0,0,0.5)" />
-                            <Text style={styles.pillDetail} numberOfLines={1}>{memory.locationName?.split(',')[0] || 'Unknown'}</Text>
-                            <Feather name="calendar" size={12} color="rgba(0,0,0,0.5)" />
-                            <Text style={styles.pillDetail}>{formatMemoryDate(memory.date)}</Text>
-                            {/* Expiry Badge if needed */}
-                            {remainingTime && (
-                                <>
-                                    <Feather name="clock" size={12} color="#D97706" />
-                                    <Text style={[styles.pillDetail, { color: '#D97706' }]}>{remainingTime}</Text>
-                                </>
-                            )}
+                    {Platform.OS === 'android' ? (
+                        <BlurView intensity={60} tint="light" style={styles.frostedPillBlur}>
+                            <View style={styles.frostedPillContent}>
+                                {/* Line 1: Title */}
+                                <Text style={styles.pillTitle} numberOfLines={1}>{memory.title}</Text>
+                                {/* Line 2: Location & Date */}
+                                <View style={styles.pillDetailsRow}>
+                                    <Feather name="map-pin" size={12} color="rgba(0,0,0,0.5)" />
+                                    <Text style={styles.pillDetail} numberOfLines={1}>{memory.locationName?.split(',')[0] || 'Unknown'}</Text>
+                                    <Feather name="calendar" size={12} color="rgba(0,0,0,0.5)" />
+                                    <Text style={styles.pillDetail}>{formatMemoryDate(memory.date)}</Text>
+                                    {/* Expiry Badge if needed */}
+                                    {remainingTime && (
+                                        <>
+                                            <Feather name="clock" size={12} color="#D97706" />
+                                            <Text style={[styles.pillDetail, { color: '#D97706' }]}>{remainingTime}</Text>
+                                        </>
+                                    )}
+                                </View>
+                            </View>
+                        </BlurView>
+                    ) : (
+                        <View style={styles.frostedPill}>
+                            {/* Line 1: Title */}
+                            <Text style={styles.pillTitle} numberOfLines={1}>{memory.title}</Text>
+                            {/* Line 2: Location & Date */}
+                            <View style={styles.pillDetailsRow}>
+                                <Feather name="map-pin" size={12} color="rgba(0,0,0,0.5)" />
+                                <Text style={styles.pillDetail} numberOfLines={1}>{memory.locationName?.split(',')[0] || 'Unknown'}</Text>
+                                <Feather name="calendar" size={12} color="rgba(0,0,0,0.5)" />
+                                <Text style={styles.pillDetail}>{formatMemoryDate(memory.date)}</Text>
+                                {/* Expiry Badge if needed */}
+                                {remainingTime && (
+                                    <>
+                                        <Feather name="clock" size={12} color="#D97706" />
+                                        <Text style={[styles.pillDetail, { color: '#D97706' }]}>{remainingTime}</Text>
+                                    </>
+                                )}
+                            </View>
                         </View>
-                    </View>
+                    )}
                 </View>
             </View>
         </View>
@@ -239,6 +263,22 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.1,
         shadowRadius: 4,
         elevation: 3,
+    },
+    frostedPillBlur: {
+        borderRadius: 20,
+        overflow: 'hidden',
+        maxWidth: '90%',
+        // Subtle border for glass edge effect
+        borderWidth: 1,
+        borderColor: 'rgba(255, 255, 255, 0.3)',
+    },
+    frostedPillContent: {
+        flexDirection: 'column',
+        alignItems: 'flex-start',
+        paddingHorizontal: 20,
+        paddingVertical: 10,
+        gap: 4,
+        backgroundColor: 'rgba(255, 255, 255, 0.15)', // Slight white overlay for readability
     },
     pillTitle: {
         color: '#1a1a1a',
