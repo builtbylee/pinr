@@ -66,6 +66,7 @@
     "react-native-calendars": "^1.1313.0",
     "react-native-draggable-flatlist": "^4.0.3",
     "react-native-gesture-handler": "~2.24.0",
+    "react-native-glass-effect-view": "^1.0.0",
     "react-native-image-crop-picker": "^0.51.1",
     "react-native-onesignal": "^5.2.16",
     "react-native-qrcode-svg": "^6.3.21",

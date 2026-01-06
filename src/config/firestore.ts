@@ -18,13 +18,22 @@ const configureFirestore = async () => {
 
     try {
         // Basic settings that are safe to apply early
+        // NOTE: experimentalForceLongPolling is WEB-ONLY and crashes iOS native SDK
+        // Basic settings that are safe to apply early
+        // NOTE: Commenting out manual settings to prevent race-condition crash on iPhone XR.
+        // The error "Host setting may not be nil" implies the native SDK is not ready to accept overrides.
+        // We will rely on the default configuration.
+        /*
         const settings = {
+            host: 'firestore.googleapis.com', // Explicitly set host to prevent "Host setting may not be nil" crash
             cacheSizeBytes: 10 * 1024 * 1024,
-            experimentalForceLongPolling: false, // TEMPORARILY DISABLED to test crash fix
+            // DO NOT add experimentalForceLongPolling - causes NSUnknownKeyException on iOS
         };
 
         console.log('[FirestoreConfig] ⚙️ Applying Firestore settings...');
         await firestore().settings(settings);
+        */
+        console.log('[FirestoreConfig] Using default settings (Skipping manual config to avoid iOS crash)');
 
         configurationSucceeded = true;
         console.log('[FirestoreConfig] ✅ Configuration complete.');

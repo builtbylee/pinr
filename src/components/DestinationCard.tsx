@@ -1,5 +1,6 @@
 import { Feather } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
+import { GlassEffectView } from 'react-native-glass-effect-view';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import React, { useEffect, useState } from 'react';
@@ -136,11 +137,12 @@ export const DestinationCard: React.FC<DestinationCardProps> = ({ memory, onClos
                 {/* 3. Compact Frosted Pill (Bottom) - Liquid Glass on Android */}
                 <View style={styles.pillContainer}>
                     {Platform.OS === 'android' ? (
-                        <BlurView
-                            intensity={30}
-                            tint="default"
-                            experimentalBlurMethod="dimezisBlurView"
-                            style={styles.frostedPillBlur}
+                        <GlassEffectView
+                            appearance="dark"
+                            style={[
+                                styles.frostedPillBlur,
+                                { borderColor: 'rgba(255, 255, 255, 0.3)' }
+                            ]}
                         >
                             {/* Semi-transparent white overlay for frosted look */}
                             <View style={styles.glassOverlay}>
@@ -149,9 +151,9 @@ export const DestinationCard: React.FC<DestinationCardProps> = ({ memory, onClos
                                     <Text style={styles.pillTitleGlass} numberOfLines={1}>{memory.title}</Text>
                                     {/* Line 2: Location & Date */}
                                     <View style={styles.pillDetailsRow}>
-                                        <Feather name="map-pin" size={12} color="rgba(0,0,0,0.7)" />
+                                        <Feather name="map-pin" size={12} color="rgba(255,255,255,0.9)" />
                                         <Text style={styles.pillDetailGlass} numberOfLines={1}>{memory.locationName?.split(',')[0] || 'Unknown'}</Text>
-                                        <Feather name="calendar" size={12} color="rgba(0,0,0,0.7)" />
+                                        <Feather name="calendar" size={12} color="rgba(255,255,255,0.9)" />
                                         <Text style={styles.pillDetailGlass}>{formatMemoryDate(memory.date)}</Text>
                                         {/* Expiry Badge if needed */}
                                         {remainingTime && (
@@ -163,7 +165,7 @@ export const DestinationCard: React.FC<DestinationCardProps> = ({ memory, onClos
                                     </View>
                                 </View>
                             </View>
-                        </BlurView>
+                        </GlassEffectView>
                     ) : (
                         <View style={styles.frostedPill}>
                             {/* Line 1: Title */}
@@ -278,10 +280,10 @@ const styles = StyleSheet.create({
         maxWidth: '90%',
         // Glass edge border
         borderWidth: 1.5,
-        borderColor: 'rgba(255, 255, 255, 0.4)',
+        borderColor: 'rgba(255, 255, 255, 0.2)',
     },
     glassOverlay: {
-        backgroundColor: 'rgba(255, 255, 255, 0.2)', // Semi-transparent white tint
+        backgroundColor: 'rgba(0, 0, 0, 0.2)', // Semi-transparent dark tint for contrast
         width: '100%',
     },
     frostedPillContent: {
@@ -293,16 +295,16 @@ const styles = StyleSheet.create({
         // NO backgroundColor - let the blur show through!
     },
     pillTitleGlass: {
-        color: '#000',
+        color: '#FFFFFF',
         fontSize: 16,
         fontWeight: 'bold',
         textAlign: 'left',
-        textShadowColor: 'rgba(255,255,255,0.5)',
-        textShadowOffset: { width: 0, height: 0 },
-        textShadowRadius: 2,
+        textShadowColor: 'rgba(0,0,0,0.3)',
+        textShadowOffset: { width: 0, height: 1 },
+        textShadowRadius: 3,
     },
     pillDetailGlass: {
-        color: 'rgba(0, 0, 0, 0.8)',
+        color: 'rgba(255, 255, 255, 0.9)',
         fontSize: 12,
         fontWeight: '600',
     },
