@@ -55,5 +55,14 @@
       },
       "channel": "production"
     }
+  },
+  "submit": {
+    "production": {
+      "ios": {
+        "appleId": "hackneymanlee2@icloud.com",
+        "ascAppId": "6746024330",
+        "appleTeamId": "CMBSFLQ5V6"
+      }
+    }
   }
 }

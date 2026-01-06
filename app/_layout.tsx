@@ -1,5 +1,6 @@
 import '@/src/config/firestore'; // CRITICAL: Must be first import to configure Long Polling
 import Mapbox from '@rnmapbox/maps';
+import { OneSignal, LogLevel } from 'react-native-onesignal';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState, useCallback, useRef } from 'react';
