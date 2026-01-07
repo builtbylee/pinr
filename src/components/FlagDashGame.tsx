@@ -138,7 +138,7 @@ export const FlagDashGame: React.FC<FlagDashGameProps> = ({ difficulty, onGameOv
             {/* Game Container */}
             <View style={styles.gameContainer}>
                 {/* HUD */}
-                <View style={[styles.hud, { paddingHorizontal: 16, alignItems: 'center' }]}>
+                <View style={[styles.hud, { paddingHorizontal: 16, paddingTop: insets.top + 8, alignItems: 'center' }]}>
                     <TouchableOpacity
                         style={styles.quitButtonRed}
                         onPress={handleQuit}

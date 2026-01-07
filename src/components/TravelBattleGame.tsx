@@ -352,7 +352,7 @@ export const TravelBattleGame: React.FC<TravelBattleGameProps> = ({ difficulty, 
             )}
 
             {/* HUD - Matching Flag Dash */}
-            <View style={styles.hud}>
+            <View style={[styles.hud, { paddingTop: insets.top + 8 }]}>
                 <TouchableOpacity style={styles.quitButtonRed} onPress={handleQuit}>
                     <Feather name="x" size={24} color="white" />
                 </TouchableOpacity>

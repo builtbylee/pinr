@@ -7,6 +7,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { StyleSheet, View, Text, TouchableOpacity, Modal, Animated, BackHandler, Image, ScrollView, useWindowDimensions } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Mapbox, { MapView, Camera, PointAnnotation, MarkerView } from '@rnmapbox/maps';
 import { Feather } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
@@ -47,6 +48,7 @@ export const PinDropGame: React.FC<PinDropGameProps> = ({
 }) => {
     const { width, height } = useWindowDimensions();
     const isSmallScreen = height < 700;
+    const insets = useSafeAreaInsets();
     const [state, setState] = useState<PinDropState>(pinDropService.getState());
     const [droppedPin, setDroppedPin] = useState<[number, number] | null>(null);
     const [roundResult, setRoundResult] = useState<RoundResult | null>(null);
@@ -641,7 +643,7 @@ export const PinDropGame: React.FC<PinDropGameProps> = ({
             )}
 
             {/* HUD Overlay */}
-            <View style={styles.hud}>
+            <View style={[styles.hud, { top: insets.top + 10 }]}>
                 {/* Back Button */}
                 <TouchableOpacity style={styles.backButton} onPress={handleQuitPress}>
                     <Feather name="arrow-left" size={24} color="white" />
