@@ -1,6 +1,7 @@
 import { Feather } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import React, { useEffect, useState } from 'react';
+import { KeyIcon } from './icons/KeyIcon';
 import { Dimensions, ScrollView, StyleSheet, Text, TouchableOpacity, View, Alert, Switch, TextInput, ActivityIndicator, KeyboardAvoidingView, Platform, Linking, BackHandler } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring, withTiming } from 'react-native-reanimated';
 import { getCurrentEmail, sendPasswordReset, getCurrentUser, reauthenticateUser, updatePassword } from '../services/authService';
@@ -351,14 +352,23 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     // Change Password Screen
 
     const handleTogglePush = async (value: boolean) => {
-        setPushEnabled(value);
+        const previousValue = pushEnabled;
+        setPushEnabled(value); // Optimistic update
+        
         const user = getCurrentUser();
         if (user) {
-            // Permission request logic can go here or in a wrapper
-            if (value) {
-                await notificationService.registerForPushNotificationsAsync();
+            try {
+                // Permission request logic
+                if (value) {
+                    await notificationService.registerForPushNotificationsAsync();
+                }
+                await updateNotificationSettings(user.uid, { globalEnabled: value });
+            } catch (error: any) {
+                console.error('[Settings] Failed to toggle push notifications:', error);
+                // Revert on failure
+                setPushEnabled(previousValue);
+                Alert.alert('Error', 'Failed to update notification settings. Please try again.');
             }
-            await updateNotificationSettings(user.uid, { globalEnabled: value });
         }
     };
 
@@ -894,7 +904,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                         {biometricAvailable && (
                             <View style={styles.settingRow}>
                                 <View style={styles.settingInfo}>
-                                    <Feather name={biometricType.includes('Face') ? "smile" : "fingerprint"} size={22} color="#1a1a1a" />
+                                    <KeyIcon size={22} color="#1a1a1a" />
                                     <View style={styles.settingText}>
                                         <Text style={styles.settingLabel}>{biometricType} Login</Text>
                                         <Text style={styles.settingValue}>{biometricsEnabled ? 'Enabled' : 'Disabled'}</Text>
