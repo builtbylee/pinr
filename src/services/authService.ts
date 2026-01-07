@@ -1,5 +1,8 @@
 import auth from '@react-native-firebase/auth';
 import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
+import * as AppleAuthentication from 'expo-apple-authentication';
+import * as Crypto from 'expo-crypto';
+import { Platform } from 'react-native';
 
 // Configure Google Sign-In (call this once at app startup)
 const GOOGLE_WEB_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID;
@@ -157,6 +160,87 @@ export const signInWithGoogle = async (): Promise<{ uid: string; email: string |
     // If we get here, all retries failed
     throw lastError || new Error('Google sign-in failed after retries');
 };
+
+/**
+ * Sign in with Apple (iOS only)
+ */
+export const signInWithApple = async (): Promise<{ uid: string; email: string | null; displayName: string | null; isNewUser: boolean }> => {
+    console.log('[AuthService] ========== signInWithApple START ==========');
+
+    if (Platform.OS !== 'ios') {
+        throw new Error('Apple Sign-In is only available on iOS');
+    }
+
+    // Try to ensure Firebase is ready
+    try {
+        await ensureFirebaseReady();
+        console.log('[AuthService] ✅ Firebase is ready');
+    } catch (error) {
+        console.warn('[AuthService] ⚠️ Firebase wait failed, will retry on actual call');
+    }
+
+    try {
+        // Generate a secure nonce
+        const nonce = Math.random().toString(36).substring(2, 15);
+        const hashedNonce = await Crypto.digestStringAsync(
+            Crypto.CryptoDigestAlgorithm.SHA256,
+            nonce
+        );
+        console.log('[AuthService] Generated nonce');
+
+        // Request Apple Sign-In
+        console.log('[AuthService] 📱 Calling AppleAuthentication.signInAsync()...');
+        const appleCredential = await AppleAuthentication.signInAsync({
+            requestedScopes: [
+                AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+                AppleAuthentication.AppleAuthenticationScope.EMAIL,
+            ],
+            nonce: hashedNonce,
+        });
+        console.log('[AuthService] ✅ AppleAuthentication.signInAsync() succeeded');
+
+        if (!appleCredential.identityToken) {
+            throw new Error('No identityToken returned from Apple Sign-In');
+        }
+
+        const { identityToken, email, fullName } = appleCredential;
+
+        // Create a Firebase credential with the Apple ID token
+        console.log('[AuthService] 🔑 Creating Apple credential...');
+        const firebaseCredential = auth.AppleAuthProvider.credential(identityToken, nonce);
+        console.log('[AuthService] ✅ Credential created');
+
+        // Sign in the user with the credential
+        console.log('[AuthService] 🔐 Signing in with credential...');
+        const userCredential = await auth().signInWithCredential(firebaseCredential);
+        console.log('[AuthService] ✅ Sign-in with credential succeeded');
+
+        const isNewUser = userCredential.additionalUserInfo?.isNewUser ?? false;
+        const displayName = fullName
+            ? `${fullName.givenName || ''} ${fullName.familyName || ''}`.trim()
+            : userCredential.user.displayName;
+
+        console.log('[AuthService] User ID:', userCredential.user.uid);
+        console.log('[AuthService] Is new user:', isNewUser);
+        console.log('[AuthService] ========== signInWithApple SUCCESS ==========');
+
+        return {
+            uid: userCredential.user.uid,
+            email: email || userCredential.user.email,
+            displayName: displayName,
+            isNewUser: isNewUser,
+        };
+    } catch (error: any) {
+        console.error('[AuthService] ❌ Apple Sign-In failed:', error);
+
+        if (error.code === 'ERR_REQUEST_CANCELED') {
+            throw new Error('Sign-in was cancelled');
+        }
+
+        throw error;
+    }
+};
+
 /**
  * Link an implementation-email/password credential to the current anonymous user.
  * This effectively "upgrades" the anonymous account to a permanent one.

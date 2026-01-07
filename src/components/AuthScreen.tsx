@@ -3,7 +3,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { Image } from 'expo-image';
 import React, { useState, useEffect } from 'react';
 import { Dimensions, StyleSheet, Text, TouchableOpacity, View, Alert, TextInput, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, Modal } from 'react-native';
-import { signInEmailPassword, signUpWithEmail, signInWithGoogle, deleteCurrentUser } from '../services/authService';
+import { signInEmailPassword, signUpWithEmail, signInWithGoogle, signInWithApple, deleteCurrentUser } from '../services/authService';
 import Svg, { Path } from 'react-native-svg';
 import { saveUserProfile, isUsernameTaken, getEmailByUsername } from '../services/userService';
 import { sendPasswordReset } from '../services/authService';
@@ -400,6 +400,49 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthenticated }) => {
         }
     };
 
+    const handleAppleSignIn = async () => {
+        console.log('[AuthScreen] ========== APPLE SIGN-IN ATTEMPT START ==========');
+        setIsLoading(true);
+        setError(null);
+        try {
+            const result = await signInWithApple();
+            console.log('[AuthScreen] Apple Sign-In result:', result.uid);
+            console.log('[AuthScreen] Is new user:', result.isNewUser);
+
+            if (result.isNewUser) {
+                console.log('[AuthScreen] 🆕 NEW USER - Creating profile...');
+                // Generate a unique username for new Apple Sign-In users
+                const generatedUsername = 'traveler' + Math.floor(Math.random() * 100000);
+                await saveUserProfile(result.uid, generatedUsername, result.email || undefined);
+                console.log('[AuthScreen] 📞 Calling onAuthenticated for new user...');
+                onAuthenticated(generatedUsername);
+            } else {
+                console.log('[AuthScreen] 👤 EXISTING USER - Fetching profile...');
+                const { getUserProfile } = require('../services/userService');
+                try {
+                    const profile = await getUserProfile(result.uid);
+                    if (profile?.username) {
+                        onAuthenticated(profile.username);
+                    } else {
+                        const fallbackUsername = 'traveler' + Math.floor(Math.random() * 100000);
+                        await saveUserProfile(result.uid, fallbackUsername, result.email || undefined);
+                        onAuthenticated(fallbackUsername);
+                    }
+                } catch (profileError: any) {
+                    console.warn('[AuthScreen] Failed to fetch profile:', profileError.message);
+                    onAuthenticated();
+                }
+            }
+        } catch (e: any) {
+            console.error('[AuthScreen] Apple Sign-In error:', e.message);
+            if (e.message !== 'Sign-in was cancelled') {
+                setError(e.message);
+            }
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     const resetForm = () => {
         setError(null);
         setEmailOrUsername('');
@@ -586,7 +629,17 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthenticated }) => {
                 <Text style={styles.googleButtonText}>Continue with Google</Text>
             </TouchableOpacity>
 
-
+            {/* Apple Sign-In Button (iOS only) */}
+            {Platform.OS === 'ios' && (
+                <TouchableOpacity
+                    style={styles.appleButton}
+                    onPress={handleAppleSignIn}
+                    disabled={isLoading}
+                >
+                    <Feather name="apple" size={20} color="white" />
+                    <Text style={styles.appleButtonText}>Continue with Apple</Text>
+                </TouchableOpacity>
+            )}
 
         </View>
     );
@@ -984,6 +1037,27 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.05,
         shadowRadius: 4,
         elevation: 2,
+    },
+    appleButton: {
+        width: '100%',
+        height: 56,
+        backgroundColor: '#000000',
+        borderRadius: 16,
+        flexDirection: 'row',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginTop: 12,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        elevation: 3,
+    },
+    appleButtonText: {
+        color: '#FFFFFF',
+        fontSize: 16,
+        fontWeight: '600',
+        marginLeft: 12,
     },
 
 });
