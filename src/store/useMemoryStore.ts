@@ -18,6 +18,7 @@ export interface Memory {
     id: string;
     title: string;
     date: string;
+    endDate?: string; // Optional end date for date ranges
     location: [number, number]; // [longitude, latitude]
     locationName: string; // Human-readable location name
     imageUris: string[];
