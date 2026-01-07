@@ -33,10 +33,7 @@ export default function SandboxLayout() {
                 <Stack.Screen
                     name="games"
                     options={{
-                        title: 'Games',
-                        headerShown: true,
-                        headerBackVisible: true,
-                        headerBackTitle: 'Back',
+                        headerShown: false, // Games screen has custom header
                     }}
                 />
             </Stack>
