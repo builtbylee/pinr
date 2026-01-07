@@ -156,6 +156,7 @@
     "runtimeVersion": "1.0.0",
     "owner": "hackneymanlee2",
     "updates": {
+      "enabled": false,
       "url": "https://u.expo.dev/07b696e4-84dc-4ad5-bdb4-5bbf18595824"
     }
   }

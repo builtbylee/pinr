@@ -1,0 +1,42 @@
+# Build artifacts folder
+builds
+
+# Loose build files in root
+*.aab
+*.apk
+*.ipa
+
+# Git folder
+.git
+
+# IDE folders
+.idea
+.vscode
+
+# Log files
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Android build caches
+android/.gradle
+android/app/build
+android/build
+
+# iOS build outputs (but keep source files)
+ios/build
+ios/DerivedData
+
+# Firebase functions (not needed for app)
+functions
+
+# Play store assets
+play-store-assets
+
+# Documentation
+docs
+
+# Misc temp files
+*.swp
+*.bak

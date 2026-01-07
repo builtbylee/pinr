@@ -78,3 +78,4 @@ Run this to see if logs are being generated:
 Then reload the app on the simulator and try logging in. The logs should appear in real-time.
 
 
+

@@ -29,3 +29,4 @@ xcrun simctl spawn "$BOOTED_UDID" log stream --level=debug --predicate 'processI
     grep -E "\[Firestore\]|\[UserService\]|\[useDataSubscriptions\]|\[App\]|\[Layout\]|\[FirebaseInit\]|Firestore|UserService|subscribeToPins|subscribeToUserProfile|onSnapshot|connectivity|Pins found|Profile update" --line-buffered
 
 
+

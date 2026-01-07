@@ -31,12 +31,10 @@ const TravelBattleGame = React.lazy(async () => {
     return { default: module.TravelBattleGame };
 });
 
-/*
 const ChallengeFriendModal = React.lazy(async () => {
     const module = await import('../../src/components/ChallengeFriendModal');
     return { default: module.ChallengeFriendModal };
 });
-*/
 
 export default function GameSandbox() {
     const insets = useSafeAreaInsets();
