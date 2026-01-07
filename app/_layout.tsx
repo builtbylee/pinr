@@ -1,6 +1,17 @@
 import '@/src/config/firestore'; // CRITICAL: Must be first import to configure Long Polling
 import Mapbox from '@rnmapbox/maps';
-import { OneSignal, LogLevel } from 'react-native-onesignal';
+// OneSignal imported conditionally to prevent crash if module not linked
+let OneSignal: any;
+let LogLevel: any;
+try {
+  const oneSignalModule = require('react-native-onesignal');
+  OneSignal = oneSignalModule.OneSignal;
+  LogLevel = oneSignalModule.LogLevel;
+} catch (e) {
+  console.warn('[Layout] OneSignal module not available:', e);
+  OneSignal = null;
+  LogLevel = null;
+}
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState, useCallback, useRef } from 'react';
@@ -62,7 +73,7 @@ const ONESIGNAL_DISABLED = true; // Set to false to re-enable
 
 // CRITICAL: Initialize OneSignal at module scope to ensure it runs before any child useEffects
 // This prevents race conditions where index.tsx calls notificationService.login() before init
-if (!ONESIGNAL_DISABLED) {
+if (!ONESIGNAL_DISABLED && OneSignal && LogLevel) {
   try {
     OneSignal.Debug.setLogLevel(LogLevel.Verbose);
     OneSignal.initialize(ONE_SIGNAL_APP_ID);
@@ -71,7 +82,11 @@ if (!ONESIGNAL_DISABLED) {
     console.error('[Layout] Failed to initialize OneSignal at module scope:', e);
   }
 } else {
-  console.log('[Layout] ⚠️ OneSignal is DISABLED for crash diagnosis');
+  if (ONESIGNAL_DISABLED) {
+    console.log('[Layout] ⚠️ OneSignal is DISABLED for crash diagnosis');
+  } else {
+    console.log('[Layout] ⚠️ OneSignal module not available');
+  }
 }
 
 import { ErrorBoundary } from '@/src/components/ErrorBoundary';
@@ -110,7 +125,7 @@ function RootLayoutContent() {
         }
 
         // 2. OneSignal Permission Request (init already happened at module scope)
-        if (!ONESIGNAL_DISABLED) {
+        if (!ONESIGNAL_DISABLED && OneSignal) {
           try {
             OneSignal.Notifications.requestPermission(true);
             console.log('[Layout] OneSignal permission requested');
