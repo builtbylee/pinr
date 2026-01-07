@@ -503,7 +503,6 @@ export const CreationModal: React.FC<CreationModalProps> = ({ visible, onClose, 
 
                             {/* External Custom Header for Navigation */}
                             <View style={styles.externalNavigationHeader}>
-                                <Text style={{ position: 'absolute', top: -20, color: 'red', fontWeight: 'bold' }}>DEBUG MODE ACTIVE</Text>
                                 <TouchableOpacity onPress={handlePrevMonth} style={styles.navArrow}>
                                     <Feather name="chevron-left" size={24} color="#1a1a1a" />
                                 </TouchableOpacity>
@@ -908,9 +907,8 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         marginBottom: 10,
         paddingHorizontal: 10,
-        backgroundColor: 'red', // Debug: SOLID RED (Undeniable)
-        zIndex: 9999, // Force top
-        elevation: 10,
+        backgroundColor: 'transparent',
+        zIndex: 9999,
         elevation: 10,
         height: 60, // Force height
     },

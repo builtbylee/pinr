@@ -891,7 +891,6 @@ export const StoryCreationFlow: React.FC<StoryCreationFlowProps> = ({
 
                         {/* External Custom Header for Navigation */}
                         <View style={styles.externalNavigationHeader}>
-                            <Text style={{ position: 'absolute', top: -20, color: 'red', fontWeight: 'bold' }}>DEBUG MODE ACTIVE (STORY)</Text>
                             <TouchableOpacity onPress={handlePrevMonth} style={styles.navArrow}>
                                 <Feather name="chevron-left" size={24} color="#1a1a1a" />
                             </TouchableOpacity>
@@ -1519,7 +1518,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         marginBottom: 10,
         paddingHorizontal: 10,
-        backgroundColor: 'red', // Debug: SOLID RED
+        backgroundColor: 'transparent',
         zIndex: 9999,
         elevation: 10,
         height: 60,
