@@ -151,9 +151,9 @@ export const DestinationCard: React.FC<DestinationCardProps> = ({ memory, onClos
                                     <Text style={styles.pillTitleGlass} numberOfLines={1}>{memory.title}</Text>
                                     {/* Line 2: Location & Date */}
                                     <View style={styles.pillDetailsRow}>
-                                        <Feather name="map-pin" size={12} color="rgba(255,255,255,0.9)" />
+                                        <Feather name="map-pin" size={12} color="#FFFFFF" />
                                         <Text style={styles.pillDetailGlass} numberOfLines={1}>{memory.locationName?.split(',')[0] || 'Unknown'}</Text>
-                                        <Feather name="calendar" size={12} color="rgba(255,255,255,0.9)" />
+                                        <Feather name="calendar" size={12} color="#FFFFFF" />
                                         <Text style={styles.pillDetailGlass}>{formatMemoryDate(memory.date, memory.endDate)}</Text>
                                         {/* Expiry Badge if needed */}
                                         {remainingTime && (
@@ -179,9 +179,9 @@ export const DestinationCard: React.FC<DestinationCardProps> = ({ memory, onClos
                                     <Text style={styles.pillTitleGlass} numberOfLines={1}>{memory.title}</Text>
                                     {/* Line 2: Location & Date */}
                                     <View style={styles.pillDetailsRow}>
-                                        <Feather name="map-pin" size={12} color="rgba(255,255,255,0.9)" />
+                                        <Feather name="map-pin" size={12} color="#FFFFFF" />
                                         <Text style={styles.pillDetailGlass} numberOfLines={1}>{memory.locationName?.split(',')[0] || 'Unknown'}</Text>
-                                        <Feather name="calendar" size={12} color="rgba(255,255,255,0.9)" />
+                                        <Feather name="calendar" size={12} color="#FFFFFF" />
                                         <Text style={styles.pillDetailGlass}>{formatMemoryDate(memory.date, memory.endDate)}</Text>
                                         {/* Expiry Badge if needed */}
                                         {remainingTime && (
@@ -280,7 +280,7 @@ const styles = StyleSheet.create({
         elevation: 8,
     },
     blurOverlay: {
-        backgroundColor: 'rgba(0, 0, 0, 0.25)',
+        backgroundColor: 'rgba(0, 0, 0, 0.15)', // Lighter overlay to ensure text visibility
         width: '100%',
     },
     frostedPill: {
@@ -308,7 +308,7 @@ const styles = StyleSheet.create({
         borderColor: 'rgba(255, 255, 255, 0.2)',
     },
     glassOverlay: {
-        backgroundColor: 'rgba(0, 0, 0, 0.2)', // Semi-transparent dark tint for contrast
+        backgroundColor: 'rgba(0, 0, 0, 0.15)', // Lighter overlay to ensure text visibility
         width: '100%',
     },
     frostedPillContent: {
@@ -324,14 +324,17 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontWeight: 'bold',
         textAlign: 'left',
-        textShadowColor: 'rgba(0,0,0,0.3)',
-        textShadowOffset: { width: 0, height: 1 },
-        textShadowRadius: 3,
+        textShadowColor: 'rgba(0,0,0,0.8)',
+        textShadowOffset: { width: 0, height: 2 },
+        textShadowRadius: 4,
     },
     pillDetailGlass: {
-        color: 'rgba(255, 255, 255, 0.9)',
+        color: '#FFFFFF',
         fontSize: 12,
         fontWeight: '600',
+        textShadowColor: 'rgba(0,0,0,0.6)',
+        textShadowOffset: { width: 0, height: 1 },
+        textShadowRadius: 3,
     },
     pillTitle: {
         color: '#1a1a1a',

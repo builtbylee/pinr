@@ -1935,7 +1935,8 @@ export default function GameSandbox() {
                             setDailyStreak(result.streak);
                         }}
                         onQuit={() => {
-                            handleQuit();
+                            gameService.stopGame();
+                            setSelectedGameType(null);
                         }}
                     />
                 </React.Suspense>
@@ -1954,7 +1955,8 @@ export default function GameSandbox() {
                             setDailyStreak(result.streak);
                         }}
                         onQuit={() => {
-                            handleQuit();
+                            gameService.stopGame();
+                            setSelectedGameType(null);
                         }}
                         onGameMenu={() => {
                             gameService.stopGame();

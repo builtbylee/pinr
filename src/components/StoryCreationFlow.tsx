@@ -406,7 +406,13 @@ export const StoryCreationFlow: React.FC<StoryCreationFlowProps> = ({
             }
         } else if (tempStartDate) {
             // Single date selection
-            marked[tempStartDate] = { selected: true, selectedColor: '#000000', selectedTextColor: 'white' };
+            marked[tempStartDate] = { 
+                selected: true, 
+                selectedColor: '#000000', 
+                selectedTextColor: 'white',
+                color: '#000000',
+                textColor: 'white'
+            };
         }
 
         return marked;

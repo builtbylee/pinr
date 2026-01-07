@@ -1,4 +1,16 @@
-import { LogLevel, OneSignal } from 'react-native-onesignal';
+// OneSignal imported conditionally to prevent crash if module not linked (same fix as _layout.tsx)
+let OneSignal: any;
+let LogLevel: any;
+try {
+  const oneSignalModule = require('react-native-onesignal');
+  OneSignal = oneSignalModule.OneSignal;
+  LogLevel = oneSignalModule.LogLevel;
+} catch (e) {
+  console.warn('[NotificationService] OneSignal module not available:', e);
+  OneSignal = null;
+  LogLevel = null;
+}
+
 import { Platform } from 'react-native';
 import { getCurrentUser } from './authService';
 import { getUserProfile } from './userService';
@@ -74,8 +86,8 @@ export const notificationService = {
      * Sets the external_id alias so notifications can target users by UID
      */
     async login(uid: string) {
-        if (ONESIGNAL_DISABLED) {
-            console.log('[OneSignal] DISABLED - skipping login');
+        if (ONESIGNAL_DISABLED || !OneSignal) {
+            console.log('[OneSignal] DISABLED or not available - skipping login');
             return;
         }
         console.log('[OneSignal] Logging in user:', uid);
@@ -106,8 +118,8 @@ export const notificationService = {
      * Logout from OneSignal on sign out
      */
     async logout() {
-        if (ONESIGNAL_DISABLED) {
-            console.log('[OneSignal] DISABLED - skipping logout');
+        if (ONESIGNAL_DISABLED || !OneSignal) {
+            console.log('[OneSignal] DISABLED or not available - skipping logout');
             return;
         }
         console.log('[OneSignal] Logging out');
@@ -118,8 +130,8 @@ export const notificationService = {
      * Request permissions manually
      */
     async requestPermissions() {
-        if (ONESIGNAL_DISABLED) {
-            console.log('[OneSignal] DISABLED - skipping permission request');
+        if (ONESIGNAL_DISABLED || !OneSignal) {
+            console.log('[OneSignal] DISABLED or not available - skipping permission request');
             return false;
         }
         console.log('[OneSignal] Requesting permissions');
@@ -130,8 +142,8 @@ export const notificationService = {
      * Listen for notification clicks (Deep Linking)
      */
     addClickListener(handler: (data: any) => void) {
-        if (ONESIGNAL_DISABLED) {
-            console.log('[OneSignal] DISABLED - skipping click listener');
+        if (ONESIGNAL_DISABLED || !OneSignal) {
+            console.log('[OneSignal] DISABLED or not available - skipping click listener');
             return;
         }
         console.log('[OneSignal] Adding click listener');
@@ -147,8 +159,8 @@ export const notificationService = {
      * Mock for app/index.tsx compatibility
      */
     async registerForPushNotificationsAsync() {
-        if (ONESIGNAL_DISABLED) {
-            console.log('[OneSignal] DISABLED - returning null token');
+        if (ONESIGNAL_DISABLED || !OneSignal) {
+            console.log('[OneSignal] DISABLED or not available - returning null token');
             return null;
         }
         console.log('[OneSignal] Registering for push (Mock -> Real)');

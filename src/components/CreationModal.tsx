@@ -269,7 +269,13 @@ export const CreationModal: React.FC<CreationModalProps> = ({ visible, onClose, 
             }
         } else if (startDate) {
             // Single date selection
-            marked[startDate] = { selected: true, selectedColor: '#000000', selectedTextColor: 'white' };
+            marked[startDate] = { 
+                selected: true, 
+                selectedColor: '#000000', 
+                selectedTextColor: 'white',
+                color: '#000000',
+                textColor: 'white'
+            };
         }
 
         return marked;

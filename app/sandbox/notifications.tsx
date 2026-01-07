@@ -4,7 +4,15 @@ import { Feather } from '@expo/vector-icons';
 import { notificationService } from '../../src/services/NotificationService';
 import { getCurrentUser } from '../../src/services/authService';
 import { getUserProfile, getFriends } from '../../src/services/userService';
-import { OneSignal } from 'react-native-onesignal';
+// OneSignal imported conditionally to prevent crash if module not linked
+let OneSignal: any;
+try {
+  const oneSignalModule = require('react-native-onesignal');
+  OneSignal = oneSignalModule.OneSignal;
+} catch (e) {
+  console.warn('[NotificationsSandbox] OneSignal module not available:', e);
+  OneSignal = null;
+}
 
 export default function NotificationTest() {
     const [permissionStatus, setPermissionStatus] = useState<string>('checking');
@@ -23,6 +31,11 @@ export default function NotificationTest() {
     }, []);
 
     const checkPermissions = async () => {
+        if (!OneSignal) {
+            setPermissionStatus('unavailable');
+            addLog('OneSignal not available');
+            return;
+        }
         const hasPermission = OneSignal.Notifications.hasPermission();
         setPermissionStatus(hasPermission ? 'granted' : 'denied');
         addLog(`Permission checked: ${hasPermission ? 'granted' : 'denied'}`);
@@ -34,7 +47,7 @@ export default function NotificationTest() {
             addLog('Requesting permissions via OneSignal...');
             const granted = await notificationService.requestPermissions();
             setPermissionStatus(granted ? 'granted' : 'denied');
-            if (granted) {
+            if (granted && OneSignal) {
                 // Get the player ID / push subscription ID
                 const id = OneSignal.User.pushSubscription.getPushSubscriptionId();
                 setPushToken(id || 'Registered (ID hidden)');
