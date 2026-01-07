@@ -10,6 +10,7 @@ const PINS_COLLECTION = 'pins';
 interface FirestorePin {
     title: string;
     date: string;
+    endDate?: string; // Optional end date for date ranges
     location: FirebaseFirestoreTypes.GeoPoint;
     locationName: string;
     imageUrl: string;
@@ -27,6 +28,7 @@ export const addPin = async (memory: Memory): Promise<string> => {
         const pinData: Omit<FirestorePin, 'id'> = {
             title: memory.title,
             date: memory.date,
+            endDate: memory.endDate, // Optional end date for date ranges
             location: new firestore.GeoPoint(memory.location[1], memory.location[0]), // [lat, lon]
             locationName: memory.locationName,
             imageUrl: memory.imageUris[0] || '',
@@ -69,6 +71,7 @@ export const updatePin = async (pinId: string, updates: Partial<Memory>): Promis
         const pinUpdates: Partial<FirestorePin> = {
             title: updates.title,
             date: updates.date,
+            endDate: updates.endDate,
             locationName: updates.locationName,
             imageUrl: updates.imageUris?.[0],
             pinColor: updates.pinColor,
@@ -123,6 +126,7 @@ export const subscribeToPins = (
                     id: id,
                     title: data.title,
                     date: data.date,
+                    endDate: data.endDate,
                     location: [data.location.longitude, data.location.latitude] as [number, number],
                     locationName: data.locationName,
                     imageUris: data.imageUrl ? [data.imageUrl] : [],
