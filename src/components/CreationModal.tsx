@@ -1,8 +1,9 @@
 import { Feather } from '@expo/vector-icons';
 import ImageCropPicker from 'react-native-image-crop-picker';
+import * as ImageManipulator from 'expo-image-manipulator';
 import * as Location from 'expo-location';
 import React, { useEffect, useState, useCallback } from 'react';
-import { Dimensions, Image, KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, FlatList, Pressable } from 'react-native';
+import { Dimensions, Image, KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, FlatList, Pressable, Alert } from 'react-native';
 import { Memory } from '../store/useMemoryStore';
 import { MAPBOX_TOKEN } from '../constants/Config';
 import { searchPlaces, GeocodingResult } from '../services/geocodingService';
@@ -61,6 +62,7 @@ export const CreationModal: React.FC<CreationModalProps> = ({ visible, onClose, 
     const [selectedDuration, setSelectedDuration] = useState<{ label: string, value: number | null }>(DURATION_OPTIONS[4]); // Default: permanent
 
     const [photoUri, setPhotoUri] = useState<string | null>(null);
+    const [isEditingImage, setIsEditingImage] = useState(false);
     const [manualLocation, setManualLocation] = useState<[number, number] | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
     const [isSearching, setIsSearching] = useState(false);
@@ -115,6 +117,8 @@ export const CreationModal: React.FC<CreationModalProps> = ({ visible, onClose, 
                 compressImageMaxHeight: 1920,
                 compressImageQuality: 0.8,
                 cropping: true,
+                // Allow free aspect ratio when cropping
+                freeStyleCropEnabled: true,
             });
 
             if (image && image.path) {
@@ -125,6 +129,22 @@ export const CreationModal: React.FC<CreationModalProps> = ({ visible, onClose, 
                 console.error('[CreationModal] Error picking image:', error);
             }
         }
+    };
+
+
+    const handleDeletePhoto = () => {
+        Alert.alert(
+            'Delete Photo',
+            'Are you sure you want to remove this photo?',
+            [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                    text: 'Delete',
+                    style: 'destructive',
+                    onPress: () => setPhotoUri(null)
+                }
+            ]
+        );
     };
 
     const fetchSuggestions = async (query: string) => {
@@ -266,13 +286,22 @@ export const CreationModal: React.FC<CreationModalProps> = ({ visible, onClose, 
                 current = current.add(1, 'day');
             }
         } else if (startDate) {
-            // Single date selection
+            // Single date selection - styled as circle using customStyles
             marked[startDate] = { 
-                selected: true, 
-                selectedColor: '#000000', 
-                selectedTextColor: 'white',
-                color: '#000000',
-                textColor: 'white'
+                customStyles: {
+                    container: {
+                        backgroundColor: '#000000',
+                        borderRadius: 18,
+                        width: 36,
+                        height: 36,
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                    },
+                    text: {
+                        color: 'white',
+                        fontWeight: '600',
+                    },
+                },
             };
         }
 
@@ -442,12 +471,47 @@ export const CreationModal: React.FC<CreationModalProps> = ({ visible, onClose, 
                                             style={{ width: '100%', height: 200, backgroundColor: '#eee', borderRadius: 16 }}
                                             resizeMode="cover"
                                         />
-                                        <View style={styles.editOverlay}>
-                                            <View style={styles.editBadge}>
-                                                <Feather name="edit-2" size={16} color="black" />
-                                                <Text style={styles.editText}>Change</Text>
-                                            </View>
-                                        </View>
+                                        {/* Edit icon in top left - opens native photo editor directly */}
+                                        <TouchableOpacity
+                                            style={styles.editIconButton}
+                                            onPress={async () => {
+                                                if (!photoUri) return;
+                                                try {
+                                                    // Open native photo editor directly (Android & iOS)
+                                                    // Allow free aspect ratio - users can keep original dimensions or crop as desired
+                                                    const edited = await ImageCropPicker.openCropper({
+                                                        path: photoUri,
+                                                        // Don't force dimensions - allow original aspect ratio
+                                                        compressImageQuality: 0.8,
+                                                        cropperToolbarTitle: 'Edit Photo',
+                                                        cropperChooseText: 'Done',
+                                                        cropperCancelText: 'Cancel',
+                                                        freeStyleCropEnabled: true,
+                                                        // Allow free aspect ratio (no forced square or fixed ratio)
+                                                        // iOS: Uses native Photos app editor with full editing capabilities
+                                                        // Android: Uses native system photo editor
+                                                        forceJpg: false,
+                                                    });
+                                                    if (edited && edited.path) {
+                                                        setPhotoUri(edited.path);
+                                                    }
+                                                } catch (error: any) {
+                                                    if (error.code !== 'E_PICKER_CANCELLED') {
+                                                        console.error('[CreationModal] Error opening native editor:', error);
+                                                        Alert.alert('Error', 'Failed to open photo editor');
+                                                    }
+                                                }
+                                            }}
+                                        >
+                                            <Feather name="edit-2" size={18} color="white" />
+                                        </TouchableOpacity>
+                                        {/* Delete button in top right */}
+                                        <TouchableOpacity
+                                            style={styles.deleteIconButton}
+                                            onPress={handleDeletePhoto}
+                                        >
+                                            <Feather name="x" size={18} color="white" />
+                                        </TouchableOpacity>
                                     </View>
                                 ) : (
                                     <View style={styles.uploadPlaceholder}>
@@ -683,6 +747,7 @@ export const CreationModal: React.FC<CreationModalProps> = ({ visible, onClose, 
                         </View>
                     </View>
                 </Modal>
+
             </KeyboardAvoidingView>
         </View>
     );
@@ -793,25 +858,27 @@ const styles = StyleSheet.create({
         overflow: 'hidden',
         position: 'relative',
     },
-    editOverlay: {
+    editIconButton: {
         position: 'absolute',
-        bottom: 12,
-        right: 12,
-    },
-    editBadge: {
-        flexDirection: 'row',
+        top: 12,
+        left: 12,
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        backgroundColor: 'rgba(0, 0, 0, 0.6)',
+        justifyContent: 'center',
         alignItems: 'center',
-        paddingVertical: 6,
-        paddingHorizontal: 12,
-        borderRadius: 20,
-        overflow: 'hidden',
-        backgroundColor: 'rgba(255,255,255,0.8)',
     },
-    editText: {
-        color: 'black',
-        fontSize: 12,
-        marginLeft: 6,
-        fontWeight: '600',
+    deleteIconButton: {
+        position: 'absolute',
+        top: 12,
+        right: 12,
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        backgroundColor: 'rgba(239, 68, 68, 0.9)',
+        justifyContent: 'center',
+        alignItems: 'center',
     },
     saveButton: {
         backgroundColor: '#000000',

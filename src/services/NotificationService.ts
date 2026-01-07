@@ -88,8 +88,22 @@ export const notificationService = {
     async login(uid: string) {
         if (ONESIGNAL_DISABLED || !OneSignal) {
             console.log('[OneSignal] DISABLED or not available - skipping login');
-            return;
+            return Promise.resolve();
         }
+        
+        // Additional safety check: Verify OneSignal is initialized before calling login
+        // This prevents "Must call 'initWithContext' before 'login'" errors
+        try {
+            // Check if OneSignal is initialized by trying to access a property
+            if (!OneSignal || typeof OneSignal.login !== 'function') {
+                console.warn('[OneSignal] OneSignal not properly initialized, skipping login');
+                return Promise.resolve();
+            }
+        } catch (e) {
+            console.warn('[OneSignal] OneSignal initialization check failed, skipping login:', e);
+            return Promise.resolve();
+        }
+        
         console.log('[OneSignal] Logging in user:', uid);
         try {
             // Login sets the user identity and external_id automatically in SDK v5
@@ -109,9 +123,12 @@ export const notificationService = {
             }
 
             console.log('[OneSignal] Login complete for:', uid);
-        } catch (error) {
-            console.error('[OneSignal] Login error:', error);
+        } catch (error: any) {
+            // Don't throw - just log the error to prevent crashes
+            // This handles cases where OneSignal isn't properly initialized
+            console.error('[OneSignal] Login error (non-critical):', error?.message || error);
         }
+        return Promise.resolve();
     },
 
     /**

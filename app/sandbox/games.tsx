@@ -16,25 +16,11 @@ import { PinDropDifficulty } from '../../src/services/PinDropService';
 import { streakService } from '../../src/services/StreakService';
 import { useMemoryStore } from '../../src/store/useMemoryStore';
 
-const PinDropGame = React.lazy(async () => {
-    const module = await import('../../src/components/PinDropGame');
-    return { default: module.PinDropGame };
-});
-
-const FlagDashGame = React.lazy(async () => {
-    const module = await import('../../src/components/FlagDashGame');
-    return { default: module.FlagDashGame };
-});
-
-const TravelBattleGame = React.lazy(async () => {
-    const module = await import('../../src/components/TravelBattleGame');
-    return { default: module.TravelBattleGame };
-});
-
-const ChallengeFriendModal = React.lazy(async () => {
-    const module = await import('../../src/components/ChallengeFriendModal');
-    return { default: module.ChallengeFriendModal };
-});
+// Regular imports instead of lazy loading to avoid "location" variable error in React Native
+import { PinDropGame } from '../../src/components/PinDropGame';
+import { FlagDashGame } from '../../src/components/FlagDashGame';
+import { TravelBattleGame } from '../../src/components/TravelBattleGame';
+import { ChallengeFriendModal } from '../../src/components/ChallengeFriendModal';
 
 export default function GameSandbox() {
     const insets = useSafeAreaInsets();
@@ -852,11 +838,13 @@ export default function GameSandbox() {
                             aspectRatio: 1,
                             borderRadius: 20,
                             overflow: 'hidden',
-                            shadowColor: '#3B82F6',
+                            shadowColor: '#60A5FA', // Lighter blue shadow
                             shadowOffset: { width: 0, height: 6 },
                             shadowOpacity: 0.35,
                             shadowRadius: 10,
                             elevation: 8,
+                            borderWidth: 2,
+                            borderColor: '#93C5FD', // Light blue border (lighter shade of #3B82F6)
                         }}
                         onPress={() => {
                             setState(prev => ({ ...prev, difficulty: 'medium' }));
@@ -878,13 +866,13 @@ export default function GameSandbox() {
                             aspectRatio: 1,
                             borderRadius: 20,
                             overflow: 'hidden',
-                            shadowColor: '#EF4444',
+                            shadowColor: '#F87171', // Light red shadow
                             shadowOffset: { width: 0, height: 6 },
                             shadowOpacity: 0.35,
                             shadowRadius: 10,
                             elevation: 8,
-                            borderWidth: 1,
-                            borderColor: 'rgba(0,0,0,0.08)',
+                            borderWidth: 2,
+                            borderColor: '#FCA5A5', // Light red border
                         }}
                         onPress={() => {
                             setPinDropDifficulty('medium');
@@ -906,11 +894,13 @@ export default function GameSandbox() {
                             aspectRatio: 1,
                             borderRadius: 20,
                             overflow: 'hidden',
-                            shadowColor: '#F59E0B',
+                            shadowColor: '#FCD34D', // Light amber shadow (lighter shade of #F59E0B)
                             shadowOffset: { width: 0, height: 6 },
                             shadowOpacity: 0.35,
                             shadowRadius: 10,
                             elevation: 8,
+                            borderWidth: 2,
+                            borderColor: '#FDE68A', // Light amber border (lighter shade of #F59E0B)
                         }}
                         onPress={() => {
                             setSelectedDifficulty('medium');
@@ -1904,71 +1894,65 @@ export default function GameSandbox() {
 
             {/* Pin Drop Full Screen Game - only when NOT viewing completed result */}
             {selectedGameType === 'pindrop' && !(state.gameOver && activeChallenge && challengeResult) && (
-                <React.Suspense fallback={<View style={styles.centerContainer}><ActivityIndicator size="large" color="#10B981" /></View>}>
-                    <PinDropGame
-                        difficulty={pinDropDifficulty}
-                        onGameOver={async (score) => {
-                            // Note: PinDrop scores are now submitted via Cloud Functions
-                            // The PinDropGame component handles score submission internally
-                            // Record streak
-                            const result = await streakService.recordGamePlayed();
-                            setDailyStreak(result.streak);
-                            setSelectedGameType(null);
-                        }}
-                        onQuit={() => {
-                            setSelectedGameType(null);
-                        }}
-                    />
-                </React.Suspense>
+                <PinDropGame
+                    difficulty={pinDropDifficulty}
+                    onGameOver={async (score) => {
+                        // Note: PinDrop scores are now submitted via Cloud Functions
+                        // The PinDropGame component handles score submission internally
+                        // Record streak
+                        const result = await streakService.recordGamePlayed();
+                        setDailyStreak(result.streak);
+                        setSelectedGameType(null);
+                    }}
+                    onQuit={() => {
+                        setSelectedGameType(null);
+                    }}
+                />
             )}
 
             {/* Flag Dash Game (Refactored to Component) */}
             {selectedGameType === 'flagdash' && (
-                <React.Suspense fallback={<View style={styles.centerContainer}><ActivityIndicator size="large" color="#3B82F6" /></View>}>
-                    <FlagDashGame
-                        difficulty={selectedDifficulty}
-                        onGameOver={async (score) => {
-                            // Update local state for result display logic if needed, or rely on GameService state
-                            setState(prev => ({ ...prev, score, gameOver: true }));
-                            // Record streak
-                            const result = await streakService.recordGamePlayed();
-                            setDailyStreak(result.streak);
-                        }}
-                        onQuit={() => {
-                            gameService.stopGame();
-                            setSelectedGameType(null);
-                        }}
-                    />
-                </React.Suspense>
+                <FlagDashGame
+                    difficulty={selectedDifficulty}
+                    onGameOver={async (score) => {
+                        // Update local state for result display logic if needed, or rely on GameService state
+                        setState(prev => ({ ...prev, score, gameOver: true }));
+                        // Record streak
+                        const result = await streakService.recordGamePlayed();
+                        setDailyStreak(result.streak);
+                    }}
+                    onQuit={() => {
+                        gameService.stopGame();
+                        setSelectedGameType(null);
+                    }}
+                />
             )}
 
             {/* Travel Battle Game (NEW - with Trivia) */}
             {selectedGameType === 'travelbattle' && (
-                <React.Suspense fallback={<View style={styles.centerContainer}><ActivityIndicator size="large" color="#F59E0B" /></View>}>
-                    <TravelBattleGame
-                        difficulty={selectedDifficulty}
-                        gameMode="travelbattle"
-                        onGameOver={async (score) => {
-                            setState(prev => ({ ...prev, score, gameOver: true }));
-                            // Record streak
-                            const result = await streakService.recordGamePlayed();
-                            setDailyStreak(result.streak);
-                        }}
-                        onQuit={() => {
-                            gameService.stopGame();
-                            setSelectedGameType(null);
-                        }}
-                        onGameMenu={() => {
-                            gameService.stopGame();
-                            setSelectedGameType(null);
-                        }}
-                        onExit={() => {
-                            gameService.stopGame();
-                            setSelectedGameType(null);
-                            router.push('/' as any);
-                        }}
-                    />
-                </React.Suspense>
+                <TravelBattleGame
+                    difficulty={selectedDifficulty}
+                    gameMode="travelbattle"
+                    onGameOver={async (score) => {
+                        setState(prev => ({ ...prev, score, gameOver: true }));
+                        // Record streak
+                        const result = await streakService.recordGamePlayed();
+                        setDailyStreak(result.streak);
+                    }}
+                    onQuit={() => {
+                        gameService.stopGame();
+                        setSelectedGameType(null);
+                    }}
+                    onGameMenu={() => {
+                        gameService.stopGame();
+                        setSelectedGameType(null);
+                    }}
+                    onExit={() => {
+                        gameService.stopGame();
+                        setSelectedGameType(null);
+                        router.push('/' as any);
+                    }}
+                />
             )}
 
             {!selectedGameType && (
@@ -1996,16 +1980,14 @@ export default function GameSandbox() {
             )}
 
             {/* Challenge Friend Modal */}
-            <React.Suspense fallback={null}>
-                <ChallengeFriendModal
-                    visible={showChallengePicker}
-                    onClose={() => setShowChallengePicker(false)}
-                    friends={friends}
-                    loadingFriends={loadingFriends}
-                    onSendChallenge={sendChallenge}
-                    difficulty={selectedDifficulty}
-                />
-            </React.Suspense>
+            <ChallengeFriendModal
+                visible={showChallengePicker}
+                onClose={() => setShowChallengePicker(false)}
+                friends={friends}
+                loadingFriends={loadingFriends}
+                onSendChallenge={sendChallenge}
+                difficulty={selectedDifficulty}
+            />
         </View>
     );
 }

@@ -166,6 +166,8 @@ export default function App() {
 
     // Derived State (for filters)
     const allPinsRef = useRef<Memory[]>([]);
+    // Track temp ID to real ID mapping for pin creation
+    const tempIdToRealIdMap = useRef<Map<string, string>>(new Map());
 
     // 0. Data Subscriptions (RESTORED)
     log('DataSub', `Calling useDataSubscriptions with userId: ${currentUserId ? 'present' : 'null'}`);
@@ -411,8 +413,13 @@ export default function App() {
             prevRequestCountRef.current = count;
         });
 
-        // OneSignal Identification
-        notificationService.login(currentUserId);
+        // OneSignal Identification (only if enabled)
+        // Note: notificationService.login() checks ONESIGNAL_DISABLED internally
+        // This is safe to call even if OneSignal is disabled
+        notificationService.login(currentUserId).catch((error) => {
+            // Silently catch any OneSignal errors to prevent crashes
+            console.warn('[App] OneSignal login failed (non-critical):', error);
+        });
 
         // Verify OneSignal configuration on startup (debug)
         notificationService.verifyConfiguration().then(config => {
@@ -709,10 +716,69 @@ export default function App() {
                 });
             }
 
+            // CRITICAL FIX: Merge temp pins with real pins instead of replacing
+            // This prevents temp pins from disappearing before their real counterparts arrive
+            const currentMemories = memories;
+            const tempPins = currentMemories.filter(m => m.id.startsWith('temp_'));
+            const realPinIds = new Set(allPins.map(p => p.id));
+            
+            // Find temp pins that have been replaced by real pins (by location/creator match)
+            const replacedTempIds = new Set<string>();
+            tempPins.forEach(tempPin => {
+                const matchingRealPin = allPins.find(p => 
+                    p.creatorId === tempPin.creatorId &&
+                    Math.abs(p.location[0] - tempPin.location[0]) < 0.0001 &&
+                    Math.abs(p.location[1] - tempPin.location[1]) < 0.0001 &&
+                    !p.id.startsWith('temp_')
+                );
+                if (matchingRealPin) {
+                    replacedTempIds.add(tempPin.id);
+                    tempIdToRealIdMap.current.set(tempPin.id, matchingRealPin.id);
+                    console.log('[App] Temp pin replaced by real pin:', tempPin.id, '->', matchingRealPin.id);
+                }
+            });
+            
+            // Handle temp ID to real ID transition for selected memory
+            if (selectedMemoryId && selectedMemoryId.startsWith('temp_')) {
+                const realId = tempIdToRealIdMap.current.get(selectedMemoryId);
+                if (realId) {
+                    console.log('[App] Updating selectedMemoryId from temp to real:', selectedMemoryId, '->', realId);
+                    selectMemory(realId);
+                } else {
+                    // Check if temp pin still exists
+                    const tempPin = currentMemories.find(m => m.id === selectedMemoryId);
+                    if (tempPin) {
+                        const matchingRealPin = allPins.find(p => 
+                            p.creatorId === tempPin.creatorId &&
+                            Math.abs(p.location[0] - tempPin.location[0]) < 0.0001 &&
+                            Math.abs(p.location[1] - tempPin.location[1]) < 0.0001 &&
+                            !p.id.startsWith('temp_')
+                        );
+                        if (matchingRealPin) {
+                            console.log('[App] Updating selectedMemoryId from temp to real (direct match):', selectedMemoryId, '->', matchingRealPin.id);
+                            selectMemory(matchingRealPin.id);
+                            tempIdToRealIdMap.current.set(selectedMemoryId, matchingRealPin.id);
+                        }
+                    }
+                }
+            }
+            
+            // Merge: Keep temp pins that haven't been replaced, add all real pins
+            const keptTempPins = tempPins.filter(tp => !replacedTempIds.has(tp.id));
+            const mergedMemories = [...keptTempPins, ...allPins];
+            
+            // Remove duplicates (in case a temp pin and real pin have the same ID somehow)
+            const uniqueMemories = mergedMemories.reduce((acc, pin) => {
+                if (!acc.find(p => p.id === pin.id)) {
+                    acc.push(pin);
+                }
+                return acc;
+            }, [] as Memory[]);
+            
             allPinsRef.current = allPins;
-            console.log('[App] Calling setMemories with', allPins.length, 'pins');
-            setMemories(allPins);
-            console.log('[App] setMemories called, memories should now be:', allPins.length);
+            console.log('[App] Merging memories: kept', keptTempPins.length, 'temp pins,', allPins.length, 'real pins, total:', uniqueMemories.length);
+            setMemories(uniqueMemories);
+            console.log('[App] setMemories called, memories should now be:', uniqueMemories.length);
         } else {
             console.log('[App] allPins is null/undefined, not setting memories');
         }
@@ -889,6 +955,10 @@ export default function App() {
             (async () => {
                 try {
                     const updates = { ...memoryData };
+                    // CRITICAL: Ensure endDate is explicitly preserved in updates
+                    if ('endDate' in memoryData) {
+                        updates.endDate = memoryData.endDate;
+                    }
 
                     // Specific Logic: If image changed to a LOCAL uri, upload it
                     // The CreationModal returns a local path if picked new, or remote url if untouched.
@@ -942,6 +1012,7 @@ export default function App() {
         const optimisticMemory: Memory = {
             ...createData,
             date: dateValue,
+            endDate: createData.endDate, // CRITICAL: Preserve endDate for date ranges
             id: tempId,
             creatorId: currentUserId,
         };
@@ -969,6 +1040,7 @@ export default function App() {
                 const newMemory: Memory = {
                     ...createData,
                     date: dateValue, // Use fixed date format
+                    endDate: createData.endDate, // CRITICAL: Preserve endDate for date ranges
                     id: '',
                     creatorId: currentUserId,
                 };
@@ -1719,6 +1791,7 @@ export default function App() {
                                     locationName: pinDraft.location?.name || 'Unknown',
                                     imageUris: [pinDraft.localImageUri],
                                     date: pinDraft.visitDate ? new Date(pinDraft.visitDate).toISOString() : new Date().toISOString(),
+                                    endDate: pinDraft.visitEndDate ? new Date(pinDraft.visitEndDate).toISOString() : undefined, // CRITICAL: Include endDate for date ranges
                                     pinColor: pinColor as 'magenta' | 'orange' | 'green' | 'blue' | 'cyan' | 'red',
                                     creatorId: currentUserId,
                                     expiresAt: null,

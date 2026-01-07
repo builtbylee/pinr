@@ -64,9 +64,15 @@ const parseDate = (dateInput: any): Date | null => {
         // Firestore Timestamp
         date = new Date(dateInput.seconds * 1000);
     } else if (typeof dateInput === 'string') {
-        const safeString = dateInput.replace(' ', 'T');
-        date = new Date(safeString);
-
+        // Try parsing as ISO string first (most common format from dayjs.toISOString())
+        date = new Date(dateInput);
+        
+        // If that fails, try replacing space with T (for formats like "2025-12-02 00:00:00")
+        if (isNaN(date.getTime())) {
+            const safeString = dateInput.replace(' ', 'T');
+            date = new Date(safeString);
+        }
+        
         // Fallback for timestamp strings
         if (isNaN(date.getTime()) && !isNaN(Number(dateInput))) {
             date = new Date(Number(dateInput));

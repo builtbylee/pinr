@@ -16,10 +16,12 @@ import {
     Keyboard,
     FlatList,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 import { Feather } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import ImageCropPicker from 'react-native-image-crop-picker';
+import * as ImageManipulator from 'expo-image-manipulator';
 import { MAPBOX_TOKEN } from '../constants/Config';
 import { searchPlaces, GeocodingResult } from '../services/geocodingService';
 import DraggableFlatList, { RenderItemParams, ScaleDecorator } from 'react-native-draggable-flatlist';
@@ -77,6 +79,7 @@ export const StoryCreationFlow: React.FC<StoryCreationFlowProps> = ({
     initialStory,
     initialPins
 }) => {
+    const insets = useSafeAreaInsets();
     // State
     const [step, setStep] = useState<Step>('photos');
     const [selectedPhotos, setSelectedPhotos] = useState<{ uri: string; tempId: string }[]>([]);
@@ -224,6 +227,7 @@ export const StoryCreationFlow: React.FC<StoryCreationFlowProps> = ({
         setSelectedPhotos(prev => prev.filter(p => p.tempId !== tempId));
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     };
+
 
     const proceedToDetails = () => {
         if (selectedPhotos.length === 0) {
@@ -405,13 +409,22 @@ export const StoryCreationFlow: React.FC<StoryCreationFlowProps> = ({
                 current = current.add(1, 'day');
             }
         } else if (tempStartDate) {
-            // Single date selection
+            // Single date selection - styled as circle using customStyles
             marked[tempStartDate] = { 
-                selected: true, 
-                selectedColor: '#000000', 
-                selectedTextColor: 'white',
-                color: '#000000',
-                textColor: 'white'
+                customStyles: {
+                    container: {
+                        backgroundColor: '#000000',
+                        borderRadius: 18,
+                        width: 36,
+                        height: 36,
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                    },
+                    text: {
+                        color: 'white',
+                        fontWeight: '600',
+                    },
+                },
             };
         }
 
@@ -535,7 +548,7 @@ export const StoryCreationFlow: React.FC<StoryCreationFlowProps> = ({
     // Render helpers
     const renderPhotoStep = () => (
         <View style={styles.stepContainer}>
-            <Text style={styles.stepTitle}>Select Photos</Text>
+            <Text style={[styles.stepTitle, { paddingTop: insets.top + 8 }]}>Select Photos</Text>
             <Text style={styles.stepSubtitle}>Choose one photo for a pin, or multiple for a journey (max {MAX_PHOTOS})</Text>
 
             {selectedPhotos.length === 0 ? (
@@ -570,12 +583,50 @@ export const StoryCreationFlow: React.FC<StoryCreationFlowProps> = ({
                                             <Text style={styles.photoNumberText}>{(getIndex() ?? 0) + 1}</Text>
                                         </View>
                                         {!isActive && (
-                                            <TouchableOpacity
-                                                style={styles.removePhotoBtn}
-                                                onPress={() => removePhoto(item.tempId)}
-                                            >
-                                                <Feather name="x" size={14} color="white" />
-                                            </TouchableOpacity>
+                                            <>
+                                                {/* Edit icon in top left - opens native photo editor directly */}
+                                                <TouchableOpacity
+                                                    style={styles.editIconButton}
+                                                    onPress={async () => {
+                                                        try {
+                                                            // Open native photo editor directly (Android & iOS)
+                                                            // Allow free aspect ratio - users can keep original dimensions or crop as desired
+                                                            const edited = await ImageCropPicker.openCropper({
+                                                                path: item.uri,
+                                                                // Don't force dimensions - allow original aspect ratio (removed width: 1200, height: 1200)
+                                                                compressImageQuality: 0.8,
+                                                                cropperToolbarTitle: 'Edit Photo',
+                                                                cropperChooseText: 'Done',
+                                                                cropperCancelText: 'Cancel',
+                                                                freeStyleCropEnabled: true,
+                                                                // Allow free aspect ratio (no forced square or fixed ratio)
+                                                                // iOS: Uses native Photos app editor with full editing capabilities
+                                                                // Android: Uses native system photo editor
+                                                                forceJpg: false,
+                                                            });
+                                                            if (edited && edited.path) {
+                                                                setSelectedPhotos(prev => prev.map(p => 
+                                                                    p.tempId === item.tempId ? { ...p, uri: edited.path } : p
+                                                                ));
+                                                            }
+                                                        } catch (error: any) {
+                                                            if (error.code !== 'E_PICKER_CANCELLED') {
+                                                                console.error('[StoryCreationFlow] Error opening native editor:', error);
+                                                                Alert.alert('Error', 'Failed to open photo editor');
+                                                            }
+                                                        }
+                                                    }}
+                                                >
+                                                    <Feather name="edit-2" size={14} color="white" />
+                                                </TouchableOpacity>
+                                                {/* Delete button in top right */}
+                                                <TouchableOpacity
+                                                    style={styles.removePhotoBtn}
+                                                    onPress={() => removePhoto(item.tempId)}
+                                                >
+                                                    <Feather name="x" size={14} color="white" />
+                                                </TouchableOpacity>
+                                            </>
                                         )}
                                     </TouchableOpacity>
                                 </ScaleDecorator>
@@ -629,7 +680,7 @@ export const StoryCreationFlow: React.FC<StoryCreationFlowProps> = ({
                     showsVerticalScrollIndicator={false}
                 >
                     <View style={styles.detailsHeader}>
-                        <Text style={styles.stepTitle}>Add Details</Text>
+                        <Text style={[styles.stepTitle, { paddingTop: insets.top + 8 }]}>Add Details</Text>
                         <Text style={styles.progressText}>
                             {currentDetailIndex + 1} of {pinDrafts.length}
                         </Text>
@@ -803,7 +854,7 @@ export const StoryCreationFlow: React.FC<StoryCreationFlowProps> = ({
 
     const renderReorderStep = () => (
         <View style={styles.stepContainer}>
-            <Text style={styles.stepTitle}>Review</Text>
+            <Text style={[styles.stepTitle, { paddingTop: insets.top + 8 }]}>Review</Text>
             <Text style={styles.stepSubtitle}>Ready to post your story?</Text>
 
             <View style={styles.storyTitleInput}>
@@ -920,7 +971,7 @@ export const StoryCreationFlow: React.FC<StoryCreationFlowProps> = ({
                             key={calendarCurrentDate}
                             current={calendarCurrentDate}
                             onDayPress={onDayPress}
-                            markingType={'period'}
+                            markingType={tempStartDate && tempEndDate ? 'period' : 'custom'}
                             markedDates={getMarkedDates()}
                             hideArrows={true}
                             renderHeader={() => null}
@@ -1026,6 +1077,7 @@ export const StoryCreationFlow: React.FC<StoryCreationFlowProps> = ({
                     </View>
                 </View>
             </Modal>
+
         </Modal>
     );
 };
@@ -1105,6 +1157,7 @@ const styles = StyleSheet.create({
         fontWeight: '800',
         color: '#111827',
         marginBottom: 4,
+        // paddingTop will be set dynamically using insets.top + 8
     },
     stepSubtitle: {
         fontSize: 14,
@@ -1171,13 +1224,24 @@ const styles = StyleSheet.create({
         fontSize: 11,
         fontWeight: '700',
     },
+    editIconButton: {
+        position: 'absolute',
+        top: 6,
+        left: 6,
+        width: 28,
+        height: 28,
+        borderRadius: 14,
+        backgroundColor: 'rgba(0, 0, 0, 0.6)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
     removePhotoBtn: {
         position: 'absolute',
         top: 6,
         right: 6,
-        width: 22,
-        height: 22,
-        borderRadius: 11,
+        width: 28,
+        height: 28,
+        borderRadius: 14,
         backgroundColor: 'rgba(239, 68, 68, 0.9)',
         justifyContent: 'center',
         alignItems: 'center',

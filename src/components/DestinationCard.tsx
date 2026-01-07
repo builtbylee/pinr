@@ -71,7 +71,15 @@ export const DestinationCard: React.FC<DestinationCardProps> = ({ memory, onClos
                     style: 'destructive',
                     onPress: async () => {
                         try {
+                            // Delete from Firestore
                             await deletePin(memory.id);
+                            
+                            // Remove from local store
+                            deleteMemory(memory.id);
+                            
+                            // Close the card and deselect
+                            selectMemory(null);
+                            onClose();
                         } catch (error) {
                             console.error('[DestinationCard] Delete failed:', error);
                             Alert.alert('Error', 'Failed to delete pin. Please try again.');

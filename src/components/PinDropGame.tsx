@@ -6,7 +6,7 @@
  */
 
 import React, { useState, useEffect, useRef } from 'react';
-import { StyleSheet, View, Text, TouchableOpacity, Modal, Animated, BackHandler, Image, ScrollView, useWindowDimensions } from 'react-native';
+import { StyleSheet, View, Text, TouchableOpacity, Modal, Animated, BackHandler, Image, ScrollView, useWindowDimensions, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Mapbox, { MapView, Camera, PointAnnotation, MarkerView } from '@rnmapbox/maps';
 import { Feather } from '@expo/vector-icons';
@@ -14,7 +14,8 @@ import * as Haptics from 'expo-haptics';
 import { pinDropService, PinDropState, PinDropDifficulty, RoundResult } from '../services/PinDropService';
 
 // Globe style matching main app - 3D globe with labels hidden for game difficulty
-const GLOBE_STYLE = {
+// Use styleURL for iOS (custom Mapbox style), styleJSON for Android
+const GLOBE_STYLE_JSON = {
     version: 8,
     name: 'PinDrop-Globe',
     sources: {},
@@ -32,6 +33,9 @@ const GLOBE_STYLE = {
         }
     ]
 };
+
+// Custom Mapbox style URL for iOS (same as main app, no labels)
+const GLOBE_STYLE_URL_IOS = 'mapbox://styles/hackneymanlee/cmje13rl5003301sb5r4n8qpo';
 
 interface PinDropGameProps {
     difficulty: PinDropDifficulty;
@@ -558,7 +562,8 @@ export const PinDropGame: React.FC<PinDropGameProps> = ({
             <MapView
                 style={styles.map}
                 projection="globe"
-                styleJSON={JSON.stringify(GLOBE_STYLE)}
+                styleURL={Platform.OS === 'ios' ? GLOBE_STYLE_URL_IOS : undefined}
+                styleJSON={Platform.OS === 'android' ? JSON.stringify(GLOBE_STYLE_JSON) : undefined}
                 onPress={handleMapPress}
                 logoEnabled={false}
                 attributionEnabled={false}

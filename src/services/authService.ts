@@ -165,9 +165,11 @@ export const signInWithGoogle = async (): Promise<{ uid: string; email: string |
  */
 export const signInWithApple = async (): Promise<{ uid: string; email: string | null; displayName: string | null; isNewUser: boolean }> => {
     console.log('[AuthService] ========== signInWithApple START ==========');
+    console.log('[AuthService] Platform:', Platform.OS);
 
-    if (Platform.OS !== 'ios') {
-        throw new Error('Apple Sign-In is only available on iOS');
+    // Check if we're on Android - expo-apple-authentication is iOS-only
+    if (Platform.OS === 'android') {
+        throw new Error('Apple Sign-In is currently only available on iOS. Please use Google Sign-In or email/password on Android.');
     }
 
     // Lazy import native modules only when needed (prevents crash if module not linked)
@@ -217,13 +219,42 @@ export const signInWithApple = async (): Promise<{ uid: string; email: string | 
 
         // Create a Firebase credential with the Apple ID token
         console.log('[AuthService] 🔑 Creating Apple credential...');
-        const firebaseCredential = auth.AppleAuthProvider.credential(identityToken, nonce);
-        console.log('[AuthService] ✅ Credential created');
+        console.log('[AuthService] Identity token length:', identityToken?.length || 0);
+        console.log('[AuthService] Nonce length:', nonce?.length || 0);
+        
+        let firebaseCredential;
+        try {
+            firebaseCredential = auth.AppleAuthProvider.credential(identityToken, nonce);
+            console.log('[AuthService] ✅ Credential created');
+        } catch (credError: any) {
+            console.error('[AuthService] ❌ Failed to create Firebase credential:', credError);
+            console.error('[AuthService] Credential error code:', credError.code);
+            console.error('[AuthService] Credential error message:', credError.message);
+            throw new Error(`Failed to create authentication credential: ${credError.message || 'Unknown error'}`);
+        }
 
         // Sign in the user with the credential
         console.log('[AuthService] 🔐 Signing in with credential...');
-        const userCredential = await auth().signInWithCredential(firebaseCredential);
-        console.log('[AuthService] ✅ Sign-in with credential succeeded');
+        let userCredential;
+        try {
+            userCredential = await auth().signInWithCredential(firebaseCredential);
+            console.log('[AuthService] ✅ Sign-in with credential succeeded');
+        } catch (signInError: any) {
+            console.error('[AuthService] ❌ Firebase sign-in failed:', signInError);
+            console.error('[AuthService] Sign-in error code:', signInError.code);
+            console.error('[AuthService] Sign-in error message:', signInError.message);
+            
+            // Provide more specific error messages
+            if (signInError.code === 'auth/invalid-credential') {
+                throw new Error('Invalid Apple Sign-In credential. Please try again.');
+            } else if (signInError.code === 'auth/credential-already-in-use') {
+                throw new Error('This Apple ID is already associated with another account.');
+            } else if (signInError.code === 'auth/operation-not-allowed') {
+                throw new Error('Apple Sign-In is not enabled. Please contact support.');
+            } else {
+                throw new Error(signInError.message || 'The authorization attempt failed for an unknown reason');
+            }
+        }
 
         const isNewUser = userCredential.additionalUserInfo?.isNewUser ?? false;
         const displayName = fullName
@@ -242,12 +273,21 @@ export const signInWithApple = async (): Promise<{ uid: string; email: string | 
         };
     } catch (error: any) {
         console.error('[AuthService] ❌ Apple Sign-In failed:', error);
+        console.error('[AuthService] Error code:', error.code);
+        console.error('[AuthService] Error message:', error.message);
 
-        if (error.code === 'ERR_REQUEST_CANCELED') {
+        if (error.code === 'ERR_REQUEST_CANCELED' || error.code === 'ERR_APPLE_AUTH_CANCELED') {
             throw new Error('Sign-in was cancelled');
         }
 
-        throw error;
+        // Handle Firebase auth errors
+        if (error.code === 'auth/invalid-credential' || error.code === 'auth/credential-already-in-use') {
+            throw new Error('Unable to sign in with Apple. Please try again.');
+        }
+
+        // Provide a more user-friendly error message
+        const errorMessage = error.message || 'The authorization attempt failed for an unknown reason';
+        throw new Error(errorMessage);
     }
 };
 
