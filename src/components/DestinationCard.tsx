@@ -1,6 +1,5 @@
 import { Feather } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
-import { GlassEffectView } from 'react-native-glass-effect-view';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import React, { useEffect, useState } from 'react';
@@ -134,67 +133,34 @@ export const DestinationCard: React.FC<DestinationCardProps> = ({ memory, onClos
                     </TouchableOpacity>
                 </View>
 
-                {/* 3. Compact Frosted Pill (Bottom) - Glassmorphism Effect */}
+                {/* 3. Compact Frosted Pill (Bottom) - BlurView for both platforms */}
                 <View style={styles.pillContainer}>
-                    {Platform.OS === 'android' ? (
-                        <GlassEffectView
-                            appearance="dark"
-                            style={[
-                                styles.frostedPillBlur,
-                                { borderColor: 'rgba(255, 255, 255, 0.3)' }
-                            ]}
-                        >
-                            {/* Semi-transparent dark overlay for contrast */}
-                            <View style={styles.glassOverlay}>
-                                <View style={styles.frostedPillContent}>
-                                    {/* Line 1: Title */}
-                                    <Text style={styles.pillTitleGlass} numberOfLines={1}>{memory.title}</Text>
-                                    {/* Line 2: Location & Date */}
-                                    <View style={styles.pillDetailsRow}>
-                                        <Feather name="map-pin" size={12} color="#FFFFFF" />
-                                        <Text style={styles.pillDetailGlass} numberOfLines={1}>{memory.locationName?.split(',')[0] || 'Unknown'}</Text>
-                                        <Feather name="calendar" size={12} color="#FFFFFF" />
-                                        <Text style={styles.pillDetailGlass}>{formatMemoryDate(memory.date, memory.endDate)}</Text>
-                                        {/* Expiry Badge if needed */}
-                                        {remainingTime && (
-                                            <>
-                                                <Feather name="clock" size={12} color="#FBBF24" />
-                                                <Text style={[styles.pillDetailGlass, { color: '#FBBF24' }]}>{remainingTime}</Text>
-                                            </>
-                                        )}
-                                    </View>
+                    <BlurView
+                        intensity={Platform.OS === 'ios' ? 40 : 60}
+                        tint="dark"
+                        style={styles.blurPill}
+                    >
+                        <View style={styles.blurOverlay}>
+                            <View style={styles.frostedPillContent}>
+                                {/* Line 1: Title */}
+                                <Text style={styles.pillTitleGlass} numberOfLines={1}>{memory.title}</Text>
+                                {/* Line 2: Location & Date */}
+                                <View style={styles.pillDetailsRow}>
+                                    <Feather name="map-pin" size={12} color="#FFFFFF" />
+                                    <Text style={styles.pillDetailGlass} numberOfLines={1}>{memory.locationName?.split(',')[0] || 'Unknown'}</Text>
+                                    <Feather name="calendar" size={12} color="#FFFFFF" />
+                                    <Text style={styles.pillDetailGlass}>{formatMemoryDate(memory.date, memory.endDate)}</Text>
+                                    {/* Expiry Badge if needed */}
+                                    {remainingTime && (
+                                        <>
+                                            <Feather name="clock" size={12} color="#FBBF24" />
+                                            <Text style={[styles.pillDetailGlass, { color: '#FBBF24' }]}>{remainingTime}</Text>
+                                        </>
+                                    )}
                                 </View>
                             </View>
-                        </GlassEffectView>
-                    ) : (
-                        /* iOS: BlurView with frosted glass styling */
-                        <BlurView
-                            intensity={40}
-                            tint="dark"
-                            style={styles.blurPill}
-                        >
-                            <View style={styles.blurOverlay}>
-                                <View style={styles.frostedPillContent}>
-                                    {/* Line 1: Title */}
-                                    <Text style={styles.pillTitleGlass} numberOfLines={1}>{memory.title}</Text>
-                                    {/* Line 2: Location & Date */}
-                                    <View style={styles.pillDetailsRow}>
-                                        <Feather name="map-pin" size={12} color="#FFFFFF" />
-                                        <Text style={styles.pillDetailGlass} numberOfLines={1}>{memory.locationName?.split(',')[0] || 'Unknown'}</Text>
-                                        <Feather name="calendar" size={12} color="#FFFFFF" />
-                                        <Text style={styles.pillDetailGlass}>{formatMemoryDate(memory.date, memory.endDate)}</Text>
-                                        {/* Expiry Badge if needed */}
-                                        {remainingTime && (
-                                            <>
-                                                <Feather name="clock" size={12} color="#FBBF24" />
-                                                <Text style={[styles.pillDetailGlass, { color: '#FBBF24' }]}>{remainingTime}</Text>
-                                            </>
-                                        )}
-                                    </View>
-                                </View>
-                            </View>
-                        </BlurView>
-                    )}
+                        </View>
+                    </BlurView>
                 </View>
             </View>
         </View>
@@ -280,7 +246,7 @@ const styles = StyleSheet.create({
         elevation: 8,
     },
     blurOverlay: {
-        backgroundColor: 'rgba(0, 0, 0, 0.15)', // Lighter overlay to ensure text visibility
+        backgroundColor: 'rgba(0, 0, 0, 0.3)', // Darker overlay for better text contrast
         width: '100%',
     },
     frostedPill: {
@@ -306,10 +272,6 @@ const styles = StyleSheet.create({
         // Glass edge border
         borderWidth: 1.5,
         borderColor: 'rgba(255, 255, 255, 0.2)',
-    },
-    glassOverlay: {
-        backgroundColor: 'rgba(0, 0, 0, 0.15)', // Lighter overlay to ensure text visibility
-        width: '100%',
     },
     frostedPillContent: {
         flexDirection: 'column',

@@ -248,7 +248,7 @@ export const subscribeToPins = (
                         callback([]);
                     }
                 }
-            }, 10000);
+            }, timeoutMs);
 
             unsubscribeSnapshot = firestore()
                 .collection(PINS_COLLECTION)

@@ -192,19 +192,16 @@ export const CreationModal: React.FC<CreationModalProps> = ({ visible, onClose, 
             } catch (e) { }
         }
 
-        // Format date for display
-        let dateDisplay = "";
+        // Store date as ISO string for Firestore, but also prepare display format
+        let dateISO = "";
+        let endDateISO: string | undefined = undefined;
         if (startDate) {
-            dateDisplay = dayjs(startDate).format('MMMM, YYYY');
+            dateISO = dayjs(startDate).toISOString();
             if (endDate && endDate !== startDate) {
-                const startFormatted = dayjs(startDate).format('MMMM, YYYY');
-                const endFormatted = dayjs(endDate).format('MMMM, YYYY');
-                if (startFormatted !== endFormatted) {
-                    dateDisplay = `${startFormatted} - ${endFormatted}`;
-                }
+                endDateISO = dayjs(endDate).toISOString();
             }
         } else {
-            dateDisplay = dayjs().format('MMMM, YYYY');
+            dateISO = dayjs().toISOString();
         }
 
         const cardTitle = title || foundLocationName || 'Memory';
@@ -216,7 +213,8 @@ export const CreationModal: React.FC<CreationModalProps> = ({ visible, onClose, 
 
         const memoryData = {
             title: cardTitle,
-            date: dateDisplay,
+            date: dateISO, // Store as ISO string for Firestore
+            endDate: endDateISO, // Store end date as ISO string if range
             location,
             locationName: foundLocationName || 'Unknown Location',
             imageUris: photoUri ? [photoUri] : [],

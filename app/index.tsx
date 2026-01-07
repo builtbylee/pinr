@@ -922,8 +922,26 @@ export default function App() {
         // We know this is Omit<Memory, 'id'> because we passed the 'id' check above
         const createData = memoryData as Omit<Memory, 'id'>;
 
+        // Fix date format: Convert display format to ISO string if needed
+        let dateValue = createData.date;
+        if (dateValue && !dateValue.includes('T') && !dateValue.includes('Z')) {
+            // If it's a formatted date like "January, 2024", convert to ISO
+            try {
+                const parsed = new Date(dateValue);
+                if (!isNaN(parsed.getTime())) {
+                    dateValue = parsed.toISOString();
+                } else {
+                    // If parsing fails, use current date
+                    dateValue = new Date().toISOString();
+                }
+            } catch (e) {
+                dateValue = new Date().toISOString();
+            }
+        }
+
         const optimisticMemory: Memory = {
             ...createData,
+            date: dateValue,
             id: tempId,
             creatorId: currentUserId,
         };
@@ -950,6 +968,7 @@ export default function App() {
             try {
                 const newMemory: Memory = {
                     ...createData,
+                    date: dateValue, // Use fixed date format
                     id: '',
                     creatorId: currentUserId,
                 };
@@ -968,6 +987,10 @@ export default function App() {
                 // Save to Firestore (real-time sync will update with proper ID)
                 const pinId = await addPin(newMemory);
                 console.log('[App] Pin saved to Firestore:', pinId);
+                console.log('[App] Pin data saved:', JSON.stringify(newMemory, null, 2));
+                
+                // Force a small delay to ensure Firestore has processed the write
+                await new Promise(resolve => setTimeout(resolve, 500));
 
                 // Notify Friends
                 const store = useMemoryStore.getState();
