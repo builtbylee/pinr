@@ -52,22 +52,9 @@
     <key>NSAppTransportSecurity</key>
     <dict>
       <key>NSAllowsArbitraryLoads</key>
-      <true/>
+      <false/>
       <key>NSAllowsLocalNetworking</key>
       <true/>
-      <key>NSExceptionDomains</key>
-      <dict>
-        <key>10.62.176.176</key>
-        <dict>
-          <key>NSExceptionAllowsInsecureHTTPLoads</key>
-          <true/>
-        </dict>
-        <key>localhost</key>
-        <dict>
-          <key>NSExceptionAllowsInsecureHTTPLoads</key>
-          <true/>
-        </dict>
-      </dict>
     </dict>
     <key>NSCameraUsageDescription</key>
     <string>Take photos for your travel memories.</string>

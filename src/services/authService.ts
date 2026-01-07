@@ -1,7 +1,5 @@
 import auth from '@react-native-firebase/auth';
 import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
-import * as AppleAuthentication from 'expo-apple-authentication';
-import * as Crypto from 'expo-crypto';
 import { Platform } from 'react-native';
 
 // Configure Google Sign-In (call this once at app startup)
@@ -163,12 +161,24 @@ export const signInWithGoogle = async (): Promise<{ uid: string; email: string |
 
 /**
  * Sign in with Apple (iOS only)
+ * Uses lazy imports to avoid loading native modules on Android or when not needed
  */
 export const signInWithApple = async (): Promise<{ uid: string; email: string | null; displayName: string | null; isNewUser: boolean }> => {
     console.log('[AuthService] ========== signInWithApple START ==========');
 
     if (Platform.OS !== 'ios') {
         throw new Error('Apple Sign-In is only available on iOS');
+    }
+
+    // Lazy import native modules only when needed (prevents crash if module not linked)
+    let AppleAuthentication: any;
+    let Crypto: any;
+    try {
+        AppleAuthentication = require('expo-apple-authentication');
+        Crypto = require('expo-crypto');
+    } catch (error: any) {
+        console.error('[AuthService] ❌ Failed to load Apple Sign-In modules:', error);
+        throw new Error('Apple Sign-In is not available. Please ensure expo-apple-authentication is installed and linked.');
     }
 
     // Try to ensure Firebase is ready
