@@ -202,7 +202,7 @@ export default function GameSandbox() {
                     RestService.fetchActiveGames(uid).then((res: { active: any[], pending: any[] }) => {
                         console.log(`[GameSandbox] REST Success: ${res.active.length} active, ${res.pending.length} pending`);
                         setDebugDirectCount(res.active.length);
-                        setActiveChallenges(res.active);
+                        setActiveGames(res.active);
                         setPendingChallenges(res.pending);
                     }).catch((e: any) => {
                         console.error('[GameSandbox] REST fetch failed:', e);
@@ -406,9 +406,34 @@ export default function GameSandbox() {
         }
     };
 
-    // Stubbed
     const loadFriendsForChallenge = async () => {
-        console.log('loadFriendsForChallenge stubbed');
+        console.log('[GameSandbox] Loading friends for challenge...');
+        setShowChallengePicker(true);
+        setLoadingFriends(true);
+        try {
+            const user = getCurrentUser();
+            if (!user) {
+                console.error('[GameSandbox] No current user for loading friends');
+                return;
+            }
+            const friendList = await getFriends(user.uid);
+            const friendProfiles = await Promise.all(
+                friendList.map(async (fUid) => {
+                    const profile = await getUserProfile(fUid);
+                    return {
+                        uid: fUid,
+                        username: profile?.username || 'Unknown',
+                        avatarUrl: profile?.avatarUrl,
+                        pinColor: profile?.pinColor,
+                    };
+                })
+            );
+            setFriends(friendProfiles);
+        } catch (error) {
+            console.error('[GameSandbox] Failed to load friends:', error);
+        } finally {
+            setLoadingFriends(false);
+        }
     };
 
     // Stubbed
@@ -417,8 +442,17 @@ export default function GameSandbox() {
     };
 
 
-    const sendChallenge = async (friendUid: string, gameType: 'flagdash' | 'pindrop' | 'travelbattle', difficulty: Difficulty) => {
-        console.log('sendChallenge stubbed');
+    const sendChallenge = async (friend: { uid: string; username: string; avatarUrl?: string; pinColor?: string }, gameType: 'flagdash' | 'pindrop' | 'travelbattle', difficulty: Difficulty) => {
+        console.log(`[GameSandbox] Sending challenge to ${friend.username} for ${gameType} (${difficulty})...`);
+        try {
+            const newChallenge = await challengeService.createChallenge(friend.uid, difficulty, gameType);
+            if (newChallenge) {
+                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                setShowChallengePicker(false);
+            }
+        } catch (error) {
+            console.error('[GameSandbox] Failed to send challenge:', error);
+        }
     };
 
     const acceptChallenge = async (challenge: GameChallenge) => {
@@ -535,43 +569,32 @@ export default function GameSandbox() {
                 contentContainerStyle={{ paddingBottom: 100 }}
                 showsVerticalScrollIndicator={false}
             >
-                {/* Debug Footer for verification */}
-                <View style={{ alignItems: 'center', marginVertical: 10, opacity: 0.7 }}>
-                    <Text style={{ fontSize: 13, color: 'black', fontWeight: 'bold' }}>
-                        User: "{selfUsername}"
-                    </Text>
-                    <Text style={{ fontSize: 13, color: 'black', fontWeight: 'bold' }}>
-                        UID: "{currentUserId ? currentUserId.slice(-5) : 'None'}"
-                    </Text>
-                    <Text style={{ fontSize: 13, color: 'black', fontWeight: 'bold' }}>
-                        Sub: {activeGames.length} | Get: {debugDirectCount === null ? '...' : debugDirectCount}
-                    </Text>
-                    <Text style={{ fontSize: 11, color: '#333' }}>PID: {firestore().app.options.projectId}</Text>
-                    {errorInfo && (
-                        <Text style={{ fontSize: 10, color: 'red', fontWeight: 'bold' }}>{errorInfo}</Text>
-                    )}
-                </View>
-
-
-                {/* Page Header with Back Button */}
-                <View style={{ paddingHorizontal: 20, paddingTop: 8, paddingBottom: 8 }}>
-                    {/* Back Button */}
-                    < TouchableOpacity
+                {/* Custom Header with Back Button */}
+                <View style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    paddingHorizontal: 16,
+                    paddingTop: insets.top + 8,
+                    paddingBottom: 12,
+                    backgroundColor: '#FAFAFA',
+                }}>
+                    <TouchableOpacity
                         onPress={() => router.back()}
                         style={{
-                            width: 36,
-                            height: 36,
-                            borderRadius: 18,
-                            backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                            justifyContent: 'center',
+                            flexDirection: 'row',
                             alignItems: 'center',
-                            marginBottom: 12,
-                            alignSelf: 'flex-start',
+                            paddingVertical: 4,
+                            paddingRight: 12,
                         }}
+                        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                     >
-                        <Feather name="arrow-left" size={20} color="#3B82F6" />
-                    </TouchableOpacity >
+                        <Feather name="chevron-left" size={28} color="#000" />
+                        <Text style={{ fontSize: 17, color: '#000', marginLeft: 2 }}>Back</Text>
+                    </TouchableOpacity>
+                </View>
 
+                {/* Page Title with Streak Badge */}
+                <View style={{ paddingHorizontal: 20, paddingBottom: 8 }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                         <View>
                             <Text style={{ fontSize: 24, fontWeight: '800', color: '#1F2937' }}>🎮 Games</Text>
@@ -822,118 +845,84 @@ export default function GameSandbox() {
 
                 {/* Game Cards Row - Premium Tiles */}
                 <View style={{ flexDirection: 'row', marginHorizontal: 20, gap: 8, marginBottom: 20 }}>
-                    {/* Flag Dash Card - Blue */}
+                    {/* Flag Dash Card - 3D Image */}
                     <TouchableOpacity
                         style={{
                             flex: 1,
                             aspectRatio: 1,
-                            backgroundColor: '#3B82F6',
-                            borderRadius: 12,
-                            padding: isSmallScreen ? 8 : 10,
-                            justifyContent: 'center',
-                            alignItems: 'center',
+                            borderRadius: 20,
+                            overflow: 'hidden',
                             shadowColor: '#3B82F6',
-                            shadowOffset: { width: 0, height: 4 },
-                            shadowOpacity: 0.3,
-                            shadowRadius: 8,
-                            elevation: 6,
-                            borderWidth: 1,
-                            borderColor: 'rgba(255,255,255,0.2)',
+                            shadowOffset: { width: 0, height: 6 },
+                            shadowOpacity: 0.35,
+                            shadowRadius: 10,
+                            elevation: 8,
                         }}
                         onPress={() => {
                             setState(prev => ({ ...prev, difficulty: 'medium' }));
                             setSelectedGameType('flagdash');
                         }}
+                        activeOpacity={0.85}
                     >
-                        {/* Icon Circle */}
-                        <View style={{
-                            width: isSmallScreen ? 36 : 42,
-                            height: isSmallScreen ? 36 : 42,
-                            borderRadius: isSmallScreen ? 18 : 21,
-                            backgroundColor: 'rgba(255,255,255,0.25)',
-                            justifyContent: 'center',
-                            alignItems: 'center',
-                            marginBottom: 8,
-                        }}>
-                            <Feather name="flag" size={isSmallScreen ? 18 : 22} color="white" />
-                        </View>
-                        <Text style={{ color: 'white', fontSize: isSmallScreen ? 10 : 11, fontWeight: '700', textAlign: 'center' }}>Flag Dash</Text>
+                        <Image
+                            source={require('../../assets/game-icons/flag-dash.png')}
+                            style={{ width: '100%', height: '100%' }}
+                            contentFit="cover"
+                        />
                     </TouchableOpacity>
 
-                    {/* Pin Drop Card - Red */}
+                    {/* Pin Drop Card - 3D Image */}
                     <TouchableOpacity
                         style={{
                             flex: 1,
                             aspectRatio: 1,
-                            backgroundColor: '#EF4444',
-                            borderRadius: 12,
-                            padding: isSmallScreen ? 8 : 10,
-                            justifyContent: 'center',
-                            alignItems: 'center',
+                            borderRadius: 20,
+                            overflow: 'hidden',
                             shadowColor: '#EF4444',
-                            shadowOffset: { width: 0, height: 4 },
-                            shadowOpacity: 0.3,
-                            shadowRadius: 8,
-                            elevation: 6,
+                            shadowOffset: { width: 0, height: 6 },
+                            shadowOpacity: 0.35,
+                            shadowRadius: 10,
+                            elevation: 8,
                             borderWidth: 1,
-                            borderColor: 'rgba(255,255,255,0.2)',
+                            borderColor: 'rgba(0,0,0,0.08)',
                         }}
                         onPress={() => {
                             setPinDropDifficulty('medium');
                             setSelectedGameType('pindrop');
                         }}
+                        activeOpacity={0.85}
                     >
-                        {/* Icon Circle */}
-                        <View style={{
-                            width: isSmallScreen ? 36 : 42,
-                            height: isSmallScreen ? 36 : 42,
-                            borderRadius: isSmallScreen ? 18 : 21,
-                            backgroundColor: 'rgba(255,255,255,0.25)',
-                            justifyContent: 'center',
-                            alignItems: 'center',
-                            marginBottom: 8,
-                        }}>
-                            <Feather name="map-pin" size={isSmallScreen ? 18 : 22} color="white" />
-                        </View>
-                        <Text style={{ color: 'white', fontSize: isSmallScreen ? 10 : 11, fontWeight: '700', textAlign: 'center' }}>Pin Drop</Text>
+                        <Image
+                            source={require('../../assets/game-icons/pin-drop.png')}
+                            style={{ width: '100%', height: '100%' }}
+                            contentFit="cover"
+                        />
                     </TouchableOpacity>
 
-                    {/* Travel Battle Card - Amber */}
+                    {/* Travel Battle Card - 3D Image */}
                     <TouchableOpacity
                         style={{
                             flex: 1,
                             aspectRatio: 1,
-                            backgroundColor: '#F59E0B',
-                            borderRadius: 12,
-                            padding: isSmallScreen ? 8 : 10,
-                            justifyContent: 'center',
-                            alignItems: 'center',
+                            borderRadius: 20,
+                            overflow: 'hidden',
                             shadowColor: '#F59E0B',
-                            shadowOffset: { width: 0, height: 4 },
-                            shadowOpacity: 0.3,
-                            shadowRadius: 8,
-                            elevation: 6,
-                            borderWidth: 1,
-                            borderColor: 'rgba(255,255,255,0.2)',
+                            shadowOffset: { width: 0, height: 6 },
+                            shadowOpacity: 0.35,
+                            shadowRadius: 10,
+                            elevation: 8,
                         }}
                         onPress={() => {
                             setSelectedDifficulty('medium');
                             setSelectedGameType('travelbattle');
                         }}
+                        activeOpacity={0.85}
                     >
-                        {/* Icon Circle */}
-                        <View style={{
-                            width: isSmallScreen ? 36 : 42,
-                            height: isSmallScreen ? 36 : 42,
-                            borderRadius: isSmallScreen ? 18 : 21,
-                            backgroundColor: 'rgba(255,255,255,0.25)',
-                            justifyContent: 'center',
-                            alignItems: 'center',
-                            marginBottom: 8,
-                        }}>
-                            <Feather name="globe" size={isSmallScreen ? 18 : 22} color="white" />
-                        </View>
-                        <Text style={{ color: 'white', fontSize: isSmallScreen ? 10 : 11, fontWeight: '700', textAlign: 'center' }}>Travel Battle</Text>
+                        <Image
+                            source={require('../../assets/game-icons/travel-battle.png')}
+                            style={{ width: '100%', height: '100%' }}
+                            contentFit="cover"
+                        />
                     </TouchableOpacity>
                 </View>
 
@@ -1003,7 +992,7 @@ export default function GameSandbox() {
 
         return (
             <View style={{ flex: 1, backgroundColor: '#FAFAFA' }}>
-                <View style={{ paddingHorizontal: 20, paddingTop: 12, paddingBottom: 8 }}>
+                <View style={{ paddingHorizontal: 20, paddingTop: insets.top + 12, paddingBottom: 8 }}>
                     <Text style={{ fontSize: 24, fontWeight: '800', color: '#1F2937' }}>🏆 Leaderboard</Text>
                     <Text style={{ fontSize: 13, color: '#6B7280', marginTop: 0 }}>Compete with friends</Text>
                 </View>
@@ -2003,6 +1992,18 @@ export default function GameSandbox() {
                     {renderBottomNav()}
                 </View>
             )}
+
+            {/* Challenge Friend Modal */}
+            <React.Suspense fallback={null}>
+                <ChallengeFriendModal
+                    visible={showChallengePicker}
+                    onClose={() => setShowChallengePicker(false)}
+                    friends={friends}
+                    loadingFriends={loadingFriends}
+                    onSendChallenge={sendChallenge}
+                    difficulty={selectedDifficulty}
+                />
+            </React.Suspense>
         </View>
     );
 }
