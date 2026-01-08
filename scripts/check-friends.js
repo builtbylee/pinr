@@ -51,7 +51,10 @@ async function main() {
 
     console.log('hackneymanlee profile:');
     console.log('Username:', data.fields?.username?.stringValue);
-    console.log('Friends:', JSON.stringify(data.fields?.friends?.arrayValue?.values || [], null, 2));
+    // Sanitize friend UIDs in output (truncate to first 8 chars)
+    const friends = data.fields?.friends?.arrayValue?.values || [];
+    const sanitizedFriends = friends.map(f => f.stringValue ? f.stringValue.substring(0, 8) + '...' : 'NULL');
+    console.log('Friends (UIDs truncated for security):', JSON.stringify(sanitizedFriends, null, 2));
 }
 
 main().then(() => process.exit(0)).catch(e => { console.error(e); process.exit(1); });

@@ -127,8 +127,11 @@ async function main() {
     const uid1 = usersJson.documents[0].name.split('/').pop();
     const uid2 = usersJson.documents[1].name.split('/').pop();
 
-    console.log(`  Challenger: ${u1.username} (${uid1})`);
-    console.log(`  Opponent:   ${u2.username} (${uid2})`);
+    // Truncate UIDs for security
+    const truncatedUid1 = uid1 ? uid1.substring(0, 8) + '...' : 'NULL';
+    const truncatedUid2 = uid2 ? uid2.substring(0, 8) + '...' : 'NULL';
+    console.log(`  Challenger: ${u1.username} (${truncatedUid1})`);
+    console.log(`  Opponent:   ${u2.username} (${truncatedUid2})`);
 
     // --- SCENARIO 1: HAPPY PATH ---
     console.log('\n--- SCENARIO 1: HAPPY PATH ---');

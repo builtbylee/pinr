@@ -88,7 +88,9 @@ async function main() {
     console.log('\n--- Step 2: Bucket List Logic ---');
     const token = await getAccessToken();
     const TEST_UID = `test_explorer_${Date.now()}`;
-    console.log(`Using Test User: ${TEST_UID}`);
+    // Truncate test UID for security (even though it's a test UID)
+    const truncatedTestUid = TEST_UID ? TEST_UID.substring(0, 15) + '...' : 'NULL';
+    console.log(`Using Test User: ${truncatedTestUid}`);
 
     // Create User Doc
     const controller1 = new AbortController();

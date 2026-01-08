@@ -51,7 +51,9 @@ async function main() {
         const parts = doc.name.split('/');
         const uid = parts[parts.length - 1];
         const username = doc.fields?.username?.stringValue || '[no username]';
-        console.log(`${username}: ${uid}`);
+        // Truncate UID for security (first 8 chars only)
+        const truncatedUid = uid ? uid.substring(0, 8) + '...' : 'NULL';
+        console.log(`${username}: ${truncatedUid}`);
     }
 }
 

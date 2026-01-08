@@ -65,7 +65,9 @@ async function main() {
         const uid = `test_user_${Math.floor(Math.random() * 100000)}`;
 
         // A. Create User Profile
-        console.log(`\nProcessing ${user.name} (${uid})...`);
+        // Truncate UID for security
+        const truncatedUid = uid ? uid.substring(0, 8) + '...' : 'NULL';
+        console.log(`\nProcessing ${user.name} (${truncatedUid})...`);
         await fetchWithTimeout(`https://firestore.googleapis.com/v1/projects/days-c4ad4/databases/(default)/documents/users/${uid}`, {
             method: 'PATCH',
             headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },

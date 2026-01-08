@@ -78,7 +78,10 @@ async function main() {
         console.error('Error:', result.error);
     } else {
         console.log('✅ Successfully added leetestprofile to hackneymanlee friends list!');
-        console.log('New friends:', result.fields?.friends?.arrayValue?.values?.map(v => v.stringValue));
+        // Sanitize friend UIDs in output (truncate to first 8 chars)
+        const friends = result.fields?.friends?.arrayValue?.values?.map(v => v.stringValue) || [];
+        const sanitizedFriends = friends.map(uid => uid ? uid.substring(0, 8) + '...' : 'NULL');
+        console.log('New friends (UIDs truncated for security):', sanitizedFriends);
     }
 }
 
