@@ -1,5 +1,5 @@
 import { Feather } from '@expo/vector-icons';
-import { BlurView } from 'expo-blur';
+import { LiquidGlass } from './LiquidGlass';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import React, { useEffect, useState } from 'react';
@@ -141,9 +141,9 @@ export const DestinationCard: React.FC<DestinationCardProps> = ({ memory, onClos
                     </TouchableOpacity>
                 </View>
 
-                {/* 3. Compact Frosted Pill (Bottom) - BlurView for both platforms */}
+                {/* 3. Compact Frosted Pill (Bottom) - LiquidGlass for both platforms */}
                 <View style={styles.pillContainer}>
-                    <BlurView
+                    <LiquidGlass
                         intensity={Platform.OS === 'ios' ? 40 : 60}
                         tint="dark"
                         style={styles.blurPill}
@@ -168,7 +168,7 @@ export const DestinationCard: React.FC<DestinationCardProps> = ({ memory, onClos
                                 </View>
                             </View>
                         </View>
-                    </BlurView>
+                    </LiquidGlass>
                 </View>
             </View>
         </View>

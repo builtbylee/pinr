@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Modal, TouchableOpacity, TextInput, FlatList, Image, Alert, ActivityIndicator, ScrollView } from 'react-native';
 import { Feather, MaterialIcons } from '@expo/vector-icons';
-import { BlurView } from 'expo-blur';
+import { LiquidGlass } from './LiquidGlass';
 import { Memory } from '../store/useMemoryStore';
 import { storyService, Story, MAX_PINS_PER_STORY } from '../services/StoryService';
 import * as Haptics from 'expo-haptics';
@@ -194,7 +194,7 @@ export const StoryEditorModal: React.FC<StoryEditorModalProps> = ({
             transparent={true}
             onRequestClose={onClose}
         >
-            <BlurView intensity={20} style={styles.container}>
+            <LiquidGlass intensity={20} style={styles.container}>
                 <View style={styles.content}>
                     {/* Header */}
                     <View style={styles.header}>
@@ -279,7 +279,7 @@ export const StoryEditorModal: React.FC<StoryEditorModalProps> = ({
                     </View>
 
                 </View>
-            </BlurView>
+            </LiquidGlass>
         </Modal>
     );
 };

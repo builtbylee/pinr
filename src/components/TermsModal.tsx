@@ -10,7 +10,7 @@ import {
     Platform,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { BlurView } from 'expo-blur';
+import { LiquidGlass } from './LiquidGlass';
 
 interface TermsModalProps {
     visible: boolean;
@@ -28,11 +28,7 @@ export const TermsModal: React.FC<TermsModalProps> = ({ visible, onClose }) => {
             onRequestClose={onClose}
         >
             <View style={styles.container}>
-                {Platform.OS === 'ios' ? (
-                    <BlurView intensity={20} tint="dark" style={StyleSheet.absoluteFill} />
-                ) : (
-                    <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.5)' }]} />
-                )}
+                <LiquidGlass intensity={20} tint="dark" style={StyleSheet.absoluteFill} />
 
                 <View style={styles.content}>
                     <View style={styles.header}>
