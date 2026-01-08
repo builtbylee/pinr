@@ -14,6 +14,12 @@ admin.initializeApp();
 const db = admin.firestore();
 const USERS_COLLECTION = 'users';
 
+// Helper to sanitize UIDs in logs (truncate to first 8 chars)
+function sanitizeUid(uid: string | undefined | null): string {
+    if (!uid) return 'NULL';
+    return uid.length > 8 ? uid.substring(0, 8) + '...' : uid;
+}
+
 // ============================================
 // RATE LIMITING UTILITY
 // ============================================
@@ -54,7 +60,7 @@ async function checkRateLimit(
 
         if (data.count >= config.maxRequests) {
             // Rate limit exceeded
-            console.warn(`[RateLimit] User ${uid} exceeded limit for ${action}`);
+            console.warn(`[RateLimit] User ${sanitizeUid(uid)} exceeded limit for ${action}`);
             return { allowed: false, remaining: 0 };
         }
 
@@ -64,8 +70,8 @@ async function checkRateLimit(
         });
 
         return { allowed: true, remaining: config.maxRequests - data.count - 1 };
-    } catch (error) {
-        console.error('[RateLimit] Error checking rate limit:', error);
+    } catch (error: any) {
+        console.error('[RateLimit] Error checking rate limit:', error?.message || 'Unknown error');
         // Fail open to avoid blocking legitimate users
         return { allowed: true, remaining: config.maxRequests };
     }
@@ -175,7 +181,7 @@ export const addFriend = functions.https.onCall(async (data: AddFriendData, cont
         if (error instanceof functions.https.HttpsError) {
             throw error;
         }
-        console.error('[addFriend] Error:', error);
+        console.error('[addFriend] Error:', error?.message || 'Unknown error');
         throw new functions.https.HttpsError(
             'internal',
             error.message || 'Failed to add friend.'
@@ -236,7 +242,7 @@ export const removeFriend = functions.https.onCall(async (data: RemoveFriendData
             message: 'Friend removed.',
         };
     } catch (error: any) {
-        console.error('[removeFriend] Error:', error);
+        console.error('[removeFriend] Error:', error?.message || 'Unknown error');
         throw new functions.https.HttpsError(
             'internal',
             error.message || 'Failed to remove friend.'
@@ -353,7 +359,7 @@ export const acceptFriendRequest = functions.https.onCall(async (data: AcceptFri
         if (error instanceof functions.https.HttpsError) {
             throw error;
         }
-        console.error('[acceptFriendRequest] Error:', error);
+        console.error('[acceptFriendRequest] Error:', error?.message || 'Unknown error');
         throw new functions.https.HttpsError(
             'internal',
             error.message || 'Failed to accept friend request.'
@@ -441,7 +447,7 @@ export const submitGameScore = functions.https.onCall(async (data: SubmitGameSco
     // 3. Validate game time (30 seconds = 30000ms, give some buffer)
     const MAX_GAME_TIME_MS = 35000; // 35 seconds max
     if (gameTimeMs > MAX_GAME_TIME_MS) {
-        console.warn(`[submitGameScore] Suspiciously long game time: ${gameTimeMs}ms from ${uid}`);
+        console.warn(`[submitGameScore] Suspiciously long game time: ${gameTimeMs}ms from ${sanitizeUid(uid)}`);
         // Don't reject, but log it
     }
 
@@ -473,7 +479,7 @@ export const submitGameScore = functions.https.onCall(async (data: SubmitGameSco
     // 5. Check for score manipulation
     const scoreDifference = Math.abs(serverScore - clientScore);
     if (scoreDifference > 10) { // Allow small rounding differences
-        console.warn(`[submitGameScore] Score mismatch! Client: ${clientScore}, Server: ${serverScore}, User: ${uid}`);
+        console.warn(`[submitGameScore] Score mismatch! Client: ${clientScore}, Server: ${serverScore}, User: ${sanitizeUid(uid)}`);
         // Use server score, not client score
     }
 
@@ -517,7 +523,7 @@ export const submitGameScore = functions.https.onCall(async (data: SubmitGameSco
         timestamp: Date.now(),
     });
 
-    console.log(`[submitGameScore] New high score: ${serverScore} for ${uid} on ${gameType}`);
+    console.log(`[submitGameScore] New high score: ${serverScore} for ${sanitizeUid(uid)} on ${gameType}`);
 
     return {
         success: true,
@@ -588,7 +594,7 @@ export const submitChallengeScore = functions.https.onCall(async (data: SubmitCh
     const startedAt = challenge[startedAtField];
 
     if (startedAt && gameTimeMs > TIME_LIMIT_MS) {
-        console.warn(`[submitChallengeScore] Time exceeded: ${gameTimeMs}ms from ${uid}`);
+        console.warn(`[submitChallengeScore] Time exceeded: ${gameTimeMs}ms from ${sanitizeUid(uid)}`);
         // Strict: Reject scores that exceed time limit
         throw new functions.https.HttpsError(
             'failed-precondition',
@@ -616,7 +622,7 @@ export const submitChallengeScore = functions.https.onCall(async (data: SubmitCh
 
     // 6. Log score mismatches
     if (Math.abs(serverScore - clientScore) > 10) {
-        console.warn(`[submitChallengeScore] Score mismatch! Client: ${clientScore}, Server: ${serverScore}, User: ${uid}`);
+        console.warn(`[submitChallengeScore] Score mismatch! Client: ${clientScore}, Server: ${serverScore}, User: ${sanitizeUid(uid)}`);
     }
 
     // 7. Update challenge with validated score
@@ -647,7 +653,7 @@ export const submitChallengeScore = functions.https.onCall(async (data: SubmitCh
 
     await challengeRef.update(updateData);
 
-    console.log(`[submitChallengeScore] Score ${serverScore} saved for ${uid} on challenge ${challengeId}`);
+    console.log(`[submitChallengeScore] Score ${serverScore} saved for ${sanitizeUid(uid)} on challenge ${sanitizeUid(challengeId)}`);
 
     return {
         success: true,
@@ -737,7 +743,7 @@ export const createStory = functions.https.onCall(async (data: CreateStoryData, 
 
     await storyRef.set(storyData);
 
-    console.log(`[createStory] Created story ${storyRef.id} for ${uid}`);
+    console.log(`[createStory] Created story ${sanitizeUid(storyRef.id)} for ${sanitizeUid(uid)}`);
 
     return {
         success: true,
@@ -777,12 +783,16 @@ export const onWaitlistSignup = functions.firestore
 
         // Skip if email already sent (shouldn't happen on create, but safety check)
         if (data.emailSent) {
-            console.log(`[onWaitlistSignup] Email already sent to ${email}, skipping`);
+            // Sanitize email in logs (show only first part before @)
+            const emailPrefix = email ? email.split('@')[0]?.substring(0, 5) + '...@***' : 'NULL';
+            console.log(`[onWaitlistSignup] Email already sent to ${emailPrefix}, skipping`);
             return;
         }
 
         const platform = data.platform || 'unknown';
-        console.log(`[onWaitlistSignup] New signup: ${email} (${platform})`);
+        // Sanitize email in logs
+        const emailPrefix = email ? email.split('@')[0]?.substring(0, 5) + '...@***' : 'NULL';
+        console.log(`[onWaitlistSignup] New signup: ${emailPrefix} (${platform})`);
 
         // Platform detection for personalized messaging
         const LANDING_PAGE = 'https://getpinr.com';
@@ -862,18 +872,21 @@ export const onWaitlistSignup = functions.firestore
 
             if (!response.ok) {
                 const errorBody = await response.text();
-                console.error(`[onWaitlistSignup] Resend API error: ${response.status} - ${errorBody}`);
+                console.error(`[onWaitlistSignup] Resend API error: ${response.status} - ${errorBody?.substring(0, 200) || 'Unknown error'}`);
                 return;
             }
 
             const result = await response.json();
-            console.log(`[onWaitlistSignup] Email sent to ${email}, ID: ${result.id}`);
+            // Sanitize email and result ID in logs
+            const emailPrefix = email ? email.split('@')[0]?.substring(0, 5) + '...@***' : 'NULL';
+            const resultId = result.id ? result.id.substring(0, 8) + '...' : 'NULL';
+            console.log(`[onWaitlistSignup] Email sent to ${emailPrefix}, ID: ${resultId}`);
 
             // Mark email as sent
             await snapshot.ref.update({ emailSent: true });
 
         } catch (error: any) {
-            console.error('[onWaitlistSignup] Failed to send email:', error.message);
+            console.error('[onWaitlistSignup] Failed to send email:', error?.message || 'Unknown error');
         }
     });
 
@@ -927,14 +940,14 @@ export const banUser = functions.https.onCall(async (data, context) => {
             });
             await batch.commit();
 
-            console.log(`[banUser] Deleted ${pinsSnapshot.size} pins for user ${userId}`);
+            console.log(`[banUser] Deleted ${pinsSnapshot.size} pins for user ${sanitizeUid(userId)}`);
         }
 
-        console.log(`[banUser] User ${userId} banned by ${context.auth.uid}`);
+        console.log(`[banUser] User ${sanitizeUid(userId)} banned by ${sanitizeUid(context.auth.uid)}`);
         return { success: true, message: 'User banned successfully.' };
 
     } catch (error: any) {
-        console.error('[banUser] Error:', error.message);
+        console.error('[banUser] Error:', error?.message || 'Unknown error');
         throw new functions.https.HttpsError('internal', 'Failed to ban user.');
     }
 });
@@ -966,11 +979,11 @@ export const unbanUser = functions.https.onCall(async (data, context) => {
             unbannedBy: context.auth.uid,
         });
 
-        console.log(`[unbanUser] User ${userId} unbanned by ${context.auth.uid}`);
+        console.log(`[unbanUser] User ${sanitizeUid(userId)} unbanned by ${sanitizeUid(context.auth.uid)}`);
         return { success: true, message: 'User unbanned successfully.' };
 
     } catch (error: any) {
-        console.error('[unbanUser] Error:', error.message);
+        console.error('[unbanUser] Error:', error?.message || 'Unknown error');
         throw new functions.https.HttpsError('internal', 'Failed to unban user.');
     }
 });
@@ -997,7 +1010,7 @@ export const checkBanStatus = functions.https.onCall(async (data, context) => {
         };
 
     } catch (error: any) {
-        console.error('[checkBanStatus] Error:', error.message);
+        console.error('[checkBanStatus] Error:', error?.message || 'Unknown error');
         return { banned: false };
     }
 });
@@ -1024,11 +1037,11 @@ export const adminDeletePin = functions.https.onCall(async (data, context) => {
 
     try {
         await db.collection('pins').doc(pinId).delete();
-        console.log(`[adminDeletePin] Pin ${pinId} deleted by ${context.auth.uid}`);
+        console.log(`[adminDeletePin] Pin ${sanitizeUid(pinId)} deleted by ${sanitizeUid(context.auth.uid)}`);
         return { success: true };
 
     } catch (error: any) {
-        console.error('[adminDeletePin] Error:', error.message);
+        console.error('[adminDeletePin] Error:', error?.message || 'Unknown error');
         throw new functions.https.HttpsError('internal', 'Failed to delete pin.');
     }
 });
@@ -1097,7 +1110,7 @@ export const moderateImage = functions.https.onCall(async (data, context) => {
         return { approved: true, reason: null };
 
     } catch (error: any) {
-        console.error('[moderateImage] Error:', error.message);
+        console.error('[moderateImage] Error:', error?.message || 'Unknown error');
         // On error, allow the image (fail open) but log for review
         // In production, you may want to fail closed instead
         return { approved: true, reason: null, error: 'Moderation check failed' };
@@ -1115,7 +1128,9 @@ export const onReportCreated = functions.firestore
         const reportData = snapshot.data();
         const reportId = context.params.reportId;
 
-        console.log(`[onReportCreated] New report ${reportId}:`, reportData.reason);
+        // Sanitize report ID in logs
+        const sanitizedReportId = reportId ? reportId.substring(0, 8) + '...' : 'NULL';
+        console.log(`[onReportCreated] New report ${sanitizedReportId}:`, reportData.reason || 'NONE');
 
         try {
             // Get reporter info
@@ -1147,7 +1162,7 @@ export const onReportCreated = functions.firestore
                 `;
                 targetLink = `https://console.firebase.google.com/project/days-c4ad4/firestore/data/~2Fpins~2F${reportData.reportedPinId}`;
 
-                console.log(`[onReportCreated] Pin ${reportData.reportedPinId} marked as under review`);
+                console.log(`[onReportCreated] Pin ${sanitizeUid(reportData.reportedPinId)} marked as under review`);
             } else if (reportData.reportedUserId) {
                 // User report
                 const userDoc = await db.collection(USERS_COLLECTION).doc(reportData.reportedUserId).get();
@@ -1213,14 +1228,14 @@ export const onReportCreated = functions.firestore
 
             if (!response.ok) {
                 const errorBody = await response.text();
-                console.error(`[onReportCreated] Email error: ${response.status} - ${errorBody}`);
+                console.error(`[onReportCreated] Email error: ${response.status} - ${errorBody?.substring(0, 200) || 'Unknown error'}`);
                 return;
             }
 
-            console.log(`[onReportCreated] Admin notification sent for report ${reportId}`);
+            console.log(`[onReportCreated] Admin notification sent for report ${sanitizedReportId}`);
 
         } catch (error: any) {
-            console.error('[onReportCreated] Error:', error.message);
+            console.error('[onReportCreated] Error:', error?.message || 'Unknown error');
         }
     });
 
@@ -1260,11 +1275,11 @@ export const approveReportedPin = functions.https.onCall(async (data, context) =
             });
         }
 
-        console.log(`[approveReportedPin] Pin ${pinId} approved by ${context.auth.uid}`);
+        console.log(`[approveReportedPin] Pin ${sanitizeUid(pinId)} approved by ${sanitizeUid(context.auth.uid)}`);
         return { success: true };
 
     } catch (error: any) {
-        console.error('[approveReportedPin] Error:', error.message);
+        console.error('[approveReportedPin] Error:', error?.message || 'Unknown error');
         throw new functions.https.HttpsError('internal', 'Failed to approve pin.');
     }
 });
@@ -1300,11 +1315,11 @@ export const rejectReportedPin = functions.https.onCall(async (data, context) =>
             });
         }
 
-        console.log(`[rejectReportedPin] Pin ${pinId} deleted by ${context.auth.uid}`);
+        console.log(`[rejectReportedPin] Pin ${sanitizeUid(pinId)} deleted by ${sanitizeUid(context.auth.uid)}`);
         return { success: true };
 
     } catch (error: any) {
-        console.error('[rejectReportedPin] Error:', error.message);
+        console.error('[rejectReportedPin] Error:', error?.message || 'Unknown error');
         throw new functions.https.HttpsError('internal', 'Failed to reject pin.');
     }
 });
@@ -1326,7 +1341,7 @@ export const fetchActiveGames = functions.https.onCall(async (data, context) => 
     }
 
     const uid = context.auth.uid;
-    console.log(`[fetchActiveGames] Fetching games for user: ${uid}`);
+    console.log(`[fetchActiveGames] Fetching games for user: ${sanitizeUid(uid)}`);
 
     try {
         const challengesRef = db.collection(CHALLENGES_COLLECTION);
@@ -1370,7 +1385,7 @@ export const fetchActiveGames = functions.https.onCall(async (data, context) => 
 
         const pending = pendingChallenges.docs.map(formatGame);
 
-        console.log(`[fetchActiveGames] Found ${activeGames.length} active and ${pending.length} pending for ${uid}`);
+        console.log(`[fetchActiveGames] Found ${activeGames.length} active and ${pending.length} pending for ${sanitizeUid(uid)}`);
 
         return {
             success: true,
