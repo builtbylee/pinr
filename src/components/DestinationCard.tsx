@@ -148,7 +148,10 @@ export const DestinationCard: React.FC<DestinationCardProps> = ({ memory, onClos
                         tint="light"
                         style={styles.blurPill}
                     >
-                        <View style={[styles.blurOverlay, Platform.OS === 'android' && styles.blurOverlayAndroid]}>
+                        <View style={[
+                            styles.blurOverlay,
+                            Platform.OS === 'android' ? styles.blurOverlayAndroid : null
+                        ]}>
                             <View style={styles.frostedPillContent}>
                                 {/* Line 1: Title */}
                                 <Text style={styles.pillTitleGlass} numberOfLines={1}>{memory.title}</Text>
