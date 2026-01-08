@@ -24,6 +24,10 @@ public class AppDelegate: ExpoAppDelegate {
 
 #if os(iOS) || os(tvOS)
     window = UIWindow(frame: UIScreen.main.bounds)
+    // Set window background to white immediately to eliminate black screen flash
+    // This matches the splash screen background color (#FFFFFF) for seamless transition
+    // The launch storyboard will show on top, but this ensures no black screen appears
+    window?.backgroundColor = UIColor.white
 // @generated begin @react-native-firebase/app-didFinishLaunchingWithOptions - expo prebuild (DO NOT MODIFY) sync-10e8520570672fd76b2403b7e1e27f5198a6349a
 FirebaseApp.configure()
 // @generated end @react-native-firebase/app-didFinishLaunchingWithOptions
