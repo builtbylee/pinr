@@ -103,7 +103,7 @@ export default function GameSandbox() {
         if (params.challengeId) {
             // checkDeepLinkChallenge(params.challengeId);
         } else if (activeGameId && !activeChallenge) {
-            console.log('[GameSandbox] Hydrating persisted game:', activeGameId);
+            if (__DEV__) console.log('[GameSandbox] Hydrating persisted game:', activeGameId ? activeGameId.substring(0, 8) + '...' : 'NULL');
             // checkDeepLinkChallenge(activeGameId);
         }
     }, [params.challengeId]); // Run on mount (activeGameId is stable-ish, avoiding loop)
@@ -120,11 +120,11 @@ export default function GameSandbox() {
 
     // Stubbed checkDeepLinkChallenge
     const checkDeepLinkChallenge = async (id: string) => {
-        console.log('checkDeepLinkChallenge stubbed for Phase 2');
+        if (__DEV__) console.log('checkDeepLinkChallenge stubbed for Phase 2');
     };
 
     const handleRematch = () => {
-        console.log('handleRematch stubbed');
+        if (__DEV__) console.log('handleRematch stubbed');
     };
 
     useEffect(() => {
@@ -148,25 +148,25 @@ export default function GameSandbox() {
                 unsubAuth = await onAuthStateChanged((uid) => {
                     if (uid) {
                         if (uid !== currentUserId) {
-                            console.log('[GameSandbox] Auth State: User found:', uid);
+                            if (__DEV__) console.log('[GameSandbox] Auth State: User found:', uid ? uid.substring(0, 8) + '...' : 'NULL');
                             setAuthDebug(`User: ${uid.slice(0, 5)}...`);
                             setCurrentUserId(uid);
                             setupUserSubscriptions(uid);
                         }
                     } else {
-                        console.log('[GameSandbox] Auth State: No user');
+                        if (__DEV__) console.log('[GameSandbox] Auth State: No user');
                         setAuthDebug('User not logged in');
                         setCurrentUserId(null);
                     }
                 });
             } catch (e: any) {
-                console.error('[GameSandbox] Auth init failed:', e);
+                if (__DEV__) console.error('[GameSandbox] Auth init failed:', e?.message || 'Unknown error');
                 setAuthDebug(`Auth init failed: ${e.message}`);
             }
         };
 
         function setupUserSubscriptions(uid: string) {
-            console.log('[GameSandbox] Setting up subscriptions for user:', uid);
+            if (__DEV__) console.log('[GameSandbox] Setting up subscriptions for user:', uid ? uid.substring(0, 8) + '...' : 'NULL');
             setErrorInfo(null); // Clear previous errors
 
             // Fetch Username for verification
@@ -184,14 +184,14 @@ export default function GameSandbox() {
                 const { RestService } = require('@/src/services/RestService');
 
                 const pollGames = () => {
-                    console.log('[GameSandbox] 🔄 iOS: Polling REST API...');
+                    if (__DEV__) console.log('[GameSandbox] 🔄 iOS: Polling REST API...');
                     RestService.fetchActiveGames(uid).then((res: { active: any[], pending: any[] }) => {
-                        console.log(`[GameSandbox] REST Success: ${res.active.length} active, ${res.pending.length} pending`);
+                        if (__DEV__) console.log(`[GameSandbox] REST Success: ${res.active.length} active, ${res.pending.length} pending`);
                         setDebugDirectCount(res.active.length);
                         setActiveGames(res.active);
                         setPendingChallenges(res.pending);
                     }).catch((e: any) => {
-                        console.error('[GameSandbox] REST fetch failed:', e);
+                        if (__DEV__) console.error('[GameSandbox] REST fetch failed:', e?.message || 'Unknown error');
                         setDebugDirectCount(-2);
                     });
                 };
@@ -207,10 +207,10 @@ export default function GameSandbox() {
             } else {
                 // Android: Native SDK (works correctly)
                 challengeService.getActiveChallenges().then(res => {
-                    console.log('[GameSandbox] Direct fetch result:', res.length);
+                    if (__DEV__) console.log('[GameSandbox] Direct fetch result:', res.length);
                     setDebugDirectCount(res.length);
                 }).catch(e => {
-                    console.error('[GameSandbox] Direct fetch failed:', e);
+                    if (__DEV__) console.error('[GameSandbox] Direct fetch failed:', e?.message || 'Unknown error');
                     setDebugDirectCount(-1);
                 });
             }
@@ -218,7 +218,7 @@ export default function GameSandbox() {
             // A. Active Games
             unsubChallenges = challengeService.subscribeToActiveChallenges(uid, async (games) => {
                 try {
-                    console.log('[GameSandbox] Active games updated:', games.length);
+                    if (__DEV__) console.log('[GameSandbox] Active games updated:', games.length);
                     setActiveGames(games);
 
                     // Fetch avatars/pins for opponents
@@ -241,18 +241,18 @@ export default function GameSandbox() {
                         setOpponentData(prev => ({ ...prev, ...dataUpdates }));
                     }
                 } catch (error: any) {
-                    console.error('[GameSandbox] Error in challenge subscription:', error);
+                    if (__DEV__) console.error('[GameSandbox] Error in challenge subscription:', error?.message || 'Unknown error');
                     setErrorInfo('Failed to load games: ' + (error.message || 'Unknown error'));
                 }
-            }, (error) => {
-                console.error('[GameSandbox] Firestore Subscription Error:', error);
+            }, (error: any) => {
+                if (__DEV__) console.error('[GameSandbox] Firestore Subscription Error:', error?.message || 'Unknown error');
                 setErrorInfo(`Firestore Error: ${error.code || error.message}`);
                 // Could be 'permission-denied', 'unavailable', etc.
             });
 
             // B. Pending Challenges
             unsubPending = challengeService.subscribeToPendingChallenges(uid, (challenges) => {
-                console.log('[GameSandbox] Received pending challenges update:', challenges.length);
+                if (__DEV__) console.log('[GameSandbox] Received pending challenges update:', challenges.length);
                 setPendingChallenges(challenges);
             });
 
@@ -329,7 +329,7 @@ export default function GameSandbox() {
     const handleStart = () => {
         // setSelectedGameType('flagdash');
         // gameService.startGame(selectedDifficulty, 'flagdash');
-        console.log('handleStart stubbed for Phase 2');
+        if (__DEV__) console.log('handleStart stubbed for Phase 2');
     };
 
 
@@ -385,21 +385,21 @@ export default function GameSandbox() {
             if (Object.keys(avatarUpdates).length > 0) {
                 setLeaderboardAvatars(prev => ({ ...prev, ...avatarUpdates }));
             }
-        } catch (error) {
-            console.error('Failed to fetch leaderboard:', error);
+        } catch (error: any) {
+            if (__DEV__) console.error('Failed to fetch leaderboard:', error?.message || 'Unknown error');
         } finally {
             setLoadingLeaderboard(false);
         }
     };
 
     const loadFriendsForChallenge = async () => {
-        console.log('[GameSandbox] Loading friends for challenge...');
+        if (__DEV__) console.log('[GameSandbox] Loading friends for challenge...');
         setShowChallengePicker(true);
         setLoadingFriends(true);
         try {
             const user = getCurrentUser();
             if (!user) {
-                console.error('[GameSandbox] No current user for loading friends');
+                if (__DEV__) console.error('[GameSandbox] No current user for loading friends');
                 return;
             }
             const friendList = await getFriends(user.uid);
@@ -415,8 +415,8 @@ export default function GameSandbox() {
                 })
             );
             setFriends(friendProfiles);
-        } catch (error) {
-            console.error('[GameSandbox] Failed to load friends:', error);
+        } catch (error: any) {
+            if (__DEV__) console.error('[GameSandbox] Failed to load friends:', error?.message || 'Unknown error');
         } finally {
             setLoadingFriends(false);
         }
@@ -424,25 +424,25 @@ export default function GameSandbox() {
 
     // Stubbed
     const loadPendingChallenges = async () => {
-        console.log('loadPendingChallenges stubbed');
+        if (__DEV__) console.log('loadPendingChallenges stubbed');
     };
 
 
     const sendChallenge = async (friend: { uid: string; username: string; avatarUrl?: string; pinColor?: string }, gameType: 'flagdash' | 'pindrop' | 'travelbattle', difficulty: Difficulty) => {
-        console.log(`[GameSandbox] Sending challenge to ${friend.username} for ${gameType} (${difficulty})...`);
+        if (__DEV__) console.log(`[GameSandbox] Sending challenge to ${friend.username || 'NONE'} for ${gameType} (${difficulty})...`);
         try {
             const newChallenge = await challengeService.createChallenge(friend.uid, difficulty, gameType);
             if (newChallenge) {
                 Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
                 setShowChallengePicker(false);
             }
-        } catch (error) {
-            console.error('[GameSandbox] Failed to send challenge:', error);
+        } catch (error: any) {
+            if (__DEV__) console.error('[GameSandbox] Failed to send challenge:', error?.message || 'Unknown error');
         }
     };
 
     const acceptChallenge = async (challenge: GameChallenge) => {
-        console.log('acceptChallenge stubbed');
+        if (__DEV__) console.log('acceptChallenge stubbed');
     };
 
     // Load pending challenges (Real-time)
@@ -451,7 +451,7 @@ export default function GameSandbox() {
         if (!user) return;
 
         const unsubscribe = challengeService.subscribeToPendingChallenges(user.uid, (challenges) => {
-            console.log('[GameSandbox] Received pending challenges update:', challenges.length);
+            if (__DEV__) console.log('[GameSandbox] Received pending challenges update:', challenges.length);
             setPendingChallenges(challenges);
         });
 
