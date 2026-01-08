@@ -55,8 +55,13 @@ async function main() {
         console.error('❌ Missing EXPO_PUBLIC_MAPBOX_TOKEN in .env');
     } else {
         const query = 'London';
-        const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json?access_token=${MAPBOX_TOKEN}&types=place&limit=1`;
-        const resp = await fetch(url);
+        // Use Authorization header instead of URL parameter for security
+        const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json?types=place&limit=1`;
+        const resp = await fetch(url, {
+            headers: {
+                'Authorization': `Bearer ${MAPBOX_TOKEN}`
+            }
+        });
         if (resp.ok) {
             const data = await resp.json();
             if (data.features && data.features.length > 0) {

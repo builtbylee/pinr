@@ -378,13 +378,13 @@ export default function App() {
 
             // Notification Logic
             if (prevGameCountRef.current !== -1 && count > prevGameCountRef.current) {
-                console.log('[App] New Game Invite received!');
+                if (__DEV__) console.log('[App] New Game Invite received!');
                 try {
                     if (Haptics && Haptics.notificationAsync) {
-                        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch((e: any) => console.log('Haptics failed', e));
+                        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch((e: any) => { if (__DEV__) console.log('Haptics failed', e?.message || 'Unknown error'); });
                     }
                 } catch (e) {
-                    console.log('Haptics module missing or error', e);
+                    if (__DEV__) console.log('Haptics module missing or error', e?.message || 'Unknown error');
                 }
                 const newChallenges = count - prevGameCountRef.current;
                 useMemoryStore.getState().showToast(`New Game Challenge! ⚔️`, 'info');
@@ -400,13 +400,13 @@ export default function App() {
             // Notification Logic
             if (prevRequestCountRef.current !== -1 && count > prevRequestCountRef.current) {
                 // New request arrived while app is open
-                console.log('[App] New Friend Request received via stream!');
+                if (__DEV__) console.log('[App] New Friend Request received via stream!');
                 try {
                     if (Haptics && Haptics.notificationAsync) {
-                        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch((e: any) => console.log('Haptics failed', e));
+                        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch((e: any) => { if (__DEV__) console.log('Haptics failed', e?.message || 'Unknown error'); });
                     }
                 } catch (e) {
-                    console.log('Haptics module missing or error', e);
+                    if (__DEV__) console.log('Haptics module missing or error', e?.message || 'Unknown error');
                 }
                 useMemoryStore.getState().showToast(`New Friend Request! (${count} pending)`, 'info');
             }
@@ -418,41 +418,41 @@ export default function App() {
         // This is safe to call even if OneSignal is disabled
         notificationService.login(currentUserId).catch((error) => {
             // Silently catch any OneSignal errors to prevent crashes
-            console.warn('[App] OneSignal login failed (non-critical):', error);
+            if (__DEV__) console.warn('[App] OneSignal login failed (non-critical):', error?.message || 'Unknown error');
         });
 
         // Verify OneSignal configuration on startup (debug)
         notificationService.verifyConfiguration().then(config => {
-            console.log('[App] OneSignal Config Check:', {
+            if (__DEV__) console.log('[App] OneSignal Config Check:', {
                 appId: config.appId,
                 restApiKeyLoaded: config.restApiKeyLoaded,
                 restApiKeyLength: config.restApiKeyLength,
                 restApiKeyPreview: config.restApiKeyPreview,
             });
             if (config.issues.length > 0) {
-                console.warn('[App] OneSignal Configuration Issues:', config.issues);
+                if (__DEV__) console.warn('[App] OneSignal Configuration Issues:', config.issues);
             }
-        }).catch(err => console.error('[App] Config check failed:', err));
+        }).catch(err => { if (__DEV__) console.error('[App] Config check failed:', err?.message || 'Unknown error'); });
 
         // Ensure token (once)
         notificationService.registerForPushNotificationsAsync().then(token => {
             if (token && currentUserId) {
-                console.log('[App] Saving push token:', token);
+                if (__DEV__) console.log('[App] Saving push token:', token ? token.substring(0, 10) + '...' : 'NULL');
                 savePushToken(currentUserId, token);
             }
-        }).catch(err =>
-            console.error('[App] Token registration failed:', err)
-        );
+        }).catch(err => {
+            if (__DEV__) console.error('[App] Token registration failed:', err?.message || 'Unknown error');
+        });
 
 
 
 
         // Listen for Notification Clicks (Deep Linking)
         notificationService.addClickListener((data) => {
-            console.log('[App] Notification Payload:', data);
+            if (__DEV__) console.log('[App] Notification Payload:', { type: data?.type, challengeId: data?.challengeId ? data.challengeId.substring(0, 8) + '...' : null });
             if (data.type === 'challenge_result' && data.challengeId) {
                 // Navigate to games with ID
-                console.log('[App] Navigating to challenge result:', data.challengeId);
+                if (__DEV__) console.log('[App] Navigating to challenge result:', data.challengeId ? data.challengeId.substring(0, 8) + '...' : 'NULL');
                 // setTimeout to ensure router is ready if cold start?
                 setTimeout(() => {
                     router.push({ pathname: '/sandbox/games', params: { challengeId: data.challengeId } } as any);
@@ -462,7 +462,7 @@ export default function App() {
                 router.push('/sandbox/games' as any);
             } else if (data.type === 'new_pin' && data.lat && data.lon) {
                 // Deep link to new pin location
-                console.log('[App] Flying to new pin at:', data.lat, data.lon);
+                if (__DEV__) console.log('[App] Flying to new pin at:', data.lat, data.lon);
                 setTimeout(() => {
                     if (cameraRef.current) {
                         cameraRef.current.setCamera({
@@ -481,7 +481,7 @@ export default function App() {
                 }, 500);
             } else if (data.type === 'new_story' && data.lat && data.lon) {
                 // Deep link to story cover location
-                console.log('[App] Flying to new story at:', data.lat, data.lon);
+                if (__DEV__) console.log('[App] Flying to new story at:', data.lat, data.lon);
                 setTimeout(() => {
                     if (cameraRef.current) {
                         cameraRef.current.setCamera({
@@ -523,7 +523,7 @@ export default function App() {
                 }
             });
 
-            console.log('[App] Stories updated. Mapped pins:', newStoryPinIds.size, 'Hidden pins:', newHiddenStoryPinIds.size);
+            if (__DEV__) console.log('[App] Stories updated. Mapped pins:', newStoryPinIds.size, 'Hidden pins:', newHiddenStoryPinIds.size);
             setPinToStoryMap(newPinToStoryMap);
             setStoryPinIds(newStoryPinIds);
             setHiddenStoryPinIds(newHiddenStoryPinIds);
@@ -533,7 +533,7 @@ export default function App() {
         // Deep Linking (QR Codes / Custom Scheme)
         const handleDeepLink = async (event: { url: string }) => {
             const url = event.url;
-            console.log('[App] Deep link received:', url);
+            if (__DEV__) console.log('[App] Deep link received (sanitized for security)');
 
             if (url.includes('friend/add/')) {
                 const usernameToAdd = url.split('friend/add/')[1];
@@ -562,10 +562,12 @@ export default function App() {
             }
 
             // Handle pin deep links: pinr://pin/{pinId}
+            // Validate deep link format before processing
             if (url.includes('pin/')) {
                 const pinId = url.split('pin/')[1]?.split('?')[0]; // Handle any query params
-                if (pinId) {
-                    console.log('[App] Deep link to pin:', pinId);
+                // Validate pinId: must be non-empty, alphanumeric, and reasonable length (prevent injection)
+                if (pinId && /^[a-zA-Z0-9_-]{1,100}$/.test(pinId)) {
+                    if (__DEV__) console.log('[App] Deep link to pin:', pinId);
                     // Find the pin and fly to it
                     const pin = memories.find(m => m.id === pinId);
                     if (pin && cameraRef.current) {
@@ -594,8 +596,11 @@ export default function App() {
                                 setTimeout(() => setHighlightedPinId(null), 5000);
                             }
                         } catch (err) {
-                            console.error('[App] Failed to fetch pin for deep link:', err);
+                            if (__DEV__) console.error('[App] Failed to fetch pin for deep link:', err?.message || 'Unknown error');
                         }
+                    } else {
+                        // Invalid pinId format - silently ignore or log in dev only
+                        if (__DEV__) console.warn('[App] Invalid pin ID format in deep link:', pinId);
                     }
                 }
             }
@@ -694,9 +699,9 @@ export default function App() {
             return;
         }
 
-        console.log('[App] allPins changed:', allPins.length, 'pins');
+        if (__DEV__) console.log('[App] allPins changed:', allPins.length, 'pins');
         if (allPins) {
-            console.log('[App] Setting memories with', allPins.length, 'pins');
+            if (__DEV__) console.log('[App] Setting memories with', allPins.length, 'pins');
             // Check for added pins (Comparison logic)
             if (allPinsRef.current.length > 0 && allPins.length > allPinsRef.current.length) {
                 const prevIds = new Set(allPinsRef.current.map(p => p.id));
@@ -705,7 +710,7 @@ export default function App() {
                 newPins.forEach(pin => {
                     // Check if friend's pin and NOT my own
                     if (friends.includes(pin.creatorId) && pin.creatorId !== currentUserId) {
-                        console.log('[App] New Friend Pin detected:', pin.id);
+                        if (__DEV__) console.log('[App] New Friend Pin detected:', pin.id ? pin.id.substring(0, 8) + '...' : 'NULL');
 
                         // Increment badge
                         setNewPinCount(prev => prev + 1);
@@ -734,7 +739,7 @@ export default function App() {
                 if (matchingRealPin) {
                     replacedTempIds.add(tempPin.id);
                     tempIdToRealIdMap.current.set(tempPin.id, matchingRealPin.id);
-                    console.log('[App] Temp pin replaced by real pin:', tempPin.id, '->', matchingRealPin.id);
+                    if (__DEV__) console.log('[App] Temp pin replaced by real pin:', tempPin.id ? tempPin.id.substring(0, 8) + '...' : 'NULL', '->', matchingRealPin.id ? matchingRealPin.id.substring(0, 8) + '...' : 'NULL');
                 }
             });
             
@@ -742,7 +747,7 @@ export default function App() {
             if (selectedMemoryId && selectedMemoryId.startsWith('temp_')) {
                 const realId = tempIdToRealIdMap.current.get(selectedMemoryId);
                 if (realId) {
-                    console.log('[App] Updating selectedMemoryId from temp to real:', selectedMemoryId, '->', realId);
+                    if (__DEV__) console.log('[App] Updating selectedMemoryId from temp to real:', selectedMemoryId ? selectedMemoryId.substring(0, 8) + '...' : 'NULL', '->', realId ? realId.substring(0, 8) + '...' : 'NULL');
                     selectMemory(realId);
                 } else {
                     // Check if temp pin still exists
@@ -755,7 +760,7 @@ export default function App() {
                             !p.id.startsWith('temp_')
                         );
                         if (matchingRealPin) {
-                            console.log('[App] Updating selectedMemoryId from temp to real (direct match):', selectedMemoryId, '->', matchingRealPin.id);
+                            if (__DEV__) console.log('[App] Updating selectedMemoryId from temp to real (direct match):', selectedMemoryId ? selectedMemoryId.substring(0, 8) + '...' : 'NULL', '->', matchingRealPin.id ? matchingRealPin.id.substring(0, 8) + '...' : 'NULL');
                             selectMemory(matchingRealPin.id);
                             tempIdToRealIdMap.current.set(selectedMemoryId, matchingRealPin.id);
                         }
@@ -776,11 +781,11 @@ export default function App() {
             }, [] as Memory[]);
             
             allPinsRef.current = allPins;
-            console.log('[App] Merging memories: kept', keptTempPins.length, 'temp pins,', allPins.length, 'real pins, total:', uniqueMemories.length);
+            if (__DEV__) console.log('[App] Merging memories: kept', keptTempPins.length, 'temp pins,', allPins.length, 'real pins, total:', uniqueMemories.length);
             setMemories(uniqueMemories);
-            console.log('[App] setMemories called, memories should now be:', uniqueMemories.length);
+            if (__DEV__) console.log('[App] setMemories called, memories should now be:', uniqueMemories.length);
         } else {
-            console.log('[App] allPins is null/undefined, not setting memories');
+            if (__DEV__) console.log('[App] allPins is null/undefined, not setting memories');
         }
     }, [allPins, friends, hiddenFriendIds, currentUserId, pinsLoaded]);
 
@@ -801,7 +806,7 @@ export default function App() {
 
             if (idsToFetch.length === 0) return;
 
-            console.log('[App] Fetching profiles for pins (missing from cache):', idsToFetch.length);
+            if (__DEV__) console.log('[App] Fetching profiles for pins (missing from cache):', idsToFetch.length);
 
             const results = await Promise.all(idsToFetch.map(async (uid) => {
                 const profile = await getUserProfile(uid);
@@ -827,7 +832,7 @@ export default function App() {
             });
 
             if (Object.keys(updates).length > 0) {
-                console.log('[App] Updating persistent user cache for', Object.keys(updates).length, 'users');
+                if (__DEV__) console.log('[App] Updating persistent user cache for', Object.keys(updates).length, 'users');
                 setMultipleUserCache(updates);
             }
 
@@ -849,7 +854,7 @@ export default function App() {
             if (firestoreProfile.username) setUsername(firestoreProfile.username);
             if (firestoreProfile.avatarUrl) setAvatarUri(firestoreProfile.avatarUrl);
             if (firestoreProfile.pinColor) {
-                console.log('[DEBUG] Syncing pinColor from Firestore:', firestoreProfile.pinColor, '| typeof:', typeof firestoreProfile.pinColor);
+                if (__DEV__) console.log('[DEBUG] Syncing pinColor from Firestore:', firestoreProfile.pinColor, '| typeof:', typeof firestoreProfile.pinColor);
                 setPinColor(firestoreProfile.pinColor);
             }
 
@@ -859,7 +864,7 @@ export default function App() {
                 if (currentUserId) {
                     try {
                         const secureFriends = await getFriends(currentUserId);
-                        console.log('[App] Hydrated secure friends:', secureFriends.length);
+                        if (__DEV__) console.log('[App] Hydrated secure friends:', secureFriends.length);
 
                         // Friends list loaded successfully
 
@@ -876,7 +881,7 @@ export default function App() {
                         prevFriendsRef.current = secureFriends;
 
                     } catch (e) {
-                        console.error('[App] Failed to hydrate friends:', e);
+                        if (__DEV__) console.error('[App] Failed to hydrate friends:', e?.message || 'Unknown error');
                     }
                 }
             })();
@@ -892,7 +897,7 @@ export default function App() {
 
 
     const onMapStyleLoaded = () => {
-        console.log(`[Map] Style loaded. Mode: DAY`);
+        if (__DEV__) console.log(`[Map] Style loaded. Mode: DAY`);
         SplashScreen.hideAsync();
     };
 
@@ -927,25 +932,25 @@ export default function App() {
             setAvatarUri(downloadUrl);
         } catch (error: any) {
             if (error.code !== 'E_PICKER_CANCELLED') {
-                console.error('[App] Error uploading avatar:', error);
+                if (__DEV__) console.error('[App] Error uploading avatar:', error?.message || 'Unknown error');
                 Alert.alert('Error', 'Failed to upload avatar');
             }
         }
     };
 
     const handleCreateMemory = async (memoryData: Omit<Memory, 'id'> | (Partial<Memory> & { id: string }), createStory: boolean = false) => {
-        console.log('[App] Saving Memory:', memoryData, 'Create Story:', createStory);
+        if (__DEV__) console.log('[App] Saving Memory (redacted for security), Create Story:', createStory);
 
         const currentUserId = useMemoryStore.getState().currentUserId;
         if (!currentUserId) {
-            console.error('[App] No user ID - cannot create pin');
+            if (__DEV__) console.error('[App] No user ID - cannot create pin');
             return;
         }
 
         // EDIT FLOW
         if ('id' in memoryData && memoryData.id) {
             const pinId = memoryData.id;
-            console.log('[App] Updating existing pin:', pinId);
+            if (__DEV__) console.log('[App] Updating existing pin:', pinId ? pinId.substring(0, 8) + '...' : 'NULL');
 
             // Optimistic Update (Local)
             // Ideally store has updateMemory, but for now we rely on re-fetch or specific logic
@@ -966,7 +971,7 @@ export default function App() {
                     if (updates.imageUris && updates.imageUris.length > 0) {
                         const uri = updates.imageUris[0];
                         if (!uri.startsWith('http')) {
-                            console.log('[App] Uploading new image for edit...');
+                            if (__DEV__) console.log('[App] Uploading new image for edit...');
                             const downloadUrl = await uploadImage(uri, currentUserId, pinId);
                             updates.imageUris = [downloadUrl];
                         }
@@ -974,7 +979,7 @@ export default function App() {
 
                     await updatePin(pinId, updates);
                 } catch (e) {
-                    console.error('[App] Update failed:', e);
+                    if (__DEV__) console.error('[App] Update failed:', e?.message || 'Unknown error');
                     Alert.alert('Error', 'Failed to update pin.');
                 }
             })();
@@ -1023,7 +1028,7 @@ export default function App() {
         // Spin globe to the new pin location (don't open card)
         setTimeout(() => {
             if (cameraRef.current) {
-                console.log('[App] Spinning to new pin:', memoryData.location);
+                if (__DEV__) console.log('[App] Spinning to new pin:', memoryData.location);
                 cameraRef.current.setCamera({
                     centerCoordinate: memoryData.location,
                     zoomLevel: 1.5,
@@ -1050,7 +1055,7 @@ export default function App() {
                     const localUri = memoryData.imageUris[0];
                     const pinId = Date.now().toString();
 
-                    console.log('[App] Uploading image in background...');
+                    if (__DEV__) console.log('[App] Uploading image in background...');
                     const downloadUrl = await uploadImage(localUri, currentUserId, pinId);
                     newMemory.imageUris = [downloadUrl];
                 }
@@ -1058,8 +1063,8 @@ export default function App() {
                 // Save to Firestore (real-time sync will update with proper ID)
                 // Save to Firestore (real-time sync will update with proper ID)
                 const pinId = await addPin(newMemory);
-                console.log('[App] Pin saved to Firestore:', pinId);
-                console.log('[App] Pin data saved:', JSON.stringify(newMemory, null, 2));
+                if (__DEV__) console.log('[App] Pin saved to Firestore:', pinId ? pinId.substring(0, 8) + '...' : 'NULL');
+                if (__DEV__) console.log('[App] Pin data saved (redacted for security)');
                 
                 // Force a small delay to ensure Firestore has processed the write
                 await new Promise(resolve => setTimeout(resolve, 500));
@@ -1069,20 +1074,20 @@ export default function App() {
                 const friends = store.friends || [];
                 const username = store.username || 'A friend';
 
-                console.log(`[App] Friends list for notification:`, friends);
+                if (__DEV__) console.log(`[App] Friends list for notification (count):`, friends.length);
                 if (friends.length > 0) {
-                    console.log(`[App] Notifying ${friends.length} friends about new pin...`);
+                    if (__DEV__) console.log(`[App] Notifying ${friends.length} friends about new pin...`);
                     // Fire and forget - don't await loop to block UI
                     friends.forEach(friendUid => {
                         notificationService.notifyNewPin(friendUid, username);
                     });
                 } else {
-                    console.log('[App] No friends to notify - friends array is empty');
+                    if (__DEV__) console.log('[App] No friends to notify - friends array is empty');
                 }
 
                 // The Firestore listener will receive the update and replace our temp memory
             } catch (error) {
-                console.error('[App] Error syncing memory to cloud:', error);
+                if (__DEV__) console.error('[App] Error syncing memory to cloud:', error?.message || 'Unknown error');
             }
         })();
 
@@ -1102,7 +1107,7 @@ export default function App() {
 
         // Then spin to the pin location
         if (memoryToSpinTo && cameraRef.current) {
-            console.log('[App] Spinning to pin location:', memoryToSpinTo.location);
+            if (__DEV__) console.log('[App] Spinning to pin location:', memoryToSpinTo.location);
             cameraRef.current.setCamera({
                 centerCoordinate: memoryToSpinTo.location,
                 zoomLevel: 1.5,
@@ -1137,13 +1142,13 @@ export default function App() {
         // console.log('[App] Memories updated:', memories.length);
     }, [memories]);
 
-    console.log('[App] Rendering memories count:', memories.length);
+    if (__DEV__) console.log('[App] Rendering memories count:', memories.length);
 
     // Filter memories for display
 
 
     const handlePlayStory = (userId: string, story?: Story) => {
-        console.log('[App] Playing story for user:', userId, story ? `(${story.title})` : '(All)');
+        if (__DEV__) console.log('[App] Playing story for user:', userId ? userId.substring(0, 8) + '...' : 'NULL', story ? `(${story.title})` : '(All)');
         // Close ProfileModal before starting story mode to prevent it blocking map after story ends
         setSelectedUserProfileId(null);
 
@@ -1273,9 +1278,9 @@ export default function App() {
                     onPress={async () => {
                         try {
                             await auth().signOut();
-                            console.log('[App] Emergency sign out completed');
-                        } catch (e) {
-                            console.error('[App] Sign out failed:', e);
+                            if (__DEV__) console.log('[App] Emergency sign out completed');
+                        } catch (e: any) {
+                            if (__DEV__) console.error('[App] Sign out failed:', e?.message || 'Unknown error');
                         }
                     }}
                     style={{ marginTop: 40, padding: 12, backgroundColor: 'rgba(0,0,0,0.1)', borderRadius: 8 }}
@@ -1780,7 +1785,7 @@ export default function App() {
                             setEditingStoryPins(undefined);
                         }}
                         onCreateSinglePin={async (pinDraft) => {
-                            console.log('[App] Creating single pin:', pinDraft.title);
+                            if (__DEV__) console.log('[App] Creating single pin:', pinDraft.title);
                             try {
                                 // Use existing handleCreateMemory for single pin
                                 await handleCreateMemory({
@@ -1799,12 +1804,12 @@ export default function App() {
                                 setIsStoryCreationVisible(false);
                                 useMemoryStore.getState().showToast('Pin created!', 'success');
                             } catch (error) {
-                                console.error('[App] Pin creation error:', error);
+                                if (__DEV__) console.error('[App] Pin creation error:', error?.message || 'Unknown error');
                                 useMemoryStore.getState().showToast('Failed to create pin', 'error');
                             }
                         }}
                         onComplete={async (storyTitle, pinDrafts) => {
-                            console.log('[App] Story creation/update complete:', storyTitle, pinDrafts.length, 'pins');
+                            if (__DEV__) console.log('[App] Story creation/update complete:', storyTitle, pinDrafts.length, 'pins');
                             const store = useMemoryStore.getState();
                             const { storyService } = require('@/src/services/StoryService');
 
@@ -1893,7 +1898,7 @@ export default function App() {
                                     try {
                                         creatorUsername = await getUsername(pin.creatorId) || '';
                                     } catch (e) {
-                                        console.warn('[Share] Could not fetch username:', e);
+                                        if (__DEV__) console.warn('[Share] Could not fetch username:', e?.message || 'Unknown error');
                                     }
                                 }
 
@@ -1984,7 +1989,7 @@ export default function App() {
                                     try {
                                         await toggleHiddenPinService(currentUserId, pin.id, true);
                                     } catch (e) {
-                                        console.error('Failed to hide pin remotely:', e);
+                                        if (__DEV__) console.error('Failed to hide pin remotely:', e?.message || 'Unknown error');
                                         // Revert if failed? For now keep local.
                                     }
                                 }
@@ -2013,7 +2018,7 @@ export default function App() {
                                 }
                             }}
                             onReport={() => {
-                                console.log('[Report] Button pressed, contextMenuPinId:', contextMenuPinId);
+                                if (__DEV__) console.log('[Report] Button pressed, contextMenuPinId:', contextMenuPinId ? contextMenuPinId.substring(0, 8) + '...' : 'NULL');
                                 if (contextMenuPinId) {
                                     setReportModalPinId(contextMenuPinId);
                                 }
@@ -2036,7 +2041,7 @@ export default function App() {
                             handleCardClose();
                         }}
                         onEdit={() => {
-                            console.log('[App] Edit requested for:', selectedMemory.id);
+                            if (__DEV__) console.log('[App] Edit requested for:', selectedMemory.id ? selectedMemory.id.substring(0, 8) + '...' : 'NULL');
                             setEditingMemory(selectedMemory);
                             setIsCreationModalVisible(true);
                             handleCardClose(); // Close card to show modal

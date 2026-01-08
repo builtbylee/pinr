@@ -106,8 +106,13 @@ export async function waitForFirebase(): Promise<void> {
                             try {
                                 // Try to initialize with explicit config from plist values
                                 // This is a fallback if native configure didn't work
+                                // Use environment variable for API key (never hardcode)
+                                const apiKey = process.env.EXPO_PUBLIC_FIREBASE_API_KEY;
+                                if (!apiKey) {
+                                    throw new Error('Firebase API key not found in environment variables');
+                                }
                                 const firebaseConfig = {
-                                    apiKey: "AIzaSyAUKW5TCvDSYK_G-T9CuxVGaCeYv57ikBE",
+                                    apiKey: apiKey,
                                     projectId: "days-c4ad4",
                                     storageBucket: "days-c4ad4.firebasestorage.app",
                                     appId: "1:760973100570:ios:35508928194bfacfcef3a3",
