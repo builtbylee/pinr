@@ -1,8 +1,31 @@
 import React, { useMemo } from 'react';
 import { View, StyleSheet, Platform, ViewStyle } from 'react-native';
 import { BlurView } from 'expo-blur';
-import { Canvas, Rect, rrect, Skia, LinearGradient, vec } from '@shopify/react-native-skia';
-import { useWindowDimensions } from 'react-native';
+
+// React Native Skia requires native builds - not available in OTA updates
+// Make it optional to prevent crashes
+let SkiaAvailable = false;
+let Canvas: any;
+let Rect: any;
+let rrect: any;
+let Skia: any;
+let LinearGradient: any;
+let vec: any;
+
+try {
+    const skiaModule = require('@shopify/react-native-skia');
+    Canvas = skiaModule.Canvas;
+    Rect = skiaModule.Rect;
+    rrect = skiaModule.rrect;
+    Skia = skiaModule.Skia;
+    LinearGradient = skiaModule.LinearGradient;
+    vec = skiaModule.vec;
+    SkiaAvailable = true;
+} catch (e) {
+    // Skia not available (likely OTA update without native build)
+    // Will fall back to BlurView only
+    if (__DEV__) console.warn('[LiquidGlass] Skia not available, using BlurView only');
+}
 
 interface LiquidGlassProps {
     /**
@@ -59,12 +82,13 @@ export const LiquidGlass: React.FC<LiquidGlassProps> = ({
         ? containerStyle.height
         : height;
     
-    // Create rounded rect for glass bounds
+    // Create rounded rect for glass bounds (only if Skia is available)
     const borderRadius = (typeof containerStyle?.borderRadius === 'number' 
         ? containerStyle.borderRadius 
         : 0) || 0;
     
     const rect = useMemo(() => {
+        if (!SkiaAvailable || !rrect || !Skia) return null;
         return rrect(
             Skia.XYWHRect(0, 0, containerWidth, containerHeight),
             borderRadius,
@@ -112,33 +136,35 @@ export const LiquidGlass: React.FC<LiquidGlassProps> = ({
                 style={StyleSheet.absoluteFill}
             />
             
-            {/* Skia Canvas adds liquid glass enhancements on top */}
-            <Canvas style={StyleSheet.absoluteFill} pointerEvents="none">
-                {/* Light diffusion - top highlight gradient (simulates light refraction) */}
-                <Rect rect={rect}>
-                    <LinearGradient
-                        start={vec(0, 0)}
-                        end={vec(0, Math.min(containerHeight * 0.5, 100))}
-                        colors={[glassConfig.highlightStart, glassConfig.highlightEnd]}
+            {/* Skia Canvas adds liquid glass enhancements on top (only if Skia is available) */}
+            {SkiaAvailable && Canvas && rect && (
+                <Canvas style={StyleSheet.absoluteFill} pointerEvents="none">
+                    {/* Light diffusion - top highlight gradient (simulates light refraction) */}
+                    <Rect rect={rect}>
+                        <LinearGradient
+                            start={vec(0, 0)}
+                            end={vec(0, Math.min(containerHeight * 0.5, 100))}
+                            colors={[glassConfig.highlightStart, glassConfig.highlightEnd]}
+                        />
+                    </Rect>
+                    
+                    {/* Mid-tone layer for depth */}
+                    <Rect
+                        rect={rect}
+                        color={glassConfig.midTone}
                     />
-                </Rect>
-                
-                {/* Mid-tone layer for depth */}
-                <Rect
-                    rect={rect}
-                    color={glassConfig.midTone}
-                />
-                
-                {/* Edge highlight for 3D depth perception (top edge) */}
-                <Rect
-                    rect={rrect(
-                        Skia.XYWHRect(0, 0, containerWidth, Math.max(1, borderRadius * 0.3)),
-                        0,
-                        0
-                    )}
-                    color={glassConfig.edgeHighlight}
-                />
-            </Canvas>
+                    
+                    {/* Edge highlight for 3D depth perception (top edge) */}
+                    <Rect
+                        rect={rrect(
+                            Skia.XYWHRect(0, 0, containerWidth, Math.max(1, borderRadius * 0.3)),
+                            0,
+                            0
+                        )}
+                        color={glassConfig.edgeHighlight}
+                    />
+                </Canvas>
+            )}
             
             {/* Children rendered on top */}
             {children}
