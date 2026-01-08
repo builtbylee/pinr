@@ -100,16 +100,17 @@ Apple reviews all apps before they appear in the App Store. The review process t
 
 #### Legal & Privacy
 - [x] **Privacy Policy** - Exists (`privacy-policy.html`) ✅
-- [ ] **Privacy Policy URL** - **MISSING** (must be publicly accessible) ⚠️
-- [ ] **Terms of Service** - **MISSING** ⚠️
-- [ ] **Support Contact** - **MISSING** ⚠️
-- [ ] **Support URL** - **MISSING** ⚠️
+- [x] **Privacy Policy URL** - Exists in app (`https://builtbylee.github.io/pinr/`) ✅
+- [x] **Terms of Service** - Exists (`TermsModal` component) ✅
+- [x] **Support Contact** - Exists (email: `pinr.builtbylee@gmail.com`) ✅
+- [x] **Support URL** - Exists (email link in app) ✅
 
 #### Content Guidelines
 - [x] **No Offensive Content** - App appears clean ✅
 - [x] **No Copyright Violations** - Original content ✅
-- [x] **User-Generated Content** - Photos/pins (need moderation plan) ⚠️
-- [ ] **Content Moderation** - **MISSING** (for user photos/pins) ⚠️
+- [x] **User-Generated Content** - Photos/pins ✅
+- [x] **Content Moderation Infrastructure** - Backend ready (`moderateImage` Cloud Function) ✅
+- [ ] **Content Moderation Active** - **NOT INTEGRATED** (needs activation in upload flow) ⚠️
 
 ---
 
@@ -162,15 +163,17 @@ Apple reviews all apps before they appear in the App Store. The review process t
    - Screenshots (all required sizes)
    - App preview video (optional but recommended)
 
-2. **Legal & Support**
-   - Privacy Policy URL (must be publicly accessible)
-   - Terms of Service
-   - Support URL
-   - Contact information
+2. **Privacy Policy URL Verification**
+   - Privacy Policy URL exists in app (`https://builtbylee.github.io/pinr/`)
+   - **Action:** Verify this URL actually serves the privacy policy page
+   - **Note:** App currently links to landing page, may need direct link to `privacy-policy.html`
 
-3. **Content Moderation**
-   - Plan for moderating user-generated content (photos, pins)
-   - Reporting mechanism for inappropriate content
+3. **Content Moderation Activation**
+   - Moderation infrastructure exists but is **NOT ACTIVE**
+   - `moderateImage` Cloud Function is deployed
+   - `ModerationService.ts` exists
+   - **Action:** Integrate moderation into `uploadImage` flow in `storageService.ts`
+   - **Flow:** Upload → Moderate → If fails, delete image and show error
 
 4. **Age Rating**
    - Must complete age rating questionnaire in App Store Connect
@@ -181,16 +184,18 @@ Apple reviews all apps before they appear in the App Store. The review process t
 
 ### 🔴 **Critical (Must Have Before Submission)**
 
-1. **Privacy Policy URL**
-   - **Status:** Privacy policy exists but not hosted
-   - **Action:** Host `privacy-policy.html` on a public URL
-   - **Recommendation:** Use GitHub Pages (builtbylee.github.io/pinr/privacy-policy)
+1. **Privacy Policy URL Verification**
+   - **Status:** URL exists in app (`https://builtbylee.github.io/pinr/`) but may need direct link
+   - **Action:** Verify URL serves privacy policy correctly
+   - **Current:** App links to landing page, which has privacy policy link
+   - **Recommendation:** Use direct URL: `https://builtbylee.github.io/pinr/privacy-policy.html`
+   - **Update:** Change Settings link to direct privacy policy URL
    - **Required in:** App Store Connect → App Information → Privacy Policy URL
 
 2. **Support URL**
-   - **Status:** Missing
-   - **Action:** Create support page or use email
-   - **Recommendation:** `https://builtbylee.github.io/pinr/support` or `mailto:support@yourdomain.com`
+   - **Status:** ✅ Exists (email: `pinr.builtbylee@gmail.com`)
+   - **Action:** Use email URL: `mailto:pinr.builtbylee@gmail.com?subject=Pinr Support Request`
+   - **Note:** Apple accepts email URLs for support
    - **Required in:** App Store Connect → App Information → Support URL
 
 3. **App Description**
@@ -225,23 +230,31 @@ Apple reviews all apps before they appear in the App Store. The review process t
 ### 🟡 **Important (Strongly Recommended)**
 
 7. **Terms of Service**
-   - **Status:** Missing
-   - **Action:** Create terms of service document
-   - **Should cover:**
-     - User responsibilities
-     - Content ownership
-     - Prohibited uses
-     - Account termination
-     - Limitation of liability
+   - **Status:** ✅ Exists (`TermsModal` component in app)
+   - **Action:** Verify terms are comprehensive and cover all necessary areas
+   - **Note:** Terms are shown in-app, which is acceptable for App Store
 
-8. **Content Moderation Plan**
-   - **Status:** Missing
-   - **Action:** Implement reporting mechanism for inappropriate content
-   - **Consider:**
-     - In-app reporting feature
-     - Automated content filtering
-     - Manual review process
-     - User blocking capabilities
+8. **Content Moderation Activation** ⚠️ **REQUIRED**
+   - **Status:** Infrastructure ready but **NOT ACTIVE**
+   - **Backend:** `moderateImage` Cloud Function deployed ✅
+   - **Service:** `ModerationService.ts` exists ✅
+   - **Integration:** **MISSING** - Not called in upload flow ❌
+   - **Action:** Integrate moderation into `storageService.ts` upload flow:
+     ```typescript
+     // After uploadImage in storageService.ts:
+     1. Upload image to Firebase Storage
+     2. Get download URL
+     3. Call moderateImage(downloadUrl)
+     4. If not approved:
+        - Delete image from Storage
+        - Show error to user
+        - Return error
+     5. If approved:
+        - Return download URL
+     ```
+   - **Files to modify:**
+     - `src/services/storageService.ts` - Add moderation check after upload
+     - `src/services/StoryService.ts` - Handle moderation errors
 
 9. **App Preview Video**
    - **Status:** Missing (optional)
@@ -269,26 +282,20 @@ Apple reviews all apps before they appear in the App Store. The review process t
 
 ### Phase 1: Legal & Support (Week 1)
 
-1. **Host Privacy Policy**
-   ```bash
-   # Option 1: GitHub Pages
-   # Copy privacy-policy.html to docs/ folder
-   # Push to GitHub
-   # Access at: https://builtbylee.github.io/pinr/privacy-policy.html
-   
-   # Option 2: Your own domain
-   # Upload to your web server
-   ```
+1. **Verify Privacy Policy URL**
+   - **Status:** URL exists but may need direct link
+   - **Action:** Update Settings link to: `https://builtbylee.github.io/pinr/privacy-policy.html`
+   - **Verify:** URL is publicly accessible and serves privacy policy
+   - **File:** `src/components/SettingsModal.tsx` line ~1019
 
-2. **Create Terms of Service**
-   - Use template or legal service
-   - Host at: `https://builtbylee.github.io/pinr/terms.html`
-   - Include in app settings (optional but recommended)
+2. **Terms of Service** ✅
+   - **Status:** Already exists in `TermsModal` component
+   - **Action:** Review terms for completeness
+   - **Note:** In-app terms are acceptable for App Store
 
-3. **Create Support Page**
-   - Simple HTML page with contact form or email
-   - Host at: `https://builtbylee.github.io/pinr/support.html`
-   - Or use: `mailto:support@yourdomain.com`
+3. **Support Contact** ✅
+   - **Status:** Already exists (email: `pinr.builtbylee@gmail.com`)
+   - **Action:** Use this email URL in App Store Connect
 
 ### Phase 2: App Store Connect Setup (Week 1-2)
 
@@ -318,17 +325,27 @@ Apple reviews all apps before they appear in the App Store. The review process t
    - Show key features
    - Add captions/text overlays
 
-### Phase 3: Content Moderation (Week 2)
+### Phase 3: Content Moderation (Week 2) ⚠️ **CRITICAL**
 
-7. **Implement Reporting Feature**
-   - Add "Report" button to pins/photos
-   - Create admin dashboard for reviewing reports
-   - Set up email notifications for reports
+7. **Activate Image Moderation** 🔴 **REQUIRED BEFORE SUBMISSION**
+   - **Status:** Infrastructure ready, integration missing
+   - **Action:** Integrate `ModerationService` into upload flow
+   - **Steps:**
+     1. Modify `src/services/storageService.ts`:
+        - After `uploadImage` gets download URL
+        - Call `moderateImage(downloadUrl)` from `ModerationService`
+        - If not approved: delete image, throw error
+        - If approved: return URL
+     2. Update error handling in `StoryService.ts` to show user-friendly messages
+     3. Test with inappropriate images (ensure they're blocked)
+   - **Files to modify:**
+     - `src/services/storageService.ts`
+     - `src/services/StoryService.ts` (error handling)
 
-8. **Add Content Guidelines**
-   - Create user guidelines page
-   - Link from app settings
-   - Include in terms of service
+8. **Content Reporting** ✅
+   - **Status:** Reporting feature exists (reports collection in Firestore)
+   - **Action:** Verify reporting flow works end-to-end
+   - **Note:** `onReportCreated` Cloud Function handles reports
 
 ### Phase 4: Final Testing (Week 2-3)
 
