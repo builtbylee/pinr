@@ -157,19 +157,42 @@ function RootLayoutContent() {
   const { isBanned, isChecking: isBanCheckLoading } = useBanCheck();
 
   useEffect(() => {
-    // Listen for auth state changes
-    let unsubscribe: (() => void) | null = null;
-    let isComplete = false;
-
-    // Safety timeout: force initialization to complete after 5 seconds
-    const safetyTimeout = setTimeout(() => {
-      if (!isComplete) {
-        if (__DEV__) console.warn('[Layout] Auth initialization timeout, proceeding with no session');
-        isComplete = true;
+    // OPTIMIZATION: Check auth state synchronously first for instant launch
+    // This prevents the loading screen from appearing while waiting for onAuthStateChanged
+    try {
+      const currentUser = getCurrentUser();
+      if (currentUser && !isAnonymous()) {
+        // User is already authenticated - show app immediately
+        const userId = currentUser.uid;
+        if (__DEV__) console.log('[Layout] ✅ Fast path: User already authenticated, showing app immediately');
+        setSession(userId);
+        setCurrentUserId(userId);
+        setIsInitializing(false);
+        // Profile validation will happen in background via onAuthStateChanged
+        setProfileValidated(true); // Optimistically allow navigation
+      } else {
+        // No user or anonymous - show auth screen immediately
+        if (__DEV__) console.log('[Layout] ✅ Fast path: No user, showing auth screen immediately');
         setIsInitializing(false);
         setSession(null);
       }
-    }, 5000);
+    } catch (error: any) {
+      if (__DEV__) console.warn('[Layout] Fast path check failed, falling back to listener:', error?.message || 'Unknown error');
+      // Fall through to normal listener setup
+    }
+
+    // Listen for auth state changes (for future auth changes and profile validation)
+    let unsubscribe: (() => void) | null = null;
+    let isComplete = false;
+
+    // Safety timeout: force initialization to complete after 2 seconds (reduced from 5s since we have fast path)
+    const safetyTimeout = setTimeout(() => {
+      if (!isComplete) {
+        if (__DEV__) console.warn('[Layout] Auth listener timeout, proceeding');
+        isComplete = true;
+        setIsInitializing(false); // Safe to call even if already false
+      }
+    }, 2000);
 
     const setupAuthListener = async () => {
       try {
@@ -226,6 +249,8 @@ function RootLayoutContent() {
           setSession(userId);
           setCurrentUserId(userId);
           setIsInitializing(false);
+          // Optimistically allow navigation - profile validation happens in background
+          setProfileValidated(true);
           if (__DEV__) console.log('[Layout] ✅ User authenticated - session set');
           if (__DEV__) console.log('[Layout] isInitializing set to false');
 
