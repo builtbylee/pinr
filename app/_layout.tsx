@@ -1,5 +1,5 @@
 import '@/src/config/firestore'; // CRITICAL: Must be first import to configure Long Polling
-import Mapbox from '@rnmapbox/maps';
+// Mapbox import deferred to reduce initial load time - loaded asynchronously when needed
 // OneSignal imported conditionally to prevent crash if module not linked
 let OneSignal: any;
 let LogLevel: any;
@@ -108,15 +108,24 @@ function RootLayoutContent() {
   const [profileValidated, setProfileValidated] = useState(false); // Track if profile loaded successfully
   const profileValidationRef = useRef<boolean>(false); // Ref to track validation status for timeout closure
 
+  // Keep splash screen visible during initialization to prevent black screen flash
+  useEffect(() => {
+    SplashScreen.preventAutoHideAsync().catch(() => {
+      // Ignore errors - splash screen may already be hidden
+    });
+  }, []);
+
   // Safe Initialization Side Effect
   useEffect(() => {
     const performSafeInit = async () => {
       try {
         log('Init', 'Starting safe initialization sequence...');
 
-        // 1. Mapbox Init
+        // 1. Mapbox Init (deferred import to reduce initial load time)
         try {
           if (MAPBOX_TOKEN) {
+            // Dynamically import Mapbox only when needed to reduce initial bundle load
+            const Mapbox = require('@rnmapbox/maps').default;
             Mapbox.setAccessToken(MAPBOX_TOKEN);
             if (__DEV__) console.log('[Layout] Mapbox token configured');
           } else {
