@@ -2,7 +2,7 @@ import { Feather } from '@expo/vector-icons';
 import ImageCropPicker from 'react-native-image-crop-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
 import * as Location from 'expo-location';
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { Dimensions, Image, KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, FlatList, Pressable, Alert, ActivityIndicator } from 'react-native';
 import { Memory, useMemoryStore } from '../store/useMemoryStore';
 import { MAPBOX_TOKEN } from '../constants/Config';
@@ -67,11 +67,19 @@ export const CreationModal: React.FC<CreationModalProps> = ({ visible, onClose, 
     const [isEditingImage, setIsEditingImage] = useState(false);
     const [isModeratingPhoto, setIsModeratingPhoto] = useState(false);
     const currentUserId = useMemoryStore(state => state.currentUserId);
+    const isMountedRef = useRef(true);
     const [manualLocation, setManualLocation] = useState<[number, number] | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
     const [isSearching, setIsSearching] = useState(false);
     const [foundLocationName, setFoundLocationName] = useState('');
     const [suggestions, setSuggestions] = useState<GeocodingResult[]>([]);
+
+    useEffect(() => {
+        isMountedRef.current = true;
+        return () => {
+            isMountedRef.current = false;
+        };
+    }, []);
 
     useEffect(() => {
         if (visible) {
@@ -126,43 +134,61 @@ export const CreationModal: React.FC<CreationModalProps> = ({ visible, onClose, 
                 freeStyleCropEnabled: true,
             });
 
-            if (image && image.path) {
-                setPhotoUri(image.path);
-                setPhotoDownloadUrl(null); // Reset previous URL
-                
-                // Immediately upload and moderate the image
-                if (currentUserId) {
-                    setIsModeratingPhoto(true);
-                    try {
-                        const tempPinId = `temp_${Date.now()}`;
-                        const downloadUrl = await uploadAndModerateImage(
-                            image.path,
-                            currentUserId,
-                            tempPinId
-                        );
+            // Check if image is valid and component is still mounted
+            if (!image || !image.path || !isMountedRef.current) {
+                return;
+            }
+
+            setPhotoUri(image.path);
+            setPhotoDownloadUrl(null); // Reset previous URL
+            
+            // Immediately upload and moderate the image
+            if (currentUserId && isMountedRef.current) {
+                setIsModeratingPhoto(true);
+                try {
+                    const tempPinId = `temp_${Date.now()}`;
+                    const downloadUrl = await uploadAndModerateImage(
+                        image.path,
+                        currentUserId,
+                        tempPinId
+                    );
+                    // Check if still mounted before updating state
+                    if (isMountedRef.current) {
                         // Moderation passed - store the download URL for later use
                         setPhotoDownloadUrl(downloadUrl);
                         if (__DEV__) console.log('[CreationModal] Photo moderated and approved');
-                    } catch (error: any) {
-                        // Moderation failed - show error and clear photo
-                        if (__DEV__) console.error('[CreationModal] Photo moderation failed:', error?.message || 'Unknown error');
-                        Alert.alert(
-                            'Content Blocked',
-                            error?.message || 'This image violates our content guidelines and cannot be uploaded.',
-                            [{ text: 'OK', onPress: () => {
+                    }
+                } catch (error: any) {
+                    // Check if still mounted before showing error
+                    if (!isMountedRef.current) {
+                        return;
+                    }
+                    // Moderation failed - show error and clear photo
+                    if (__DEV__) console.error('[CreationModal] Photo moderation failed:', error?.message || 'Unknown error');
+                    Alert.alert(
+                        'Content Blocked',
+                        error?.message || 'This image violates our content guidelines and cannot be uploaded.',
+                        [{ text: 'OK', onPress: () => {
+                            if (isMountedRef.current) {
                                 setPhotoUri(null);
                                 setPhotoDownloadUrl(null);
-                            }}]
-                        );
-                    } finally {
+                            }
+                        }}]
+                    );
+                } finally {
+                    if (isMountedRef.current) {
                         setIsModeratingPhoto(false);
                     }
                 }
             }
         } catch (error: any) {
-            if (error.code !== 'E_PICKER_CANCELLED') {
-                if (__DEV__) console.error('[CreationModal] Error picking image:', error?.message || 'Unknown error');
+            // Handle cancellation and other errors gracefully
+            if (error.code === 'E_PICKER_CANCELLED') {
+                // User cancelled - this is normal, just return silently
+                return;
             }
+            // For other errors, log but don't crash
+            if (__DEV__) console.error('[CreationModal] Error picking image:', error?.message || 'Unknown error');
             setIsModeratingPhoto(false);
         }
     };

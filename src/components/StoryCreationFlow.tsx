@@ -91,6 +91,7 @@ export const StoryCreationFlow: React.FC<StoryCreationFlowProps> = ({
     const [storyTitle, setStoryTitle] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [moderatingPhotoIds, setModeratingPhotoIds] = useState<Set<string>>(new Set()); // Track which photos are being moderated
+    const isMountedRef = useRef(true);
 
     // Location autocomplete state
     const [locationSearchQuery, setLocationSearchQuery] = useState('');
@@ -109,6 +110,14 @@ export const StoryCreationFlow: React.FC<StoryCreationFlowProps> = ({
     // Temp state for Year/Month picker
     const [tempPickerYear, setTempPickerYear] = useState<number>(dayjs().year());
     const [tempPickerMonth, setTempPickerMonth] = useState<number>(dayjs().month());
+
+    // Track component mount state to prevent state updates after unmount
+    useEffect(() => {
+        isMountedRef.current = true;
+        return () => {
+            isMountedRef.current = false;
+        };
+    }, []);
 
     // Back Handler - handle back gesture throughout flow
     useEffect(() => {
@@ -210,17 +219,23 @@ export const StoryCreationFlow: React.FC<StoryCreationFlowProps> = ({
                 compressImageMaxHeight: 1200,
             });
 
-            if (images && images.length > 0) {
+            // Check if images are valid and component is still mounted - handle cancellation gracefully
+            if (!images || images.length === 0 || !isMountedRef.current) {
+                return;
+            }
+                
                 const newPhotos = images.slice(0, remainingSlots).map((img, idx) => ({
                     uri: img.path,
                     tempId: `temp_${Date.now()}_${idx}`,
                 }));
                 
-                // Add photos immediately (optimistic)
-                setSelectedPhotos(prev => [...prev, ...newPhotos]);
+                // Add photos immediately (optimistic) - only if still mounted
+                if (isMountedRef.current) {
+                    setSelectedPhotos(prev => [...prev, ...newPhotos]);
+                }
                 
                 // Moderate all photos in parallel
-                if (currentUserId) {
+                if (currentUserId && isMountedRef.current) {
                     const tempIds = newPhotos.map(p => p.tempId);
                     setModeratingPhotoIds(prev => new Set([...prev, ...tempIds]));
                     
@@ -231,43 +246,57 @@ export const StoryCreationFlow: React.FC<StoryCreationFlowProps> = ({
                                 currentUserId,
                                 photo.tempId
                             );
-                            // Update photo with download URL
-                            setSelectedPhotos(prev => prev.map(p => 
-                                p.tempId === photo.tempId ? { ...p, downloadUrl } : p
-                            ));
-                            if (__DEV__) console.log('[StoryCreation] Photo moderated and approved:', photo.tempId);
+                            // Update photo with download URL - only if still mounted
+                            if (isMountedRef.current) {
+                                setSelectedPhotos(prev => prev.map(p => 
+                                    p.tempId === photo.tempId ? { ...p, downloadUrl } : p
+                                ));
+                                if (__DEV__) console.log('[StoryCreation] Photo moderated and approved:', photo.tempId);
+                            }
                             return { success: true, tempId: photo.tempId };
                         } catch (error: any) {
                             if (__DEV__) console.error('[StoryCreation] Photo moderation failed:', photo.tempId, error?.message || 'Unknown error');
-                            // Remove failed photo
-                            setSelectedPhotos(prev => prev.filter(p => p.tempId !== photo.tempId));
+                            // Remove failed photo - only if still mounted
+                            if (isMountedRef.current) {
+                                setSelectedPhotos(prev => prev.filter(p => p.tempId !== photo.tempId));
+                            }
                             return { success: false, tempId: photo.tempId, error: error?.message };
                         }
                     });
                     
                     const results = await Promise.all(moderationPromises);
-                    const failed = results.filter(r => !r.success);
                     
-                    if (failed.length > 0) {
-                        // Show alert for failed photos
-                        const errorMessage = failed.length === 1 
-                            ? failed[0].error || 'This image violates our content guidelines and cannot be uploaded.'
-                            : `${failed.length} images were blocked. They have been removed.`;
-                        Alert.alert('Content Blocked', errorMessage);
+                    // Only update UI if component is still mounted
+                    if (isMountedRef.current) {
+                        const failed = results.filter(r => !r.success);
+                        
+                        if (failed.length > 0) {
+                            // Show alert for failed photos
+                            const errorMessage = failed.length === 1 
+                                ? failed[0].error || 'This image violates our content guidelines and cannot be uploaded.'
+                                : `${failed.length} images were blocked. They have been removed.`;
+                            Alert.alert('Content Blocked', errorMessage);
+                        }
+                        
+                        setModeratingPhotoIds(prev => {
+                            const updated = new Set(prev);
+                            tempIds.forEach(id => updated.delete(id));
+                            return updated;
+                        });
+                        
+                        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
                     }
-                    
-                    setModeratingPhotoIds(prev => {
-                        const updated = new Set(prev);
-                        tempIds.forEach(id => updated.delete(id));
-                        return updated;
-                    });
                 }
-                
-                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-            }
         } catch (error: any) {
-            if (error.code !== 'E_PICKER_CANCELLED') {
-                if (__DEV__) console.error('[StoryCreation] Photo picker error:', error?.message || 'Unknown error');
+            // Handle cancellation gracefully - this is normal user behavior
+            if (error.code === 'E_PICKER_CANCELLED') {
+                // User cancelled - return silently
+                return;
+            }
+            // For other errors, log but don't crash
+            if (__DEV__) console.error('[StoryCreation] Photo picker error:', error?.message || 'Unknown error');
+            // Only show alert for unexpected errors, not cancellations
+            if (error.message && !error.message.includes('cancelled') && !error.message.includes('callback')) {
                 Alert.alert('Error', 'Failed to select photos');
             }
         }
@@ -637,13 +666,14 @@ export const StoryCreationFlow: React.FC<StoryCreationFlowProps> = ({
                                         delayLongPress={150}
                                         style={[styles.photoThumb, isActive && styles.photoThumbActive]}
                                     >
-                                        {moderatingPhotoIds.has(item.tempId) ? (
-                                            <View style={[styles.thumbImage, { justifyContent: 'center', alignItems: 'center', backgroundColor: '#f0f0f0' }]}>
-                                                <ActivityIndicator size="small" color="#000" />
-                                            </View>
-                                        ) : (
+                                        <View style={styles.thumbImageContainer}>
                                             <Image source={{ uri: item.uri }} style={styles.thumbImage} contentFit="cover" />
-                                        )}
+                                            {moderatingPhotoIds.has(item.tempId) && (
+                                                <View style={styles.moderationOverlay}>
+                                                    <ActivityIndicator size="small" color="#fff" />
+                                                </View>
+                                            )}
+                                        </View>
                                         <View style={styles.photoNumber}>
                                             <Text style={styles.photoNumberText}>{(getIndex() ?? 0) + 1}</Text>
                                         </View>
@@ -1269,9 +1299,25 @@ const styles = StyleSheet.create({
         shadowRadius: 8,
         elevation: 10,
     },
+    thumbImageContainer: {
+        width: '100%',
+        height: '100%',
+        position: 'relative',
+    },
     thumbImage: {
         width: '100%',
         height: '100%',
+    },
+    moderationOverlay: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: 'rgba(0, 0, 0, 0.4)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderRadius: 12,
     },
     photoNumber: {
         position: 'absolute',

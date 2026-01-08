@@ -37,7 +37,7 @@ import { GeocodingResult } from '@/src/services/geocodingService';
 
 import { useMemoryStore, Memory } from '@/src/store/useMemoryStore';
 import { subscribeToPins, addPin, deletePin, updatePin } from '@/src/services/firestoreService';
-import { uploadImage } from '@/src/services/storageService';
+import { uploadImage, uploadAndModerateImage } from '@/src/services/storageService';
 import { getUserProfile, saveUserProfile, saveUserAvatar, saveUserPinColor, getFriendRequests, subscribeToFriendRequests, sendFriendRequest, getUserByUsername, toggleHiddenPin as toggleHiddenPinService, toggleHiddenFriend as toggleHiddenFriendService, getFriends, savePushToken, checkExplorationStreak } from '@/src/services/userService';
 import { StreakCelebrationModal } from '@/src/components/StreakCelebrationModal';
 
@@ -1013,8 +1013,8 @@ export default function App() {
 
             const localUri = image.path;
 
-            // Upload to Firebase Storage
-            const downloadUrl = await uploadImage(localUri, currentUserId, 'avatar');
+            // Upload and moderate the avatar image
+            const downloadUrl = await uploadAndModerateImage(localUri, currentUserId, `avatar_${Date.now()}`);
 
             // Save URL to Firestore
             await saveUserAvatar(currentUserId, downloadUrl);
@@ -1024,7 +1024,11 @@ export default function App() {
         } catch (error: any) {
             if (error.code !== 'E_PICKER_CANCELLED') {
                 if (__DEV__) console.error('[App] Error uploading avatar:', error?.message || 'Unknown error');
-                Alert.alert('Error', 'Failed to upload avatar');
+                // Show specific error message for content moderation failures
+                const errorMessage = error?.message?.includes('content guidelines') || error?.message?.includes('violates')
+                    ? error.message
+                    : 'Failed to upload avatar. Please try again.';
+                Alert.alert('Error', errorMessage);
             }
         }
     };
