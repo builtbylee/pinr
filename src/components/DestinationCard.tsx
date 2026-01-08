@@ -294,9 +294,6 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontWeight: 'bold',
         textAlign: 'left',
-        textShadowColor: 'rgba(0,0,0,0.8)',
-        textShadowOffset: { width: 0, height: 2 },
-        textShadowRadius: 4,
     },
     pillDetailGlass: {
         color: '#FFFFFF',
