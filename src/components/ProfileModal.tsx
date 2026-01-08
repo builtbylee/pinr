@@ -1158,7 +1158,7 @@ const styles = StyleSheet.create({
     gridCardTitleOverlay: {
         backgroundColor: 'rgba(255, 255, 255, 0.15)', // Light overlay for frosted glass effect (iOS default)
         paddingHorizontal: 12,
-        paddingVertical: 8,
+        paddingVertical: 6,
         width: '100%',
     },
     gridCardTitleOverlayAndroid: {
