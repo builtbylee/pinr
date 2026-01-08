@@ -34,12 +34,57 @@ jobs:
         working-directory: ./functions
         run: npm run build
       
+      - name: Verify functions in built code
+        working-directory: ./functions
+        run: |
+          echo "=== Verifying Apple functions in built code ==="
+          node -e "
+          const f = require('./lib/index.js');
+          const appleFunctions = ['getAppleAuthUrl', 'exchangeAppleAuthCode'];
+          let allFound = true;
+          for (const funcName of appleFunctions) {
+              if (typeof f[funcName] === 'function') {
+                  console.log('✅', funcName, 'EXISTS in built code');
+              } else {
+                  console.log('❌', funcName, 'MISSING from built code');
+                  allFound = false;
+              }
+          }
+          if (!allFound) {
+              console.error('ERROR: Functions missing from built code!');
+              process.exit(1);
+          }
+          "
+      
       - name: Authenticate with Google Cloud
         uses: google-github-actions/auth@v2
         with:
           credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
       
-      - name: Deploy Functions
+      - name: Deploy ALL Functions (Force Discovery)
         run: |
-          firebase deploy --only functions --project days-c4ad4 --non-interactive
-
+          echo "=== Deploying ALL functions to force discovery ==="
+          firebase deploy --only functions --project days-c4ad4 --non-interactive 2>&1 | tee deploy-all.log
+          echo ""
+          echo "=== Checking deployment results ==="
+          if grep -q "getAppleAuthUrl\|exchangeAppleAuthCode" deploy-all.log; then
+            echo "✅ Apple functions found in deployment log"
+            grep -i "getAppleAuthUrl\|exchangeAppleAuthCode" deploy-all.log
+          else
+            echo "⚠️  Apple functions not mentioned in deployment log"
+          fi
+      
+      - name: Verify Apple Functions Deployed
+        run: |
+          echo "=== Verifying functions exist in Firebase ==="
+          firebase functions:list --project days-c4ad4 2>&1 | tee functions-list.log
+          echo ""
+          if grep -qi "getAppleAuthUrl\|exchangeAppleAuthCode" functions-list.log; then
+            echo "✅ Apple functions are deployed!"
+            grep -i "getAppleAuthUrl\|exchangeAppleAuthCode" functions-list.log
+          else
+            echo "❌ Apple functions NOT found in deployed functions"
+            echo "Full function list:"
+            cat functions-list.log
+            exit 1
+          fi
