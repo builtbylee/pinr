@@ -72,6 +72,34 @@ export const TermsModal: React.FC<TermsModalProps> = ({ visible, onClose }) => {
 
                         <View style={styles.section}>
                             <View style={styles.sectionHeader}>
+                                <Feather name="alert-circle" size={20} color="#FF9500" />
+                                <Text style={styles.sectionTitle}>Content Moderation</Text>
+                            </View>
+                            <Text style={styles.text}>
+                                All images are automatically screened before posting. Content that violates our guidelines will be blocked and cannot be uploaded. You will receive a notification explaining why your content was blocked.
+                            </Text>
+                        </View>
+
+                        <View style={styles.section}>
+                            <View style={styles.sectionHeader}>
+                                <Feather name="ban" size={20} color="#FF3B30" />
+                                <Text style={styles.sectionTitle}>Repeated Violations</Text>
+                            </View>
+                            <Text style={styles.text}>
+                                Attempting to upload violating content on multiple occasions will result in progressive enforcement:
+                                {'\n\n'}
+                                • <Text style={styles.boldText}>First violation:</Text> Content is blocked with a warning.
+                                {'\n\n'}
+                                • <Text style={styles.boldText}>Repeated violations (2-3 attempts):</Text> Your account may be temporarily suspended for 7-30 days.
+                                {'\n\n'}
+                                • <Text style={styles.boldText}>Continued violations:</Text> Your account will be permanently terminated.
+                                {'\n\n'}
+                                We reserve the right to immediately terminate accounts that repeatedly attempt to post clearly inappropriate content.
+                            </Text>
+                        </View>
+
+                        <View style={styles.section}>
+                            <View style={styles.sectionHeader}>
                                 <Feather name="message-circle" size={20} color="#FF9500" />
                                 <Text style={styles.sectionTitle}>Respect Others</Text>
                             </View>
@@ -180,6 +208,10 @@ const styles = StyleSheet.create({
         color: '#4B5563',
         lineHeight: 22,
         marginLeft: 30, // Indent to align with text start
+    },
+    boldText: {
+        fontWeight: '600',
+        color: '#1a1a1a',
     },
     footer: {
         marginTop: 20,
