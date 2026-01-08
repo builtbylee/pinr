@@ -1395,10 +1395,10 @@ export const fetchActiveGames = functions.https.onCall(async (data, context) => 
         };
 
     } catch (error: any) {
-        console.error('[fetchActiveGames] Error:', error);
+        console.error('[fetchActiveGames] Error:', error?.message || 'Unknown error');
         throw new functions.https.HttpsError(
             'internal',
-            error.message || 'Failed to fetch games.'
+            error?.message || 'Failed to fetch games.'
         );
     }
 });
