@@ -268,7 +268,7 @@ const styles = StyleSheet.create({
     },
     blurOverlayAndroid: {
         // Darker shade of white on Android to match iOS appearance
-        backgroundColor: 'rgba(210, 210, 210, 0.3)',
+        backgroundColor: 'rgba(180, 180, 180, 0.3)',
     },
     frostedPill: {
         flexDirection: 'column',
