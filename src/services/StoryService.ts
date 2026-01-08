@@ -99,9 +99,18 @@ class StoryService {
             // 2. Upload photos and create pins in parallel
             const uploadPromises = pinDrafts.map(async (draft) => {
                 try {
-                    // Upload image
+                    // Use pre-moderated download URL if available, otherwise upload
+                    let downloadUrl: string;
                     const pinId = `story_pin_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-                    const downloadUrl = await uploadImage(draft.localImageUri, userId, pinId);
+                    
+                    if (draft.downloadUrl) {
+                        // Image was already uploaded and moderated
+                        if (__DEV__) console.log('[StoryService] Using pre-moderated image URL');
+                        downloadUrl = draft.downloadUrl;
+                    } else {
+                        // Upload image (shouldn't happen if moderation is working correctly, but fallback)
+                        downloadUrl = await uploadImage(draft.localImageUri, userId, pinId, false, undefined);
+                    }
 
                     // Create pin memory
                     const pinData = {

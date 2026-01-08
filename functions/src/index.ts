@@ -1085,7 +1085,9 @@ export const moderateImage = functions.https.onCall(async (data, context) => {
 
         // Check for explicit content
         // Likelihood levels: UNKNOWN, VERY_UNLIKELY, UNLIKELY, POSSIBLE, LIKELY, VERY_LIKELY
-        const BLOCK_LEVELS = ['LIKELY', 'VERY_LIKELY'];
+        // Only block VERY_LIKELY to reduce false positives (innocent content like art, medical images, etc.)
+        // This ensures we only block clearly inappropriate content, not borderline cases
+        const BLOCK_LEVELS = ['VERY_LIKELY'];
 
         const issues: string[] = [];
 

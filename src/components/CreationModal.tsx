@@ -3,12 +3,13 @@ import ImageCropPicker from 'react-native-image-crop-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
 import * as Location from 'expo-location';
 import React, { useEffect, useState, useCallback } from 'react';
-import { Dimensions, Image, KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, FlatList, Pressable, Alert } from 'react-native';
-import { Memory } from '../store/useMemoryStore';
+import { Dimensions, Image, KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, FlatList, Pressable, Alert, ActivityIndicator } from 'react-native';
+import { Memory, useMemoryStore } from '../store/useMemoryStore';
 import { MAPBOX_TOKEN } from '../constants/Config';
 import { searchPlaces, GeocodingResult } from '../services/geocodingService';
 import { Calendar, LocaleConfig } from 'react-native-calendars';
 import dayjs from 'dayjs';
+import { uploadAndModerateImage } from '../services/storageService';
 
 // Setup Calendar Locale
 LocaleConfig.locales['en'] = {
@@ -62,7 +63,10 @@ export const CreationModal: React.FC<CreationModalProps> = ({ visible, onClose, 
     const [selectedDuration, setSelectedDuration] = useState<{ label: string, value: number | null }>(DURATION_OPTIONS[4]); // Default: permanent
 
     const [photoUri, setPhotoUri] = useState<string | null>(null);
+    const [photoDownloadUrl, setPhotoDownloadUrl] = useState<string | null>(null); // Pre-moderated download URL
     const [isEditingImage, setIsEditingImage] = useState(false);
+    const [isModeratingPhoto, setIsModeratingPhoto] = useState(false);
+    const currentUserId = useMemoryStore(state => state.currentUserId);
     const [manualLocation, setManualLocation] = useState<[number, number] | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
     const [isSearching, setIsSearching] = useState(false);
@@ -97,6 +101,7 @@ export const CreationModal: React.FC<CreationModalProps> = ({ visible, onClose, 
                 setEndDate(null);
                 setSelectedDuration(DURATION_OPTIONS[4]); // Reset to "Until I Delete"
                 setPhotoUri(null);
+                setPhotoDownloadUrl(null);
                 setManualLocation(null);
                 setSearchQuery('');
                 setFoundLocationName('');
@@ -123,11 +128,42 @@ export const CreationModal: React.FC<CreationModalProps> = ({ visible, onClose, 
 
             if (image && image.path) {
                 setPhotoUri(image.path);
+                setPhotoDownloadUrl(null); // Reset previous URL
+                
+                // Immediately upload and moderate the image
+                if (currentUserId) {
+                    setIsModeratingPhoto(true);
+                    try {
+                        const tempPinId = `temp_${Date.now()}`;
+                        const downloadUrl = await uploadAndModerateImage(
+                            image.path,
+                            currentUserId,
+                            tempPinId
+                        );
+                        // Moderation passed - store the download URL for later use
+                        setPhotoDownloadUrl(downloadUrl);
+                        if (__DEV__) console.log('[CreationModal] Photo moderated and approved');
+                    } catch (error: any) {
+                        // Moderation failed - show error and clear photo
+                        if (__DEV__) console.error('[CreationModal] Photo moderation failed:', error?.message || 'Unknown error');
+                        Alert.alert(
+                            'Content Blocked',
+                            error?.message || 'This image violates our content guidelines and cannot be uploaded.',
+                            [{ text: 'OK', onPress: () => {
+                                setPhotoUri(null);
+                                setPhotoDownloadUrl(null);
+                            }}]
+                        );
+                    } finally {
+                        setIsModeratingPhoto(false);
+                    }
+                }
             }
         } catch (error: any) {
             if (error.code !== 'E_PICKER_CANCELLED') {
                 if (__DEV__) console.error('[CreationModal] Error picking image:', error?.message || 'Unknown error');
             }
+            setIsModeratingPhoto(false);
         }
     };
 
@@ -141,7 +177,10 @@ export const CreationModal: React.FC<CreationModalProps> = ({ visible, onClose, 
                 {
                     text: 'Delete',
                     style: 'destructive',
-                    onPress: () => setPhotoUri(null)
+                    onPress: () => {
+                        setPhotoUri(null);
+                        setPhotoDownloadUrl(null);
+                    }
                 }
             ]
         );
@@ -237,7 +276,8 @@ export const CreationModal: React.FC<CreationModalProps> = ({ visible, onClose, 
             endDate: endDateISO, // Store end date as ISO string if range
             location,
             locationName: foundLocationName || 'Unknown Location',
-            imageUris: photoUri ? [photoUri] : [],
+            // Use pre-moderated download URL if available, otherwise use local URI (for edit mode)
+            imageUris: photoDownloadUrl ? [photoDownloadUrl] : (photoUri ? [photoUri] : []),
             creatorId: '', // Will be filled by store/parent
             pinColor: 'magenta' as const,
             expiresAt,
@@ -463,8 +503,13 @@ export const CreationModal: React.FC<CreationModalProps> = ({ visible, onClose, 
 
                         <View style={[styles.inputGroup, { minHeight: 200, width: '100%' }]}>
                             <Text style={styles.label}>Photo</Text>
-                            <TouchableOpacity onPress={handlePickImage} activeOpacity={0.9} style={{ width: '100%' }}>
-                                {photoUri ? (
+                            <TouchableOpacity onPress={handlePickImage} activeOpacity={0.9} style={{ width: '100%' }} disabled={isModeratingPhoto}>
+                                {isModeratingPhoto ? (
+                                    <View style={[styles.previewContainer, { justifyContent: 'center', alignItems: 'center' }]}>
+                                        <ActivityIndicator size="large" color="#000" />
+                                        <Text style={{ marginTop: 12, fontSize: 14, color: '#666' }}>Checking content...</Text>
+                                    </View>
+                                ) : photoUri ? (
                                     <View style={styles.previewContainer}>
                                         <Image
                                             source={{ uri: photoUri }}
@@ -494,6 +539,34 @@ export const CreationModal: React.FC<CreationModalProps> = ({ visible, onClose, 
                                                     });
                                                     if (edited && edited.path) {
                                                         setPhotoUri(edited.path);
+                                                        setPhotoDownloadUrl(null); // Reset - need to re-moderate after edit
+                                                        
+                                                        // Re-moderate the edited photo
+                                                        if (currentUserId) {
+                                                            setIsModeratingPhoto(true);
+                                                            try {
+                                                                const tempPinId = `temp_${Date.now()}`;
+                                                                const downloadUrl = await uploadAndModerateImage(
+                                                                    edited.path,
+                                                                    currentUserId,
+                                                                    tempPinId
+                                                                );
+                                                                setPhotoDownloadUrl(downloadUrl);
+                                                                if (__DEV__) console.log('[CreationModal] Edited photo moderated and approved');
+                                                            } catch (error: any) {
+                                                                if (__DEV__) console.error('[CreationModal] Edited photo moderation failed:', error?.message || 'Unknown error');
+                                                                Alert.alert(
+                                                                    'Content Blocked',
+                                                                    error?.message || 'This image violates our content guidelines and cannot be uploaded.',
+                                                                    [{ text: 'OK', onPress: () => {
+                                                                        setPhotoUri(null);
+                                                                        setPhotoDownloadUrl(null);
+                                                                    }}]
+                                                                );
+                                                            } finally {
+                                                                setIsModeratingPhoto(false);
+                                                            }
+                                                        }
                                                     }
                                                 } catch (error: any) {
                                                     if (error.code !== 'E_PICKER_CANCELLED') {

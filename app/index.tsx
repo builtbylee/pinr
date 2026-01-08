@@ -1147,12 +1147,19 @@ export default function App() {
 
                 // If there's an image, upload it
                 if (memoryData.imageUris && memoryData.imageUris.length > 0) {
-                    const localUri = memoryData.imageUris[0];
+                    const imageUri = memoryData.imageUris[0];
                     const pinId = Date.now().toString();
 
-                    if (__DEV__) console.log('[App] Uploading image in background...');
-                    const downloadUrl = await uploadImage(localUri, currentUserId, pinId);
-                    newMemory.imageUris = [downloadUrl];
+                    // Check if it's already a download URL (starts with http) - means it was pre-moderated
+                    if (imageUri.startsWith('http://') || imageUri.startsWith('https://')) {
+                        if (__DEV__) console.log('[App] Using pre-moderated image URL');
+                        newMemory.imageUris = [imageUri];
+                    } else {
+                        // Local URI - upload it (moderation already happened in CreationModal, but upload to final location)
+                        if (__DEV__) console.log('[App] Uploading image to final location...');
+                        const downloadUrl = await uploadImage(imageUri, currentUserId, pinId, false, undefined);
+                        newMemory.imageUris = [downloadUrl];
+                    }
                 }
 
                 // Save to Firestore (real-time sync will update with proper ID)
@@ -1896,7 +1903,7 @@ export default function App() {
                                         ? [pinDraft.location.lon, pinDraft.location.lat] as [number, number]
                                         : [0, 0],
                                     locationName: pinDraft.location?.name || 'Unknown',
-                                    imageUris: [pinDraft.localImageUri],
+                                    imageUris: pinDraft.downloadUrl ? [pinDraft.downloadUrl] : [pinDraft.localImageUri],
                                     date: pinDraft.visitDate ? new Date(pinDraft.visitDate).toISOString() : new Date().toISOString(),
                                     endDate: pinDraft.visitEndDate ? new Date(pinDraft.visitEndDate).toISOString() : undefined, // CRITICAL: Include endDate for date ranges
                                     pinColor: pinColor as 'magenta' | 'orange' | 'green' | 'blue' | 'cyan' | 'red',

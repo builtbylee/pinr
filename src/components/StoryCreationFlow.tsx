@@ -46,12 +46,14 @@ const YEARS = Array.from({ length: 100 }, (_, i) => new Date().getFullYear() - 5
 
 
 import { Story } from '../services/StoryService';
-import { Memory } from '../store/useMemoryStore';
+import { Memory, useMemoryStore } from '../store/useMemoryStore';
+import { uploadAndModerateImage } from '../services/storageService';
 
 // Types - exported for StoryService
 export interface PinDraft {
     tempId: string;
     localImageUri: string;
+    downloadUrl?: string; // Pre-moderated download URL (if available)
     title: string;
     location: { lat: number; lon: number; name: string } | null;
     visitDate: number | null;
@@ -80,13 +82,15 @@ export const StoryCreationFlow: React.FC<StoryCreationFlowProps> = ({
     initialPins
 }) => {
     const insets = useSafeAreaInsets();
+    const currentUserId = useMemoryStore(state => state.currentUserId);
     // State
     const [step, setStep] = useState<Step>('photos');
-    const [selectedPhotos, setSelectedPhotos] = useState<{ uri: string; tempId: string }[]>([]);
+    const [selectedPhotos, setSelectedPhotos] = useState<{ uri: string; tempId: string; downloadUrl?: string }[]>([]);
     const [pinDrafts, setPinDrafts] = useState<PinDraft[]>([]);
     const [currentDetailIndex, setCurrentDetailIndex] = useState(0);
     const [storyTitle, setStoryTitle] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [moderatingPhotoIds, setModeratingPhotoIds] = useState<Set<string>>(new Set()); // Track which photos are being moderated
 
     // Location autocomplete state
     const [locationSearchQuery, setLocationSearchQuery] = useState('');
@@ -149,7 +153,7 @@ export const StoryCreationFlow: React.FC<StoryCreationFlowProps> = ({
 
             // Hydrate state
             setPinDrafts(drafts);
-            setSelectedPhotos(drafts.map(d => ({ uri: d.localImageUri, tempId: d.tempId })));
+            setSelectedPhotos(drafts.map(d => ({ uri: d.localImageUri, tempId: d.tempId, downloadUrl: d.downloadUrl })));
             setStoryTitle(initialStory.title);
 
             // Jump directly to Reorder (Review) step as requested
@@ -211,8 +215,54 @@ export const StoryCreationFlow: React.FC<StoryCreationFlowProps> = ({
                     uri: img.path,
                     tempId: `temp_${Date.now()}_${idx}`,
                 }));
-                // APPEND to existing photos instead of replacing
+                
+                // Add photos immediately (optimistic)
                 setSelectedPhotos(prev => [...prev, ...newPhotos]);
+                
+                // Moderate all photos in parallel
+                if (currentUserId) {
+                    const tempIds = newPhotos.map(p => p.tempId);
+                    setModeratingPhotoIds(prev => new Set([...prev, ...tempIds]));
+                    
+                    const moderationPromises = newPhotos.map(async (photo) => {
+                        try {
+                            const downloadUrl = await uploadAndModerateImage(
+                                photo.uri,
+                                currentUserId,
+                                photo.tempId
+                            );
+                            // Update photo with download URL
+                            setSelectedPhotos(prev => prev.map(p => 
+                                p.tempId === photo.tempId ? { ...p, downloadUrl } : p
+                            ));
+                            if (__DEV__) console.log('[StoryCreation] Photo moderated and approved:', photo.tempId);
+                            return { success: true, tempId: photo.tempId };
+                        } catch (error: any) {
+                            if (__DEV__) console.error('[StoryCreation] Photo moderation failed:', photo.tempId, error?.message || 'Unknown error');
+                            // Remove failed photo
+                            setSelectedPhotos(prev => prev.filter(p => p.tempId !== photo.tempId));
+                            return { success: false, tempId: photo.tempId, error: error?.message };
+                        }
+                    });
+                    
+                    const results = await Promise.all(moderationPromises);
+                    const failed = results.filter(r => !r.success);
+                    
+                    if (failed.length > 0) {
+                        // Show alert for failed photos
+                        const errorMessage = failed.length === 1 
+                            ? failed[0].error || 'This image violates our content guidelines and cannot be uploaded.'
+                            : `${failed.length} images were blocked. They have been removed.`;
+                        Alert.alert('Content Blocked', errorMessage);
+                    }
+                    
+                    setModeratingPhotoIds(prev => {
+                        const updated = new Set(prev);
+                        tempIds.forEach(id => updated.delete(id));
+                        return updated;
+                    });
+                }
+                
                 Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
             }
         } catch (error: any) {
@@ -241,6 +291,7 @@ export const StoryCreationFlow: React.FC<StoryCreationFlowProps> = ({
             return existing || {
                 tempId: photo.tempId,
                 localImageUri: photo.uri,
+                downloadUrl: photo.downloadUrl, // Include pre-moderated URL if available
                 title: '',
                 location: null,
                 visitDate: null,
@@ -586,11 +637,17 @@ export const StoryCreationFlow: React.FC<StoryCreationFlowProps> = ({
                                         delayLongPress={150}
                                         style={[styles.photoThumb, isActive && styles.photoThumbActive]}
                                     >
-                                        <Image source={{ uri: item.uri }} style={styles.thumbImage} contentFit="cover" />
+                                        {moderatingPhotoIds.has(item.tempId) ? (
+                                            <View style={[styles.thumbImage, { justifyContent: 'center', alignItems: 'center', backgroundColor: '#f0f0f0' }]}>
+                                                <ActivityIndicator size="small" color="#000" />
+                                            </View>
+                                        ) : (
+                                            <Image source={{ uri: item.uri }} style={styles.thumbImage} contentFit="cover" />
+                                        )}
                                         <View style={styles.photoNumber}>
                                             <Text style={styles.photoNumberText}>{(getIndex() ?? 0) + 1}</Text>
                                         </View>
-                                        {!isActive && (
+                                        {!isActive && !moderatingPhotoIds.has(item.tempId) && (
                                             <>
                                                 {/* Edit icon in top left - opens native photo editor directly */}
                                                 <TouchableOpacity

@@ -37,14 +37,16 @@ const compressImage = async (uri: string): Promise<string> => {
 };
 
 /**
- * Upload an image to Firebase Storage
+ * Upload an image to Firebase Storage and moderate it immediately
+ * This is used for early moderation right after photo selection
  * @param uri Local file URI from image picker
  * @param userId User's Firebase UID
- * @param pinId Unique pin identifier
+ * @param pinId Unique pin identifier (can be temporary)
  * @param skipCompression Skip compression (for already-optimized images)
- * @returns Download URL of the uploaded image
+ * @returns Download URL of the uploaded and moderated image
+ * @throws Error if moderation fails (image is automatically deleted)
  */
-export const uploadImage = async (
+export const uploadAndModerateImage = async (
     uri: string,
     userId: string,
     pinId: string,
@@ -58,15 +60,14 @@ export const uploadImage = async (
         const reference = storage().ref(`pins/${userId}/${pinId}.jpg`);
 
         // Upload the file
-        if (__DEV__) console.log('[Storage] Uploading image...', imageUri);
+        if (__DEV__) console.log('[Storage] Uploading image for moderation...', imageUri);
         await reference.putFile(imageUri);
 
         // Get the download URL
         const downloadUrl = await reference.getDownloadURL();
-        if (__DEV__) console.log('[Storage] Upload complete:', downloadUrl);
+        if (__DEV__) console.log('[Storage] Upload complete, checking moderation...');
 
-        // Moderate the uploaded image
-        if (__DEV__) console.log('[Storage] Checking image moderation...');
+        // Moderate the uploaded image immediately
         const moderationResult = await moderateImage(downloadUrl);
 
         if (!moderationResult.approved) {
@@ -83,6 +84,51 @@ export const uploadImage = async (
 
         if (__DEV__) console.log('[Storage] Image passed moderation');
         return downloadUrl;
+    } catch (error) {
+        if (__DEV__) console.error('[Storage] Upload/moderation failed:', error);
+        throw error;
+    }
+};
+
+/**
+ * Upload an image to Firebase Storage (without moderation check)
+ * Use this when moderation has already been performed earlier
+ * @param uri Local file URI from image picker
+ * @param userId User's Firebase UID
+ * @param pinId Unique pin identifier
+ * @param skipCompression Skip compression (for already-optimized images)
+ * @param downloadUrl Pre-moderated download URL (if already uploaded)
+ * @returns Download URL of the uploaded image
+ */
+export const uploadImage = async (
+    uri: string,
+    userId: string,
+    pinId: string,
+    skipCompression = false,
+    downloadUrl?: string // If provided, image was already uploaded and moderated
+): Promise<string> => {
+    // If downloadUrl is provided, it means the image was already uploaded and moderated
+    if (downloadUrl) {
+        if (__DEV__) console.log('[Storage] Using pre-moderated image URL');
+        return downloadUrl;
+    }
+
+    try {
+        // Compress image before upload (unless skipped)
+        const imageUri = skipCompression ? uri : await compressImage(uri);
+
+        // Create a reference to the file location
+        const reference = storage().ref(`pins/${userId}/${pinId}.jpg`);
+
+        // Upload the file
+        if (__DEV__) console.log('[Storage] Uploading image...', imageUri);
+        await reference.putFile(imageUri);
+
+        // Get the download URL
+        const finalDownloadUrl = await reference.getDownloadURL();
+        if (__DEV__) console.log('[Storage] Upload complete:', finalDownloadUrl);
+
+        return finalDownloadUrl;
     } catch (error) {
         if (__DEV__) console.error('[Storage] Upload failed:', error);
         throw error;
