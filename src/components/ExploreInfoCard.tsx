@@ -86,8 +86,8 @@ export const ExploreInfoCard: React.FC<ExploreInfoCardProps> = ({ placeName, loc
 
             // Update button state to show success (green) - no alert, no auto-close
             setIsInBucketList(true);
-        } catch (error) {
-            console.error("Failed to add bucket list item:", error);
+        } catch (error: any) {
+            if (__DEV__) console.error("Failed to add bucket list item:", error?.message || 'Unknown error');
             Alert.alert("Error", "Could not add to bucket list.");
         } finally {
             setAdding(false);
@@ -150,8 +150,8 @@ export const ExploreInfoCard: React.FC<ExploreInfoCardProps> = ({ placeName, loc
                                                         if (canOpen) {
                                                             await Linking.openURL(url);
                                                         }
-                                                    } catch (e) {
-                                                        console.warn('[ExploreInfoCard] Attribution link failed:', e);
+                                                    } catch (e: any) {
+                                                        if (__DEV__) console.warn('[ExploreInfoCard] Attribution link failed:', e?.message || 'Unknown error');
                                                     }
                                                 }}
                                             >

@@ -51,7 +51,7 @@ export const StoryModeController: React.FC<StoryModeControllerProps> = ({
         if (pulseTimer.current) clearTimeout(pulseTimer.current);
         if (readTimer.current) clearTimeout(readTimer.current);
 
-        console.log('[StoryMode] Starting sequence for:', currentPin.title);
+        if (__DEV__) console.log('[StoryMode] Starting sequence for:', currentPin.title || 'NONE');
 
         // 1. Fly to location
         cameraRef.current.setCamera({
@@ -116,7 +116,7 @@ export const StoryModeController: React.FC<StoryModeControllerProps> = ({
             // but pure state switch relies on new useEffect trigger
             setCurrentIndex(prev => prev + 1);
         } else {
-            console.log('[StoryMode] End of story reached, exiting...');
+            if (__DEV__) console.log('[StoryMode] End of story reached, exiting...');
             setIsPlaying(false);
             // Ensure all state is reset before exiting
             onPulsingPinChange?.(null);

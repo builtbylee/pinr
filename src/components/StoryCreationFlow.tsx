@@ -131,7 +131,7 @@ export const StoryCreationFlow: React.FC<StoryCreationFlowProps> = ({
     // Initialize Edit Mode
     useEffect(() => {
         if (visible && initialStory && initialPins && initialPins.length > 0) {
-            console.log('[StoryCreation] Initializing Edit Mode for:', initialStory.title);
+            if (__DEV__) console.log('[StoryCreation] Initializing Edit Mode for:', initialStory.title || 'NONE');
 
             // Map existing pins to PinDrafts
             const drafts: PinDraft[] = initialPins.map(pin => ({
@@ -217,7 +217,7 @@ export const StoryCreationFlow: React.FC<StoryCreationFlowProps> = ({
             }
         } catch (error: any) {
             if (error.code !== 'E_PICKER_CANCELLED') {
-                console.error('[StoryCreation] Photo picker error:', error);
+                if (__DEV__) console.error('[StoryCreation] Photo picker error:', error?.message || 'Unknown error');
                 Alert.alert('Error', 'Failed to select photos');
             }
         }
@@ -270,8 +270,8 @@ export const StoryCreationFlow: React.FC<StoryCreationFlowProps> = ({
         try {
             const results = await searchPlaces(query);
             setLocationSuggestions(results);
-        } catch (error) {
-            console.error('[StoryCreation] Location search error:', error);
+        } catch (error: any) {
+            if (__DEV__) console.error('[StoryCreation] Location search error:', error?.message || 'Unknown error');
         } finally {
             setIsSearchingLocation(false);
         }
@@ -340,8 +340,8 @@ export const StoryCreationFlow: React.FC<StoryCreationFlowProps> = ({
                 await onCreateSinglePin(pinDrafts[0]);
                 Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
                 handleClose();
-            } catch (error) {
-                console.error('[StoryCreation] Single pin error:', error);
+            } catch (error: any) {
+                if (__DEV__) console.error('[StoryCreation] Single pin error:', error?.message || 'Unknown error');
                 Alert.alert('Error', 'Failed to create pin. Please try again.');
             } finally {
                 setIsSubmitting(false);
@@ -537,8 +537,8 @@ export const StoryCreationFlow: React.FC<StoryCreationFlowProps> = ({
             await onComplete(storyTitle.trim(), pinDrafts);
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
             handleClose();
-        } catch (error) {
-            console.error('[StoryCreation] Submit error:', error);
+        } catch (error: any) {
+            if (__DEV__) console.error('[StoryCreation] Submit error:', error?.message || 'Unknown error');
             Alert.alert('Error', 'Failed to create journey. Please try again.');
         } finally {
             setIsSubmitting(false);
@@ -611,7 +611,7 @@ export const StoryCreationFlow: React.FC<StoryCreationFlowProps> = ({
                                                             }
                                                         } catch (error: any) {
                                                             if (error.code !== 'E_PICKER_CANCELLED') {
-                                                                console.error('[StoryCreationFlow] Error opening native editor:', error);
+                                                                if (__DEV__) console.error('[StoryCreationFlow] Error opening native editor:', error?.message || 'Unknown error');
                                                                 Alert.alert('Error', 'Failed to open photo editor');
                                                             }
                                                         }

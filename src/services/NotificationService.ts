@@ -5,8 +5,8 @@ try {
   const oneSignalModule = require('react-native-onesignal');
   OneSignal = oneSignalModule.OneSignal;
   LogLevel = oneSignalModule.LogLevel;
-} catch (e) {
-  console.warn('[NotificationService] OneSignal module not available:', e);
+} catch (e: any) {
+  if (__DEV__) console.warn('[NotificationService] OneSignal module not available:', e?.message || 'Unknown error');
   OneSignal = null;
   LogLevel = null;
 }
@@ -23,17 +23,17 @@ const ONE_SIGNAL_REST_API_KEY = process.env.EXPO_PUBLIC_ONESIGNAL_REST_API_KEY;
 
 // Debug: Log key status (without exposing the full key)
 if (!ONE_SIGNAL_REST_API_KEY) {
-    console.error('[NotificationService] CRITICAL: EXPO_PUBLIC_ONESIGNAL_REST_API_KEY environment variable is not set!');
+    if (__DEV__) console.error('[NotificationService] CRITICAL: EXPO_PUBLIC_ONESIGNAL_REST_API_KEY environment variable is not set!');
 } else {
     // Log first 10 chars and last 4 chars for verification (safe to log)
     const keyPreview = ONE_SIGNAL_REST_API_KEY.length > 14
         ? `${ONE_SIGNAL_REST_API_KEY.substring(0, 10)}...${ONE_SIGNAL_REST_API_KEY.substring(ONE_SIGNAL_REST_API_KEY.length - 4)}`
         : '***';
-    console.log(`[NotificationService] OneSignal REST API Key loaded: ${keyPreview} (length: ${ONE_SIGNAL_REST_API_KEY.length})`);
+    if (__DEV__) console.log(`[NotificationService] OneSignal REST API Key loaded: ${keyPreview} (length: ${ONE_SIGNAL_REST_API_KEY.length})`);
 
     // Verify key format (should start with 'os_' or be a long alphanumeric string)
     if (!ONE_SIGNAL_REST_API_KEY.startsWith('os_') && ONE_SIGNAL_REST_API_KEY.length < 50) {
-        console.warn('[NotificationService] WARNING: REST API Key format looks unusual. Expected format: starts with "os_" or is 50+ characters long.');
+        if (__DEV__) console.warn('[NotificationService] WARNING: REST API Key format looks unusual. Expected format: starts with "os_" or is 50+ characters long.');
     }
 }
 
@@ -87,7 +87,7 @@ export const notificationService = {
      */
     async login(uid: string) {
         if (ONESIGNAL_DISABLED || !OneSignal) {
-            console.log('[OneSignal] DISABLED or not available - skipping login');
+            if (__DEV__) console.log('[OneSignal] DISABLED or not available - skipping login');
             return Promise.resolve();
         }
         
@@ -96,15 +96,15 @@ export const notificationService = {
         try {
             // Check if OneSignal is initialized by trying to access a property
             if (!OneSignal || typeof OneSignal.login !== 'function') {
-                console.warn('[OneSignal] OneSignal not properly initialized, skipping login');
+                if (__DEV__) console.warn('[OneSignal] OneSignal not properly initialized, skipping login');
                 return Promise.resolve();
             }
-        } catch (e) {
-            console.warn('[OneSignal] OneSignal initialization check failed, skipping login:', e);
+        } catch (e: any) {
+            if (__DEV__) console.warn('[OneSignal] OneSignal initialization check failed, skipping login:', e?.message || 'Unknown error');
             return Promise.resolve();
         }
         
-        console.log('[OneSignal] Logging in user:', uid);
+        if (__DEV__) console.log('[OneSignal] Logging in user:', uid ? uid.substring(0, 8) + '...' : 'NULL');
         try {
             // Login sets the user identity and external_id automatically in SDK v5
             OneSignal.login(uid);
@@ -115,18 +115,18 @@ export const notificationService = {
             try {
                 if (OneSignal.User && OneSignal.User.addAlias) {
                     await OneSignal.User.addAlias('external_id', uid);
-                    console.log('[OneSignal] External ID alias explicitly set');
+                    if (__DEV__) console.log('[OneSignal] External ID alias explicitly set');
                 }
             } catch (aliasError: any) {
                 // If addAlias fails, login() should have set external_id automatically
-                console.log('[OneSignal] addAlias not available or failed (this is OK if login() sets external_id):', aliasError.message);
+                if (__DEV__) console.log('[OneSignal] addAlias not available or failed (this is OK if login() sets external_id):', aliasError.message || 'Unknown error');
             }
 
-            console.log('[OneSignal] Login complete for:', uid);
+            if (__DEV__) console.log('[OneSignal] Login complete for:', uid ? uid.substring(0, 8) + '...' : 'NULL');
         } catch (error: any) {
             // Don't throw - just log the error to prevent crashes
             // This handles cases where OneSignal isn't properly initialized
-            console.error('[OneSignal] Login error (non-critical):', error?.message || error);
+            if (__DEV__) console.error('[OneSignal] Login error (non-critical):', error?.message || 'Unknown error');
         }
         return Promise.resolve();
     },
@@ -136,10 +136,10 @@ export const notificationService = {
      */
     async logout() {
         if (ONESIGNAL_DISABLED || !OneSignal) {
-            console.log('[OneSignal] DISABLED or not available - skipping logout');
+            if (__DEV__) console.log('[OneSignal] DISABLED or not available - skipping logout');
             return;
         }
-        console.log('[OneSignal] Logging out');
+        if (__DEV__) console.log('[OneSignal] Logging out');
         OneSignal.logout();
     },
 
@@ -148,10 +148,10 @@ export const notificationService = {
      */
     async requestPermissions() {
         if (ONESIGNAL_DISABLED || !OneSignal) {
-            console.log('[OneSignal] DISABLED or not available - skipping permission request');
+            if (__DEV__) console.log('[OneSignal] DISABLED or not available - skipping permission request');
             return false;
         }
-        console.log('[OneSignal] Requesting permissions');
+        if (__DEV__) console.log('[OneSignal] Requesting permissions');
         return OneSignal.Notifications.requestPermission(true);
     },
 
@@ -160,12 +160,12 @@ export const notificationService = {
      */
     addClickListener(handler: (data: any) => void) {
         if (ONESIGNAL_DISABLED || !OneSignal) {
-            console.log('[OneSignal] DISABLED or not available - skipping click listener');
+            if (__DEV__) console.log('[OneSignal] DISABLED or not available - skipping click listener');
             return;
         }
-        console.log('[OneSignal] Adding click listener');
+        if (__DEV__) console.log('[OneSignal] Adding click listener');
         OneSignal.Notifications.addEventListener('click', (event) => {
-            console.log('[OneSignal] Notification clicked:', event);
+            if (__DEV__) console.log('[OneSignal] Notification clicked (sanitized for security)');
             if (event.notification.additionalData) {
                 handler(event.notification.additionalData);
             }
@@ -177,10 +177,10 @@ export const notificationService = {
      */
     async registerForPushNotificationsAsync() {
         if (ONESIGNAL_DISABLED || !OneSignal) {
-            console.log('[OneSignal] DISABLED or not available - returning null token');
+            if (__DEV__) console.log('[OneSignal] DISABLED or not available - returning null token');
             return null;
         }
-        console.log('[OneSignal] Registering for push (Mock -> Real)');
+        if (__DEV__) console.log('[OneSignal] Registering for push (Mock -> Real)');
         return OneSignal.User.pushSubscription.getPushSubscriptionId();
     },
 
@@ -293,7 +293,7 @@ export const notificationService = {
      */
     async notifyChallengeComplete(friendUid: string, gameName: string, result: { won: boolean, opponentName: string, challengeId: string }) {
         if (!ONE_SIGNAL_REST_API_KEY) {
-            console.error('[NotificationService] Cannot send notification - REST API key is not configured');
+            if (__DEV__) console.error('[NotificationService] Cannot send notification - REST API key is not configured');
             return;
         }
 
@@ -303,7 +303,7 @@ export const notificationService = {
         const isGameResultsEnabled = friendProfile?.notificationSettings?.gameResults ?? true;
 
         if (!isGlobalEnabled || !isGameResultsEnabled) {
-            console.log(`[NotificationService] Game result notifications disabled for ${friendUid}`);
+            if (__DEV__) console.log(`[NotificationService] Game result notifications disabled for ${friendUid ? friendUid.substring(0, 8) + '...' : 'NULL'}`);
             return;
         }
 
@@ -329,15 +329,15 @@ export const notificationService = {
             });
 
             const apiResult = await response.json();
-            console.log(`[NotificationService] notifyChallengeComplete response:`, JSON.stringify(apiResult));
+            if (__DEV__) console.log(`[NotificationService] notifyChallengeComplete response (sanitized for security)`);
 
             if (!response.ok || apiResult.errors) {
-                console.error(`[NotificationService] Failed to send challenge complete notification:`, apiResult.errors || `HTTP ${response.status}`);
+                if (__DEV__) console.error(`[NotificationService] Failed to send challenge complete notification:`, apiResult.errors || `HTTP ${response.status}`);
             } else if (apiResult.recipients === 0) {
-                console.warn(`[NotificationService] Challenge complete notification sent but no recipients found for ${friendUid}`);
+                if (__DEV__) console.warn(`[NotificationService] Challenge complete notification sent but no recipients found for ${friendUid ? friendUid.substring(0, 8) + '...' : 'NULL'}`);
             }
-        } catch (error) {
-            console.error('[NotificationService] Error notifying challenge complete:', error);
+        } catch (error: any) {
+            if (__DEV__) console.error('[NotificationService] Error notifying challenge complete:', error?.message || 'Unknown error');
         }
     },
 
@@ -346,10 +346,10 @@ export const notificationService = {
      * Includes pin location for deep linking
      */
     async notifyNewPin(friendUid: string, creatorName: string, pinData?: { pinId: string; lat: number; lon: number }) {
-        console.log(`[NotificationService] notifyNewPin called - friendUid: ${friendUid}, creatorName: ${creatorName}`);
+        if (__DEV__) console.log(`[NotificationService] notifyNewPin called - friendUid: ${friendUid ? friendUid.substring(0, 8) + '...' : 'NULL'}, creatorName: ${creatorName || 'NONE'}`);
 
         if (!ONE_SIGNAL_REST_API_KEY) {
-            console.error('[NotificationService] Cannot send notification - REST API key is not configured');
+            if (__DEV__) console.error('[NotificationService] Cannot send notification - REST API key is not configured');
             return;
         }
 
@@ -359,7 +359,7 @@ export const notificationService = {
         const isPinsEnabled = friendProfile?.notificationSettings?.pinNotifications ?? true;
 
         if (!isGlobalEnabled || !isPinsEnabled) {
-            console.log(`[NotificationService] Pin notifications disabled for ${friendUid}`);
+            if (__DEV__) console.log(`[NotificationService] Pin notifications disabled for ${friendUid ? friendUid.substring(0, 8) + '...' : 'NULL'}`);
             return;
         }
 
@@ -386,17 +386,17 @@ export const notificationService = {
                 })
             });
             const result = await response.json();
-            console.log(`[NotificationService] notifyNewPin response status: ${response.status}`, JSON.stringify(result));
+            if (__DEV__) console.log(`[NotificationService] notifyNewPin response status: ${response.status} (sanitized for security)`);
 
             if (!response.ok || result.errors) {
-                console.error(`[NotificationService] Failed to send pin notification:`, result.errors || `HTTP ${response.status}`);
+                if (__DEV__) console.error(`[NotificationService] Failed to send pin notification:`, result.errors || `HTTP ${response.status}`);
             } else if (result.recipients === 0) {
-                console.warn(`[NotificationService] Pin notification sent but no recipients found for ${friendUid}. User may not be subscribed or external_id not set.`);
+                if (__DEV__) console.warn(`[NotificationService] Pin notification sent but no recipients found for ${friendUid ? friendUid.substring(0, 8) + '...' : 'NULL'}. User may not be subscribed or external_id not set.`);
             } else {
-                console.log(`[NotificationService] Pin notification sent successfully to ${result.recipients} recipient(s)`);
+                if (__DEV__) console.log(`[NotificationService] Pin notification sent successfully to ${result.recipients} recipient(s)`);
             }
-        } catch (error) {
-            console.error('[NotificationService] Error notifying new pin:', error);
+        } catch (error: any) {
+            if (__DEV__) console.error('[NotificationService] Error notifying new pin:', error?.message || 'Unknown error');
         }
     },
 
@@ -405,7 +405,7 @@ export const notificationService = {
      * Includes story info for deep linking
      */
     async notifyNewStory(friendUid: string, creatorName: string, storyTitle: string, storyData?: { storyId: string; coverLat?: number; coverLon?: number }) {
-        console.log(`[NotificationService] notifyNewStory called - friendUid: ${friendUid}, creatorName: ${creatorName}`);
+        if (__DEV__) console.log(`[NotificationService] notifyNewStory called - friendUid: ${friendUid ? friendUid.substring(0, 8) + '...' : 'NULL'}, creatorName: ${creatorName || 'NONE'}`);
         try {
             const friendProfile = await getUserProfile(friendUid);
 
@@ -414,12 +414,12 @@ export const notificationService = {
             const isStoryEnabled = friendProfile?.notificationSettings?.storyNotifications ?? true;
 
             if (!isGlobalEnabled || !isStoryEnabled) {
-                console.log(`[NotificationService] Story notifications disabled for ${friendUid}`);
+                if (__DEV__) console.log(`[NotificationService] Story notifications disabled for ${friendUid ? friendUid.substring(0, 8) + '...' : 'NULL'}`);
                 return;
             }
 
             if (!ONE_SIGNAL_REST_API_KEY) {
-                console.error('[NotificationService] Cannot send notification - REST API key is not configured');
+                if (__DEV__) console.error('[NotificationService] Cannot send notification - REST API key is not configured');
                 return;
             }
 
@@ -446,17 +446,17 @@ export const notificationService = {
                 })
             });
             const result = await response.json();
-            console.log(`[NotificationService] notifyNewStory response status: ${response.status}`, JSON.stringify(result));
+            if (__DEV__) console.log(`[NotificationService] notifyNewStory response status: ${response.status} (sanitized for security)`);
 
             if (!response.ok || result.errors) {
-                console.error(`[NotificationService] Failed to send story notification:`, result.errors || `HTTP ${response.status}`);
+                if (__DEV__) console.error(`[NotificationService] Failed to send story notification:`, result.errors || `HTTP ${response.status}`);
             } else if (result.recipients === 0) {
-                console.warn(`[NotificationService] Story notification sent but no recipients found for ${friendUid}. User may not be subscribed or external_id not set.`);
+                if (__DEV__) console.warn(`[NotificationService] Story notification sent but no recipients found for ${friendUid ? friendUid.substring(0, 8) + '...' : 'NULL'}. User may not be subscribed or external_id not set.`);
             } else {
-                console.log(`[NotificationService] Story notification sent successfully to ${result.recipients} recipient(s)`);
+                if (__DEV__) console.log(`[NotificationService] Story notification sent successfully to ${result.recipients} recipient(s)`);
             }
-        } catch (error) {
-            console.error('[NotificationService] Error notifying new story:', error);
+        } catch (error: any) {
+            if (__DEV__) console.error('[NotificationService] Error notifying new story:', error?.message || 'Unknown error');
         }
     }
 };

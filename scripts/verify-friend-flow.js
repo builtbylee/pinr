@@ -10,6 +10,20 @@ const PROJECT_ID = 'days-c4ad4';
 const BASE_URL = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents`;
 const COLLECTION = 'friend_requests';
 
+// Helper function for fetch with timeout
+async function fetchWithTimeout(url, options = {}, timeoutMs = 30000) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+        const response = await fetch(url, { ...options, signal: controller.signal });
+        clearTimeout(timeoutId);
+        return response;
+    } catch (error) {
+        clearTimeout(timeoutId);
+        throw error;
+    }
+}
+
 // --- AUTH HELPERS ---
 async function getAccessToken() {
     const now = Math.floor(Date.now() / 1000);
@@ -22,7 +36,7 @@ async function getAccessToken() {
         scope: 'https://www.googleapis.com/auth/datastore'
     };
     const token = jwt.sign(payload, serviceAccount.private_key, { algorithm: 'RS256' });
-    const response = await fetch('https://oauth2.googleapis.com/token', {
+    const response = await fetchWithTimeout('https://oauth2.googleapis.com/token', {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: `grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&assertion=${token}`
@@ -61,7 +75,7 @@ async function main() {
         createdAt: new Date().toISOString() // Simpler for test
     };
 
-    const createResp = await fetch(`${BASE_URL}/${COLLECTION}`, {
+    const createResp = await fetchWithTimeout(`${BASE_URL}/${COLLECTION}`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ fields: toFirestore(requestData) })
@@ -75,7 +89,7 @@ async function main() {
 
     // 2. Verify Pending State
     console.log('\n--- Step 2: Verifying Pending State ---');
-    const getResp = await fetch(`${BASE_URL}/${COLLECTION}/${requestId}`, {
+    const getResp = await fetchWithTimeout(`${BASE_URL}/${COLLECTION}/${requestId}`, {
         headers: { 'Authorization': `Bearer ${token}` }
     });
     const getJson = await getResp.json();
@@ -88,7 +102,7 @@ async function main() {
 
     // 3. Accept Request (Update Status)
     console.log('\n--- Step 3: Accepting Request ---');
-    const updateResp = await fetch(`${BASE_URL}/${COLLECTION}/${requestId}?updateMask.fieldPaths=status`, {
+    const updateResp = await fetchWithTimeout(`${BASE_URL}/${COLLECTION}/${requestId}?updateMask.fieldPaths=status`, {
         method: 'PATCH',
         headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -106,7 +120,7 @@ async function main() {
     // 4. Verify Friendship (Simulate getFriends)
     console.log('\n--- Step 4: Verifying Friendship ---');
     // Query: fromUid == USER_A && status == accepted
-    const queryResp = await fetch(`${BASE_URL}:runQuery`, {
+    const queryResp = await fetchWithTimeout(`${BASE_URL}:runQuery`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -136,7 +150,7 @@ async function main() {
 
     // 5. Cleanup
     console.log('\n--- Cleanup ---');
-    await fetch(`${BASE_URL}/${COLLECTION}/${requestId}`, {
+    await fetchWithTimeout(`${BASE_URL}/${COLLECTION}/${requestId}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
     });

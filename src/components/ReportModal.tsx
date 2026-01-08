@@ -89,8 +89,8 @@ export const ReportModal: React.FC<ReportModalProps> = ({
             // Reset form
             setSelectedReason(null);
             setDescription('');
-        } catch (error) {
-            console.error('Error submitting report:', error);
+        } catch (error: any) {
+            if (__DEV__) console.error('Error submitting report:', error?.message || 'Unknown error');
             Alert.alert('Error', 'Failed to submit report. Please try again.');
         } finally {
             setIsSubmitting(false);

@@ -58,8 +58,8 @@ export const ManageVisibilityModal: React.FC<ManageVisibilityModalProps> = ({ vi
 
         try {
             await updatePinVisibility(currentUserId, friendUid, !currentlyHidden);
-        } catch (error) {
-            console.error('Failed to toggle visibility:', error);
+        } catch (error: any) {
+            if (__DEV__) console.error('Failed to toggle visibility:', error?.message || 'Unknown error');
             // Revert on error
             setHiddenFriendIds(prev =>
                 currentlyHidden

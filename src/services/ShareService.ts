@@ -27,10 +27,10 @@ export const shareService = {
                 title: `Join me on ${APP_NAME}!`,
             });
 
-            console.log('[ShareService] App invite shared successfully');
+            if (__DEV__) console.log('[ShareService] App invite shared successfully');
             return true;
-        } catch (error) {
-            console.error('[ShareService] Share app invite failed:', error);
+        } catch (error: any) {
+            if (__DEV__) console.error('[ShareService] Share app invite failed:', error?.message || 'Unknown error');
             return false;
         }
     },
@@ -49,10 +49,10 @@ export const shareService = {
                 title: `Check out my pin!`,
             });
 
-            console.log('[ShareService] Pin shared successfully');
+            if (__DEV__) console.log('[ShareService] Pin shared successfully');
             return true;
-        } catch (error) {
-            console.error('[ShareService] Share pin failed:', error);
+        } catch (error: any) {
+            if (__DEV__) console.error('[ShareService] Share pin failed:', error?.message || 'Unknown error');
             return false;
         }
     },
@@ -69,10 +69,10 @@ export const shareService = {
                 title: storyTitle,
             });
 
-            console.log('[ShareService] Journey shared successfully');
+            if (__DEV__) console.log('[ShareService] Journey shared successfully');
             return true;
-        } catch (error) {
-            console.error('[ShareService] Share journey failed:', error);
+        } catch (error: any) {
+            if (__DEV__) console.error('[ShareService] Share journey failed:', error?.message || 'Unknown error');
             return false;
         }
     },
@@ -108,10 +108,10 @@ export const shareService = {
                 title: `${score} points in ${gameName}!`,
             });
 
-            console.log('[ShareService] Game score shared successfully');
+            if (__DEV__) console.log('[ShareService] Game score shared successfully');
             return true;
-        } catch (error) {
-            console.error('[ShareService] Share game score failed:', error);
+        } catch (error: any) {
+            if (__DEV__) console.error('[ShareService] Share game score failed:', error?.message || 'Unknown error');
             return false;
         }
     },

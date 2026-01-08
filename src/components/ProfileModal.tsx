@@ -254,8 +254,8 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
         toggleHiddenFriendLocal(userId); // Optimistic
         try {
             await toggleHiddenFriend(currentUserId, userId, !isHidden);
-        } catch (error) {
-            console.error('Failed to toggle hide pins:', error);
+        } catch (error: any) {
+            if (__DEV__) console.error('Failed to toggle hide pins:', error?.message || 'Unknown error');
             toggleHiddenFriendLocal(userId); // Revert on error
         }
     };
@@ -270,7 +270,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
     const effectivePinColor = isMe ? (myFetchedPinColor || myPinColor || 'orange') : (friendPinColor || 'orange');
     const colorKey = (effectivePinColor || 'orange').toLowerCase().trim();
     const mappedColor = PIN_COLOR_MAP[colorKey];
-    console.log('[DEBUG] ProfileModal themeColor lookup:', { isMe, myPinColor, myFetchedPinColor, effectivePinColor, colorKey, mappedColor, hasMappedColor: !!mappedColor });
+    if (__DEV__) console.log('[DEBUG] ProfileModal themeColor lookup (sanitized for security)');
     let themeColor = displayAvatar
         ? (mappedColor || '#FF8C00')
         : '#FFFFFF';

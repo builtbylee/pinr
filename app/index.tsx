@@ -6,8 +6,10 @@ import auth from '@react-native-firebase/auth';
 // Instrumentation: Global cold start timestamp
 const COLD_START_TIME = Date.now();
 const log = (tag: string, msg: string) => {
-    const elapsed = Date.now() - COLD_START_TIME;
-    console.log(`[Perf +${elapsed}ms] [Index:${tag}] ${msg}`);
+    if (__DEV__) {
+        const elapsed = Date.now() - COLD_START_TIME;
+        if (__DEV__) console.log(`[Perf +${elapsed}ms] [Index:${tag}] ${msg}`);
+    }
 };
 log('Init', 'Index module loaded');
 
@@ -286,8 +288,49 @@ export default function App() {
     // Auto-Rotate Logic
     const autoRotateTimer = useRef<NodeJS.Timeout | null>(null);
 
+    // Derived state: Is the map currently obscured by a modal or overlay?
+    const isMapObscured = useMemo(() => {
+        return (
+            isExploreInfoVisible ||
+            !!selectedMemoryId ||
+            isCreationModalVisible ||
+            isFriendsVisible ||
+            !!selectedUserProfileId ||
+            isSettingsVisible ||
+            isUsernameModalVisible ||
+            isExploreSearchVisible ||
+            isGlobalStoryEditorVisible ||
+            !!storyModeData ||
+            isStoryCreationVisible ||
+            !!reportModalPinId ||
+            !!contextMenuPinId
+        );
+    }, [
+        isExploreInfoVisible,
+        selectedMemoryId,
+        isCreationModalVisible,
+        isFriendsVisible,
+        selectedUserProfileId,
+        isSettingsVisible,
+        isUsernameModalVisible,
+        isExploreSearchVisible,
+        isGlobalStoryEditorVisible,
+        storyModeData,
+        isStoryCreationVisible,
+        reportModalPinId,
+        contextMenuPinId
+    ]);
+
+    // Ref to track obscured state inside stale closures (setTimeout)
+    const isMapObscuredRef = useRef(isMapObscured);
+    useEffect(() => {
+        isMapObscuredRef.current = isMapObscured;
+    }, [isMapObscured]);
+
     const startAutoRotate = (currentCenter: [number, number]) => {
-        if (isExploreInfoVisible || selectedMemoryId || !cameraRef.current) return;
+        // Optimization: Don't animate if map is hidden/obscured to save battery.
+        // CHECK REF to ensure we don't run if state changed during setTimeout delay.
+        if (isMapObscuredRef.current || !cameraRef.current) return;
 
         // Continuous Westward Drift (Left-to-Right ground)
         // We use -170 degrees to stay valid-ish, and loop.
@@ -298,6 +341,54 @@ export default function App() {
             animationMode: 'linear'
         });
     };
+
+    // Helper: Safely stop animation without crashing if stopAnimation doesn't exist
+    const forceStopAnimation = async () => {
+        stopAutoRotate(); // Clear timer
+        if (cameraRef.current && mapRef.current) {
+            try {
+                // To stop a native animation, we overwrite it with a static camera update.
+                // We need the current center to "freeze" it in place.
+                const center = await mapRef.current.getCenter();
+                // Double-check we are still obscured before freezing (async race)
+                if (isMapObscuredRef.current || AppState.currentState !== 'active') {
+                    cameraRef.current.setCamera({
+                        centerCoordinate: center,
+                        animationDuration: 0,
+                        animationMode: 'moveTo'
+                    });
+                }
+            } catch (e) {
+                // Ignore errors during backgrounding/unmounting
+            }
+        }
+    };
+
+    // Optimization: Stop animation when app backgrounded or map obscured
+    useEffect(() => {
+        const handleAppStateChange = (nextAppState: string) => {
+            if (nextAppState === 'active' && !isMapObscuredRef.current) {
+                // App became active and map is visible. 
+                // We don't auto-start here to avoid jumping. 
+                // Interaction will restart it via onRegionDidChange.
+            } else {
+                // App backgrounded or inactive -> Freeze.
+                forceStopAnimation();
+            }
+        };
+
+        const subscription = AppState.addEventListener('change', handleAppStateChange);
+
+        // React to internal state changes
+        if (isMapObscured) {
+            forceStopAnimation();
+        }
+        // Else: Map became visible. We wait for user interaction or natural drift to restart logic.
+
+        return () => {
+            subscription.remove();
+        };
+    }, [isMapObscured]);
 
     const stopAutoRotate = () => {
         if (autoRotateTimer.current) clearTimeout(autoRotateTimer.current);
@@ -726,11 +817,11 @@ export default function App() {
             const currentMemories = memories;
             const tempPins = currentMemories.filter(m => m.id.startsWith('temp_'));
             const realPinIds = new Set(allPins.map(p => p.id));
-            
+
             // Find temp pins that have been replaced by real pins (by location/creator match)
             const replacedTempIds = new Set<string>();
             tempPins.forEach(tempPin => {
-                const matchingRealPin = allPins.find(p => 
+                const matchingRealPin = allPins.find(p =>
                     p.creatorId === tempPin.creatorId &&
                     Math.abs(p.location[0] - tempPin.location[0]) < 0.0001 &&
                     Math.abs(p.location[1] - tempPin.location[1]) < 0.0001 &&
@@ -742,7 +833,7 @@ export default function App() {
                     if (__DEV__) console.log('[App] Temp pin replaced by real pin:', tempPin.id ? tempPin.id.substring(0, 8) + '...' : 'NULL', '->', matchingRealPin.id ? matchingRealPin.id.substring(0, 8) + '...' : 'NULL');
                 }
             });
-            
+
             // Handle temp ID to real ID transition for selected memory
             if (selectedMemoryId && selectedMemoryId.startsWith('temp_')) {
                 const realId = tempIdToRealIdMap.current.get(selectedMemoryId);
@@ -753,7 +844,7 @@ export default function App() {
                     // Check if temp pin still exists
                     const tempPin = currentMemories.find(m => m.id === selectedMemoryId);
                     if (tempPin) {
-                        const matchingRealPin = allPins.find(p => 
+                        const matchingRealPin = allPins.find(p =>
                             p.creatorId === tempPin.creatorId &&
                             Math.abs(p.location[0] - tempPin.location[0]) < 0.0001 &&
                             Math.abs(p.location[1] - tempPin.location[1]) < 0.0001 &&
@@ -767,11 +858,11 @@ export default function App() {
                     }
                 }
             }
-            
+
             // Merge: Keep temp pins that haven't been replaced, add all real pins
             const keptTempPins = tempPins.filter(tp => !replacedTempIds.has(tp.id));
             const mergedMemories = [...keptTempPins, ...allPins];
-            
+
             // Remove duplicates (in case a temp pin and real pin have the same ID somehow)
             const uniqueMemories = mergedMemories.reduce((acc, pin) => {
                 if (!acc.find(p => p.id === pin.id)) {
@@ -779,7 +870,7 @@ export default function App() {
                 }
                 return acc;
             }, [] as Memory[]);
-            
+
             allPinsRef.current = allPins;
             if (__DEV__) console.log('[App] Merging memories: kept', keptTempPins.length, 'temp pins,', allPins.length, 'real pins, total:', uniqueMemories.length);
             setMemories(uniqueMemories);
@@ -1065,7 +1156,7 @@ export default function App() {
                 const pinId = await addPin(newMemory);
                 if (__DEV__) console.log('[App] Pin saved to Firestore:', pinId ? pinId.substring(0, 8) + '...' : 'NULL');
                 if (__DEV__) console.log('[App] Pin data saved (redacted for security)');
-                
+
                 // Force a small delay to ensure Firestore has processed the write
                 await new Promise(resolve => setTimeout(resolve, 500));
 

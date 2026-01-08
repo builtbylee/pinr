@@ -11,6 +11,20 @@ const PROJECT_ID = 'days-c4ad4';
 const BASE_URL = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents`;
 const STORIES_COLLECTION = 'stories';
 
+// Helper function for fetch with timeout
+async function fetchWithTimeout(url, options = {}, timeoutMs = 30000) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+        const response = await fetch(url, { ...options, signal: controller.signal });
+        clearTimeout(timeoutId);
+        return response;
+    } catch (error) {
+        clearTimeout(timeoutId);
+        throw error;
+    }
+}
+
 // --- HELPERS (Reused from simulate-gameplay.js) ---
 async function getAccessToken() {
     const now = Math.floor(Date.now() / 1000);
@@ -23,7 +37,7 @@ async function getAccessToken() {
         scope: 'https://www.googleapis.com/auth/datastore'
     };
     const token = jwt.sign(payload, serviceAccount.private_key, { algorithm: 'RS256' });
-    const response = await fetch('https://oauth2.googleapis.com/token', {
+    const response = await fetchWithTimeout('https://oauth2.googleapis.com/token', {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: `grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&assertion=${token}`
@@ -103,7 +117,7 @@ async function main() {
         console.error('❌ Client Logic Failed: ' + pinCheck.error); process.exit(1);
     }
 
-    const createResp = await fetch(`${BASE_URL}/${STORIES_COLLECTION}`, {
+    const createResp = await fetchWithTimeout(`${BASE_URL}/${STORIES_COLLECTION}`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ fields: toFirestore(story1Data) })
@@ -117,7 +131,7 @@ async function main() {
 
     // 3. Scenario: Read & Verify
     console.log('\n--- SCENARIO 2: READ & VERIFY ---');
-    const readResp = await fetch(`${BASE_URL}/${STORIES_COLLECTION}/${story1Id}`, {
+    const readResp = await fetchWithTimeout(`${BASE_URL}/${STORIES_COLLECTION}/${story1Id}`, {
         headers: { 'Authorization': `Bearer ${token}` }
     });
     const readDoc = await readResp.json();
@@ -134,7 +148,7 @@ async function main() {
     // We already have 1. Let's create 4 more to hit limit.
     console.log('Creating 4 shadow stories...');
     for (let i = 0; i < 4; i++) {
-        await fetch(`${BASE_URL}/${STORIES_COLLECTION}`, {
+        await fetchWithTimeout(`${BASE_URL}/${STORIES_COLLECTION}`, {
             method: 'POST',
             headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
             body: JSON.stringify({ fields: toFirestore({ ...story1Data, title: `Shadow Info ${i}` }) })
@@ -142,7 +156,7 @@ async function main() {
     }
 
     // Now query count
-    const queryResp = await fetch(`${BASE_URL}:runQuery`, {
+    const queryResp = await fetchWithTimeout(`${BASE_URL}:runQuery`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -177,7 +191,7 @@ async function main() {
     console.log('\n--- CLEANUP ---');
     for (const d of validDocs) {
         const id = d.document.name.split('/').pop();
-        await fetch(`${BASE_URL}/${STORIES_COLLECTION}/${id}`, {
+        await fetchWithTimeout(`${BASE_URL}/${STORIES_COLLECTION}/${id}`, {
             method: 'DELETE',
             headers: { 'Authorization': `Bearer ${token}` }
         });

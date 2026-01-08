@@ -40,10 +40,14 @@ const WIKI_HEADERS = {
 // Search for the correct Wikipedia page title first
 const searchWikiTitle = async (query: string): Promise<string | null> => {
     try {
+        // Add timeout to fetch call
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
         const response = await fetch(
             `${WIKI_SEARCH_API}?action=opensearch&search=${encodeURIComponent(query)}&limit=1&format=json`,
-            { headers: WIKI_HEADERS }
+            { headers: WIKI_HEADERS, signal: controller.signal }
         );
+        clearTimeout(timeoutId);
 
         if (!response.ok) return null;
 
@@ -57,8 +61,8 @@ const searchWikiTitle = async (query: string): Promise<string | null> => {
             return null;
         }
         return null;
-    } catch (error) {
-        console.error('Wiki Service Error:', error);
+    } catch (error: any) {
+        if (__DEV__) console.error('Wiki Service Error:', error?.message || 'Unknown error');
         return null;
     }
 };
@@ -75,7 +79,7 @@ export const searchWikiPlaces = async (query: string): Promise<GeocodingResult[]
     const cacheKey = query.toLowerCase().trim();
     const cached = wikiSearchCache.get(cacheKey);
     if (cached) {
-        console.log('[WikiService] Cache hit for:', query);
+        if (__DEV__) console.log('[WikiService] Cache hit for:', query || 'NONE');
         return cached;
     }
 
@@ -86,10 +90,14 @@ export const searchWikiPlaces = async (query: string): Promise<GeocodingResult[]
         // Note: Removed origin=* to avoid potential Native CORS confusion with specific headers
         const url = `${WIKI_SEARCH_API}?action=query&generator=prefixsearch&gpssearch=${encodeURIComponent(query)}&gpslimit=20&prop=coordinates|pageimages|description|extracts&piprop=thumbnail&pithumbsize=200&exintro&explaintext&exsentences=1&format=json`;
 
-        const response = await fetch(url, { headers: WIKI_HEADERS });
+        // Add timeout to fetch call
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+        const response = await fetch(url, { headers: WIKI_HEADERS, signal: controller.signal });
+        clearTimeout(timeoutId);
 
         if (!response.ok) {
-            console.warn('[WikiService] HTTP Error:', response.status);
+            if (__DEV__) console.warn('[WikiService] HTTP Error:', response.status);
             // We return empty array on failure, which results in "No List" in UI.
             return [];
         }
@@ -144,7 +152,7 @@ export const searchWikiPlaces = async (query: string): Promise<GeocodingResult[]
             const isTitleExcluded = titleExcludePatterns.some(pattern => title.includes(pattern));
 
             if (isDescExcluded || isTitleExcluded) {
-                console.log(`[WikiService] Filtered out non-place: ${p.title} (${desc})`);
+                if (__DEV__) console.log(`[WikiService] Filtered out non-place: ${p.title || 'NONE'} (sanitized)`);
                 return false;
             }
             return true;
@@ -162,19 +170,23 @@ export const searchWikiPlaces = async (query: string): Promise<GeocodingResult[]
 
         // Cache the results
         wikiSearchCache.set(cacheKey, results);
-        console.log('[WikiService] Cached results for:', query);
+        if (__DEV__) console.log('[WikiService] Cached results for:', query || 'NONE');
 
         return results;
 
-    } catch (error) {
-        console.error('[WikiService] Search failed:', error);
+    } catch (error: any) {
+        if (__DEV__) console.error('[WikiService] Search failed:', error?.message || 'Unknown error');
         return [];
     }
 };
 
 const fetchSummary = async (title: string, apiBase: string, sourceName: 'wikipedia' | 'wikivoyage'): Promise<WikiPlaceDetails | null> => {
     try {
-        const response = await fetch(`${apiBase}/summary/${encodeURIComponent(title)}`, { headers: WIKI_HEADERS });
+        // Add timeout to fetch call
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+        const response = await fetch(`${apiBase}/summary/${encodeURIComponent(title)}`, { headers: WIKI_HEADERS, signal: controller.signal });
+        clearTimeout(timeoutId);
         if (!response.ok) return null;
 
         const data = await response.json();
@@ -226,7 +238,11 @@ const fetchDeepImage = async (title: string, searchApiBase: string): Promise<str
         // Request up to 5 images from the page
         const url = `${searchApiBase}?action=query&titles=${encodeURIComponent(title)}&prop=pageimages&piprop=thumbnail|original&pithumbsize=600&pilimit=5&format=json`;
 
-        const response = await fetch(url, { headers: WIKI_HEADERS });
+        // Add timeout to fetch call
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+        const response = await fetch(url, { headers: WIKI_HEADERS, signal: controller.signal });
+        clearTimeout(timeoutId);
         if (!response.ok) return null;
 
         const data = await response.json();
@@ -298,7 +314,7 @@ export const getPlaceDetails = async (placeName: string): Promise<WikiPlaceDetai
     if (parts.length > 1) candidates.add(`${parts[0]}, ${parts[1]}`);
     if (candidates.size === 0 && parts.length > 0) candidates.add(parts[parts.length - 1]);
 
-    console.log(`[WikiService] Searching candidates for "${placeName}":`, Array.from(candidates));
+    if (__DEV__) console.log(`[WikiService] Searching candidates for "${placeName || 'NONE'}":`, Array.from(candidates).length, 'candidates');
 
     let bestResult: WikiPlaceDetails | null = null;
     let bestScore = 0; // 0 = none, 1 = disambig, 2 = standard+noImg, 3 = standard+badImg, 4 = standard+goodImg
@@ -350,7 +366,7 @@ export const getPlaceDetails = async (placeName: string): Promise<WikiPlaceDetai
     if (bestResult && bestResult.thumbnail) {
         const url = bestResult.originalimage?.source || bestResult.thumbnail.source;
         if (!isImageValid(url)) {
-            console.log(`[WikiService] Filtered out flag/map image: ${url}`);
+            if (__DEV__) console.log(`[WikiService] Filtered out flag/map image (sanitized for security)`);
             bestResult.thumbnail = undefined;
             bestResult.originalimage = undefined;
         }
@@ -362,7 +378,7 @@ export const getPlaceDetails = async (placeName: string): Promise<WikiPlaceDetai
         // Most major places have a scenic photo on Voyage.
         // If Thailand Voyage had a map, the filter will kill it, and we might show "No Image".
         // Which is safer than "Ugly Map".
-        console.log(`[WikiService] Returning best result from ${bestResult.source}: ${bestResult.title}`);
+        if (__DEV__) console.log(`[WikiService] Returning best result from ${bestResult.source || 'NONE'}: ${bestResult.title || 'NONE'}`);
         return bestResult;
     }
 

@@ -56,8 +56,8 @@ export const UsernameModal: React.FC<UsernameModalProps> = ({
             // Reset loading state after save completes
             setIsChecking(false);
 
-        } catch (err) {
-            console.error('[UsernameModal] Save error:', err);
+        } catch (err: any) {
+            if (__DEV__) console.error('[UsernameModal] Save error:', err?.message || 'Unknown error');
             setError('An error occurred. Please try again.');
             setIsChecking(false);
         }

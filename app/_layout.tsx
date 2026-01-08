@@ -7,8 +7,8 @@ try {
   const oneSignalModule = require('react-native-onesignal');
   OneSignal = oneSignalModule.OneSignal;
   LogLevel = oneSignalModule.LogLevel;
-} catch (e) {
-  console.warn('[Layout] OneSignal module not available:', e);
+} catch (e: any) {
+  if (__DEV__) console.warn('[Layout] OneSignal module not available:', e?.message || 'Unknown error');
   OneSignal = null;
   LogLevel = null;
 }
@@ -26,7 +26,7 @@ const COLD_START_TIME = Date.now();
 const log = (tag: string, msg: string) => {
   if (__DEV__) {
     const elapsed = Date.now() - COLD_START_TIME;
-    console.log(`[Perf +${elapsed}ms] [Layout:${tag}] ${msg}`);
+    if (__DEV__) console.log(`[Perf +${elapsed}ms] [Layout:${tag}] ${msg}`);
   }
 };
 log('Init', 'Layout module loaded');

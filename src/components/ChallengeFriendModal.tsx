@@ -87,8 +87,8 @@ export const ChallengeFriendModal: React.FC<ChallengeFriendModalProps> = ({
             await onSendChallenge(friend, selectedGame, selectedDifficulty);
             setInvitedIds(prev => new Set(prev).add(friend.uid));
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        } catch (error) {
-            console.error('Failed to send challenge:', error);
+        } catch (error: any) {
+            if (__DEV__) console.error('Failed to send challenge:', error?.message || 'Unknown error');
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
         } finally {
             setSendingId(null);

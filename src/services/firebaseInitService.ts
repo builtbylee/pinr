@@ -59,7 +59,7 @@ export async function waitForFirebase(): Promise<void> {
                             setTimeout(checkFirebase, 100);
                             return;
                         } else {
-                            console.warn('[FirebaseInit] Native bridge check timeout, proceeding to Firebase check');
+                            if (__DEV__) console.warn('[FirebaseInit] Native bridge check timeout, proceeding to Firebase check');
                         }
                     } else {
                         // Native module is loaded, give it a moment to initialize
@@ -83,7 +83,7 @@ export async function waitForFirebase(): Promise<void> {
                 const appModule = NativeModules.RNFBAppModule;
                 if (appModule && appModule.NATIVE_FIREBASE_APPS) {
                     const nativeApps = appModule.NATIVE_FIREBASE_APPS;
-                    console.log(`[FirebaseInit] Found ${nativeApps.length} native Firebase app(s)`);
+                    if (__DEV__) console.log(`[FirebaseInit] Found ${nativeApps.length} native Firebase app(s)`);
                     if (nativeApps.length === 0 && attempts < 100) {
                         // Native module is ready but no apps yet - wait a bit more
                         setTimeout(checkFirebase, 100);
@@ -102,7 +102,7 @@ export async function waitForFirebase(): Promise<void> {
                         // Try explicit initialization as fallback if native configure didn't work
                         if (!explicitInitAttempted && attempts > 50) {
                             explicitInitAttempted = true;
-                            console.log('[FirebaseInit] Native configure may have failed, attempting explicit JS initialization...');
+                            if (__DEV__) console.log('[FirebaseInit] Native configure may have failed, attempting explicit JS initialization...');
                             try {
                                 // Try to initialize with explicit config from plist values
                                 // This is a fallback if native configure didn't work
@@ -119,16 +119,16 @@ export async function waitForFirebase(): Promise<void> {
                                     messagingSenderId: "760973100570"
                                 };
                                 initializeApp(firebaseConfig);
-                                console.log('[FirebaseInit] Explicit JS initialization with config attempted, waiting...');
+                                if (__DEV__) console.log('[FirebaseInit] Explicit JS initialization with config attempted, waiting...');
                                 // Give it time to initialize
                                 setTimeout(checkFirebase, 1000);
                                 return;
                             } catch (initError: any) {
-                                console.error('[FirebaseInit] Explicit JS initialization failed:', initError);
+                                if (__DEV__) console.error('[FirebaseInit] Explicit JS initialization failed:', initError?.message || 'Unknown error');
                                 // If explicit init also fails, there's a deeper issue
                                 if (initError.message?.includes('already been created') || initError.message?.includes('already exists')) {
                                     // App might already exist, try to get it
-                                    console.log('[FirebaseInit] App may already exist, retrying getApp()...');
+                                    if (__DEV__) console.log('[FirebaseInit] App may already exist, retrying getApp()...');
                                     setTimeout(checkFirebase, 500);
                                     return;
                                 }
@@ -141,9 +141,9 @@ export async function waitForFirebase(): Promise<void> {
                             return;
                         } else {
                             // Timeout - this is a critical error
-                            console.error('[FirebaseInit] CRITICAL: Firebase app not found after timeout');
-                            console.error('[FirebaseInit] This indicates FirebaseApp.configure() in AppDelegate did not work');
-                            console.error('[FirebaseInit] Verify: 1) plist is in app bundle, 2) FirebaseApp.configure() is called, 3) app was rebuilt');
+                            if (__DEV__) console.error('[FirebaseInit] CRITICAL: Firebase app not found after timeout');
+                            if (__DEV__) console.error('[FirebaseInit] This indicates FirebaseApp.configure() in AppDelegate did not work');
+                            if (__DEV__) console.error('[FirebaseInit] Verify: 1) plist is in app bundle, 2) FirebaseApp.configure() is called, 3) app was rebuilt');
                             isFirebaseReady = true; // Set to true to prevent infinite loops, but log the error
                             resolve();
                             return;
@@ -154,7 +154,7 @@ export async function waitForFirebase(): Promise<void> {
                         setTimeout(checkFirebase, 100);
                         return;
                     } else {
-                        console.error('[FirebaseInit] Error getting app:', error);
+                        if (__DEV__) console.error('[FirebaseInit] Error getting app:', error?.message || 'Unknown error');
                         isFirebaseReady = true;
                         resolve();
                         return;
@@ -168,7 +168,7 @@ export async function waitForFirebase(): Promise<void> {
                     const _ = authInstance.currentUser;
 
                     isFirebaseReady = true;
-                    console.log(`[FirebaseInit] ✅ Firebase Auth is ready (after ${attempts} attempts, ${(attempts * 100) / 1000}s)`);
+                    if (__DEV__) console.log(`[FirebaseInit] ✅ Firebase Auth is ready (after ${attempts} attempts, ${(attempts * 100) / 1000}s)`);
                     resolve();
                     return;
                 } catch (authError: any) {
@@ -183,8 +183,8 @@ export async function waitForFirebase(): Promise<void> {
                             return;
                         } else {
                             // Timeout - critical error
-                            console.error('[FirebaseInit] CRITICAL: Firebase auth not ready after timeout');
-                            console.error('[FirebaseInit] Error:', authError);
+                            if (__DEV__) console.error('[FirebaseInit] CRITICAL: Firebase auth not ready after timeout');
+                            if (__DEV__) console.error('[FirebaseInit] Error:', authError?.message || 'Unknown error');
                             isFirebaseReady = true;
                             resolve();
                             return;
@@ -195,7 +195,7 @@ export async function waitForFirebase(): Promise<void> {
                         setTimeout(checkFirebase, 100);
                         return;
                     } else {
-                        console.error('[FirebaseInit] Auth check failed after timeout:', authError);
+                        if (__DEV__) console.error('[FirebaseInit] Auth check failed after timeout:', authError?.message || 'Unknown error');
                         isFirebaseReady = true;
                         resolve();
                         return;
@@ -211,7 +211,7 @@ export async function waitForFirebase(): Promise<void> {
                         setTimeout(checkFirebase, 100);
                         return;
                     } else {
-                        console.error('[FirebaseInit] Firebase initialization timeout:', error);
+                        if (__DEV__) console.error('[FirebaseInit] Firebase initialization timeout:', error?.message || 'Unknown error');
                         isFirebaseReady = true;
                         resolve();
                         return;
@@ -222,7 +222,7 @@ export async function waitForFirebase(): Promise<void> {
                         setTimeout(checkFirebase, 100);
                         return;
                     } else {
-                        console.error('[FirebaseInit] Unexpected error after timeout:', error);
+                        if (__DEV__) console.error('[FirebaseInit] Unexpected error after timeout:', error?.message || 'Unknown error');
                         isFirebaseReady = true;
                         resolve();
                         return;
@@ -232,7 +232,7 @@ export async function waitForFirebase(): Promise<void> {
         };
 
         // Start checking immediately - we'll check native bridge first, then Firebase
-        console.log('[FirebaseInit] Starting Firebase initialization check...');
+        if (__DEV__) console.log('[FirebaseInit] Starting Firebase initialization check...');
         setTimeout(checkFirebase, 500); // Small initial delay to let React Native start
     });
 
@@ -279,11 +279,11 @@ export async function waitForFirestore(): Promise<void> {
                     // Start: Configuration is now handled in @/src/config/firestore.ts
                     // We do not re-apply settings here to avoid "Settings already locked" errors
                     // or native race conditions.
-                    console.log('[FirebaseInit] Firestore instance detected. Using global config.');
+                    if (__DEV__) console.log('[FirebaseInit] Firestore instance detected. Using global config.');
                     // End: Configuration handling
 
                     isFirestoreReady = true;
-                    console.log(`[FirebaseInit] ✅ Firestore is ready (after ${attempts} attempts)`);
+                    if (__DEV__) console.log(`[FirebaseInit] ✅ Firestore is ready (after ${attempts} attempts)`);
 
                     if (!hasAlertedReady) {
                         // Alert.alert('Debug: Init', 'Firestore Ready!');
@@ -298,7 +298,7 @@ export async function waitForFirestore(): Promise<void> {
                     setTimeout(checkFirestore, 100);
                     return;
                 } else {
-                    console.warn('[FirebaseInit] Firestore check timed out, proceeding anyway');
+                    if (__DEV__) console.warn('[FirebaseInit] Firestore check timed out, proceeding anyway');
                     isFirestoreReady = true;
                     if (!hasAlertedReady) {
                         // Alert.alert('Debug: Init', 'Firestore Timed Out (Max Attempts)');
@@ -308,7 +308,7 @@ export async function waitForFirestore(): Promise<void> {
                     return;
                 }
             } catch (error: any) {
-                console.warn('[FirebaseInit] Firestore check error:', error);
+                if (__DEV__) console.warn('[FirebaseInit] Firestore check error:', error?.message || 'Unknown error');
 
                 // For critical errors, retry a few times then give up
                 if (attempts < maxAttempts) {
@@ -326,7 +326,7 @@ export async function waitForFirestore(): Promise<void> {
             }
         };
 
-        console.log('[FirebaseInit] Starting Firestore initialization check...');
+        if (__DEV__) console.log('[FirebaseInit] Starting Firestore initialization check...');
         setTimeout(checkFirestore, 200); // Small delay to let Firestore initialize after Firebase
     });
 

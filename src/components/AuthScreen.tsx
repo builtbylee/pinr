@@ -73,7 +73,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthenticated }) => {
                     setIsLoading(true);
                     // Auto-fill and login
                     const userId = await signInEmailPassword(creds.email, creds.pass);
-                    console.log('[AuthScreen] ✅ Biometric login succeeded, user ID:', userId);
+                    if (__DEV__) console.log('[AuthScreen] ✅ Biometric login succeeded, user ID:', userId ? userId.substring(0, 8) + '...' : 'NULL');
 
                     // Fetch username to pass back (with timeout to prevent hang)
                     const { getUserProfile } = require('../services/userService');
@@ -88,18 +88,18 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthenticated }) => {
                             const profile = await Promise.race([profilePromise, timeoutPromise]) as any;
                             onAuthenticated(profile?.username);
                         } catch (profileError: any) {
-                            console.warn('[AuthScreen] Failed to fetch profile (non-blocking):', profileError.message);
+                            if (__DEV__) console.warn('[AuthScreen] Failed to fetch profile (non-blocking):', profileError.message || 'Unknown error');
                             // Continue without username - it's not critical for login
                             onAuthenticated();
                         }
                     } else {
-                        console.warn('[AuthScreen] User not available after biometric login');
+                        if (__DEV__) console.warn('[AuthScreen] User not available after biometric login');
                         onAuthenticated();
                     }
                 }
             }
         } catch (e: any) {
-            console.log('Biometric login failed:', e);
+            if (__DEV__) console.log('Biometric login failed:', e?.message || 'Unknown error');
             // Don't alert detailed error, just let user try manual
         } finally {
             setIsLoading(false);
@@ -109,12 +109,12 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthenticated }) => {
 
 
     const handleLogin = async () => {
-        console.log('[AuthScreen] ========== LOGIN ATTEMPT START ==========');
-        console.log('[AuthScreen] Email/Username:', emailOrUsername ? emailOrUsername.trim() : 'EMPTY');
-        console.log('[AuthScreen] Password length:', password ? password.length : 0);
+        if (__DEV__) console.log('[AuthScreen] ========== LOGIN ATTEMPT START ==========');
+        if (__DEV__) console.log('[AuthScreen] Email/Username:', emailOrUsername ? emailOrUsername.trim().substring(0, 10) + '...' : 'EMPTY');
+        if (__DEV__) console.log('[AuthScreen] Password length:', password ? password.length : 0);
 
         if (!emailOrUsername || !password) {
-            console.error('[AuthScreen] ❌ Missing email or password');
+            if (__DEV__) console.error('[AuthScreen] ❌ Missing email or password');
             setError('Please enter email and password');
             return;
         }
@@ -123,47 +123,47 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthenticated }) => {
         setError(null);
         try {
             const loginEmail = emailOrUsername.trim();
-            console.log('[AuthScreen] Trimmed email:', loginEmail);
+            if (__DEV__) console.log('[AuthScreen] Trimmed email:', loginEmail ? loginEmail.substring(0, 10) + '...' : 'EMPTY');
 
             // Require valid email format
             if (!loginEmail.includes('@')) {
-                console.error('[AuthScreen] ❌ Invalid email format (no @)');
+                if (__DEV__) console.error('[AuthScreen] ❌ Invalid email format (no @)');
                 throw new Error('Please enter a valid email address.');
             }
 
-            console.log('[AuthScreen] 📧 Calling signInEmailPassword...');
+            if (__DEV__) console.log('[AuthScreen] 📧 Calling signInEmailPassword...');
             const startTime = Date.now();
             const userId = await signInEmailPassword(loginEmail, password);
             const duration = Date.now() - startTime;
-            console.log('[AuthScreen] ✅ Email/password sign-in succeeded');
-            console.log('[AuthScreen] User ID:', userId);
-            console.log('[AuthScreen] Sign-in duration:', duration + 'ms');
+            if (__DEV__) console.log('[AuthScreen] ✅ Email/password sign-in succeeded');
+            if (__DEV__) console.log('[AuthScreen] User ID:', userId ? userId.substring(0, 8) + '...' : 'NULL');
+            if (__DEV__) console.log('[AuthScreen] Sign-in duration:', duration + 'ms');
 
             // Verify user is actually signed in
-            console.log('[AuthScreen] 🔍 Verifying user is signed in...');
+            if (__DEV__) console.log('[AuthScreen] 🔍 Verifying user is signed in...');
             const { getCurrentUser } = require('../services/authService');
             let user = getCurrentUser();
-            console.log('[AuthScreen] Initial user check:', user ? `Found user ${user.uid}` : 'NO USER');
+            if (__DEV__) console.log('[AuthScreen] Initial user check:', user ? `Found user ${user.uid ? user.uid.substring(0, 8) + '...' : 'NULL'}` : 'NO USER');
 
             // If user is not immediately available, wait a bit for auth state to propagate
             if (!user) {
-                console.log('[AuthScreen] ⏳ User not immediately available, waiting 300ms for auth state...');
+                if (__DEV__) console.log('[AuthScreen] ⏳ User not immediately available, waiting 300ms for auth state...');
                 await new Promise(resolve => setTimeout(resolve, 300));
                 user = getCurrentUser();
-                console.log('[AuthScreen] After wait, user:', user ? `Found user ${user.uid}` : 'STILL NO USER');
+                if (__DEV__) console.log('[AuthScreen] After wait, user:', user ? `Found user ${user.uid ? user.uid.substring(0, 8) + '...' : 'NULL'}` : 'STILL NO USER');
             }
 
             if (!user || user.uid !== userId) {
-                console.error('[AuthScreen] ❌ Sign-in succeeded but user verification failed');
-                console.error('[AuthScreen] Expected user ID:', userId);
-                console.error('[AuthScreen] Got user:', user ? user.uid : 'null');
-                console.error('[AuthScreen] User match:', user?.uid === userId ? 'YES' : 'NO');
+                if (__DEV__) console.error('[AuthScreen] ❌ Sign-in succeeded but user verification failed');
+                if (__DEV__) console.error('[AuthScreen] Expected user ID:', userId ? userId.substring(0, 8) + '...' : 'NULL');
+                if (__DEV__) console.error('[AuthScreen] Got user:', user ? (user.uid ? user.uid.substring(0, 8) + '...' : 'NULL') : 'null');
+                if (__DEV__) console.error('[AuthScreen] User match:', user?.uid === userId ? 'YES' : 'NO');
                 throw new Error('Sign-in failed. Please try again.');
             }
-            console.log('[AuthScreen] ✅ User verified after sign-in:', user.uid);
+            if (__DEV__) console.log('[AuthScreen] ✅ User verified after sign-in:', user.uid ? user.uid.substring(0, 8) + '...' : 'NULL');
 
             // Fetch username to pass back (with timeout to prevent hang)
-            console.log('[AuthScreen] 📋 Fetching user profile...');
+            if (__DEV__) console.log('[AuthScreen] 📋 Fetching user profile...');
             const { getUserProfile } = require('../services/userService');
             let loggedInUsername = '';
             try {
@@ -176,34 +176,34 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthenticated }) => {
                 const profile = await Promise.race([profilePromise, timeoutPromise]) as any;
                 const profileDuration = Date.now() - profileStartTime;
                 loggedInUsername = profile?.username || '';
-                console.log('[AuthScreen] ✅ Profile fetched successfully');
-                console.log('[AuthScreen] Profile duration:', profileDuration + 'ms');
-                console.log('[AuthScreen] Username:', loggedInUsername || 'NONE');
-                console.log('[AuthScreen] Profile exists:', profile ? 'YES' : 'NO');
+                if (__DEV__) console.log('[AuthScreen] ✅ Profile fetched successfully');
+                if (__DEV__) console.log('[AuthScreen] Profile duration:', profileDuration + 'ms');
+                if (__DEV__) console.log('[AuthScreen] Username:', loggedInUsername || 'NONE');
+                if (__DEV__) console.log('[AuthScreen] Profile exists:', profile ? 'YES' : 'NO');
             } catch (profileError: any) {
-                console.warn('[AuthScreen] ⚠️ Failed to fetch profile (non-blocking)');
-                console.warn('[AuthScreen] Profile error:', profileError.message);
-                console.warn('[AuthScreen] Profile error code:', profileError.code);
+                if (__DEV__) console.warn('[AuthScreen] ⚠️ Failed to fetch profile (non-blocking)');
+                if (__DEV__) console.warn('[AuthScreen] Profile error:', profileError.message || 'Unknown error');
+                if (__DEV__) console.warn('[AuthScreen] Profile error code:', profileError.code || 'N/A');
                 // Continue without username - it's not critical for login
                 loggedInUsername = '';
             }
 
-            console.log('[AuthScreen] ✅ Login flow complete');
-            console.log('[AuthScreen] Username to pass:', loggedInUsername || 'NONE');
-            console.log('[AuthScreen] Biometric available:', biometricAvailable);
-            console.log('[AuthScreen] Has saved credentials:', hasSavedCredentials);
-            console.log('[AuthScreen] 📞 Calling onAuthenticated...');
+            if (__DEV__) console.log('[AuthScreen] ✅ Login flow complete');
+            if (__DEV__) console.log('[AuthScreen] Username to pass:', loggedInUsername || 'NONE');
+            if (__DEV__) console.log('[AuthScreen] Biometric available:', biometricAvailable);
+            if (__DEV__) console.log('[AuthScreen] Has saved credentials:', hasSavedCredentials);
+            if (__DEV__) console.log('[AuthScreen] 📞 Calling onAuthenticated...');
 
             // Offer to save credentials for biometric login
             if (biometricAvailable && !hasSavedCredentials) {
-                console.log('[AuthScreen] Showing biometric prompt...');
+                if (__DEV__) console.log('[AuthScreen] Showing biometric prompt...');
                 Alert.alert(
                     `Enable ${biometricType}?`,
                     `Would you like to use ${biometricType} for faster sign-in next time?`,
                     [
                         {
                             text: 'Not Now', style: 'cancel', onPress: () => {
-                                console.log('[AuthScreen] User declined biometric, calling onAuthenticated');
+                                if (__DEV__) console.log('[AuthScreen] User declined biometric, calling onAuthenticated');
                                 onAuthenticated(loggedInUsername);
                             }
                         },
@@ -214,8 +214,8 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthenticated }) => {
                                     await biometricService.saveCredentials(loginEmail, password);
                                     setHasSavedCredentials(true);
                                     Alert.alert('Success', `${biometricType} enabled!`);
-                                } catch (e) {
-                                    console.error('Failed to save biometric credentials:', e);
+                                } catch (e: any) {
+                                    if (__DEV__) console.error('Failed to save biometric credentials:', e?.message || 'Unknown error');
                                 }
                                 onAuthenticated(loggedInUsername);
                             },
@@ -229,20 +229,20 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthenticated }) => {
             }
 
             // No biometric prompt - proceed directly
-            console.log('[AuthScreen] No biometric prompt, calling onAuthenticated directly');
+            if (__DEV__) console.log('[AuthScreen] No biometric prompt, calling onAuthenticated directly');
             onAuthenticated(loggedInUsername);
-            console.log('[AuthScreen] ✅ onAuthenticated called, waiting for navigation...');
-            console.log('[AuthScreen] ========== LOGIN ATTEMPT END ==========');
+            if (__DEV__) console.log('[AuthScreen] ✅ onAuthenticated called, waiting for navigation...');
+            if (__DEV__) console.log('[AuthScreen] ========== LOGIN ATTEMPT END ==========');
 
         } catch (e: any) {
-            console.error('[AuthScreen] ❌ LOGIN ERROR');
-            console.error('[AuthScreen] Error message:', e.message);
-            console.error('[AuthScreen] Error code:', e.code);
-            console.error('[AuthScreen] Error stack:', e.stack);
-            console.error('[AuthScreen] ========== LOGIN ATTEMPT FAILED ==========');
+            if (__DEV__) console.error('[AuthScreen] ❌ LOGIN ERROR');
+            if (__DEV__) console.error('[AuthScreen] Error message:', e.message || 'Unknown error');
+            if (__DEV__) console.error('[AuthScreen] Error code:', e.code || 'N/A');
+            if (__DEV__) console.error('[AuthScreen] Error stack:', e.stack ? e.stack.substring(0, 200) + '...' : 'N/A');
+            if (__DEV__) console.error('[AuthScreen] ========== LOGIN ATTEMPT FAILED ==========');
             setError(e.message);
         } finally {
-            console.log('[AuthScreen] Setting isLoading to false');
+            if (__DEV__) console.log('[AuthScreen] Setting isLoading to false');
             setIsLoading(false);
         }
     };
@@ -292,27 +292,27 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthenticated }) => {
 
 
     const handleGoogleSignIn = async () => {
-        console.log('[AuthScreen] ========== GOOGLE SIGN-IN ATTEMPT START ==========');
+        if (__DEV__) console.log('[AuthScreen] ========== GOOGLE SIGN-IN ATTEMPT START ==========');
         setIsLoading(true);
         setError(null);
         try {
-            console.log('[AuthScreen] 📱 Calling signInWithGoogle...');
+            if (__DEV__) console.log('[AuthScreen] 📱 Calling signInWithGoogle...');
             const startTime = Date.now();
             const result = await signInWithGoogle();
             const duration = Date.now() - startTime;
-            console.log('[AuthScreen] ✅ Google sign-in succeeded');
-            console.log('[AuthScreen] Sign-in duration:', duration + 'ms');
-            console.log('[AuthScreen] User ID:', result.uid);
-            console.log('[AuthScreen] Email:', result.email);
-            console.log('[AuthScreen] Display name:', result.displayName);
-            console.log('[AuthScreen] Is new user:', result.isNewUser);
+            if (__DEV__) console.log('[AuthScreen] ✅ Google sign-in succeeded');
+            if (__DEV__) console.log('[AuthScreen] Sign-in duration:', duration + 'ms');
+            if (__DEV__) console.log('[AuthScreen] User ID:', result.uid ? result.uid.substring(0, 8) + '...' : 'NULL');
+            if (__DEV__) console.log('[AuthScreen] Email:', result.email ? result.email.substring(0, 10) + '...' : 'NULL');
+            if (__DEV__) console.log('[AuthScreen] Display name:', result.displayName || 'NONE');
+            if (__DEV__) console.log('[AuthScreen] Is new user:', result.isNewUser);
             const { saveUserProfile, isUsernameTaken, getUserProfile } = require('../services/userService');
 
-            console.log('[AuthScreen] Processing Google sign-in result...');
-            console.log('[AuthScreen] Is new user:', result.isNewUser);
+            if (__DEV__) console.log('[AuthScreen] Processing Google sign-in result...');
+            if (__DEV__) console.log('[AuthScreen] Is new user:', result.isNewUser);
 
             if (result.isNewUser) {
-                console.log('[AuthScreen] 🆕 New user - creating profile...');
+                if (__DEV__) console.log('[AuthScreen] 🆕 New user - creating profile...');
                 // New user - ALWAYS create a profile with a username
                 let baseUsername: string;
 
@@ -334,14 +334,14 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthenticated }) => {
                     attempts++;
                 }
 
-                console.log('[AuthScreen] Saving profile for new user...');
+                if (__DEV__) console.log('[AuthScreen] Saving profile for new user...');
                 await saveUserProfile(result.uid, finalUsername, result.email || undefined);
-                console.log('[AuthScreen] ✅ Profile saved, username:', finalUsername);
-                console.log('[AuthScreen] 📞 Calling onAuthenticated for new user...');
+                if (__DEV__) console.log('[AuthScreen] ✅ Profile saved, username:', finalUsername || 'NONE');
+                if (__DEV__) console.log('[AuthScreen] 📞 Calling onAuthenticated for new user...');
                 onAuthenticated(finalUsername);
-                console.log('[AuthScreen] ✅ onAuthenticated called for new user');
+                if (__DEV__) console.log('[AuthScreen] ✅ onAuthenticated called for new user');
             } else {
-                console.log('[AuthScreen] 👤 Existing user - fetching profile...');
+                if (__DEV__) console.log('[AuthScreen] 👤 Existing user - fetching profile...');
                 // Existing user - fetch their profile (with timeout to prevent hang)
                 try {
                     const profileStartTime = Date.now();
@@ -351,57 +351,57 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthenticated }) => {
                     );
                     const profile = await Promise.race([profilePromise, timeoutPromise]) as any;
                     const profileDuration = Date.now() - profileStartTime;
-                    console.log('[AuthScreen] ✅ Profile fetched for existing user');
-                    console.log('[AuthScreen] Profile duration:', profileDuration + 'ms');
-                    console.log('[AuthScreen] Profile exists:', profile ? 'YES' : 'NO');
-                    console.log('[AuthScreen] Username:', profile?.username || 'NONE');
+                    if (__DEV__) console.log('[AuthScreen] ✅ Profile fetched for existing user');
+                    if (__DEV__) console.log('[AuthScreen] Profile duration:', profileDuration + 'ms');
+                    if (__DEV__) console.log('[AuthScreen] Profile exists:', profile ? 'YES' : 'NO');
+                    if (__DEV__) console.log('[AuthScreen] Username:', profile?.username || 'NONE');
 
                     if (profile?.username) {
-                        console.log('[AuthScreen] 📞 Calling onAuthenticated for existing user...');
+                        if (__DEV__) console.log('[AuthScreen] 📞 Calling onAuthenticated for existing user...');
                         onAuthenticated(profile.username);
-                        console.log('[AuthScreen] ✅ onAuthenticated called for existing user');
+                        if (__DEV__) console.log('[AuthScreen] ✅ onAuthenticated called for existing user');
                     } else {
-                        console.warn('[AuthScreen] ⚠️ Existing user has no username - creating fallback...');
+                        if (__DEV__) console.warn('[AuthScreen] ⚠️ Existing user has no username - creating fallback...');
                         // Edge case: existing user but no profile/username - create one now
                         const fallbackUsername = 'user' + Math.floor(Math.random() * 100000);
                         try {
                             await saveUserProfile(result.uid, fallbackUsername, result.email || undefined);
-                        } catch (saveError) {
-                            console.warn('[AuthScreen] Failed to save profile (non-blocking):', saveError);
+                        } catch (saveError: any) {
+                            if (__DEV__) console.warn('[AuthScreen] Failed to save profile (non-blocking):', saveError?.message || 'Unknown error');
                         }
-                        console.log('[AuthScreen] 📞 Calling onAuthenticated with fallback username...');
+                        if (__DEV__) console.log('[AuthScreen] 📞 Calling onAuthenticated with fallback username...');
                         onAuthenticated(fallbackUsername);
-                        console.log('[AuthScreen] ✅ onAuthenticated called with fallback');
+                        if (__DEV__) console.log('[AuthScreen] ✅ onAuthenticated called with fallback');
                     }
                 } catch (profileError: any) {
-                    console.warn('[AuthScreen] ⚠️ Failed to fetch profile (non-blocking)');
-                    console.warn('[AuthScreen] Profile error:', profileError.message);
-                    console.warn('[AuthScreen] Profile error code:', profileError.code);
+                    if (__DEV__) console.warn('[AuthScreen] ⚠️ Failed to fetch profile (non-blocking)');
+                    if (__DEV__) console.warn('[AuthScreen] Profile error:', profileError.message || 'Unknown error');
+                    if (__DEV__) console.warn('[AuthScreen] Profile error code:', profileError.code || 'N/A');
                     // Continue without username - profile will load via subscription once in app
                     // Don't show alert as it's blocking - just log and proceed
-                    console.log('[AuthScreen] 📞 Calling onAuthenticated without username (profile will load via subscription)...');
+                    if (__DEV__) console.log('[AuthScreen] 📞 Calling onAuthenticated without username (profile will load via subscription)...');
                     onAuthenticated();
-                    console.log('[AuthScreen] ✅ onAuthenticated called without username');
+                    if (__DEV__) console.log('[AuthScreen] ✅ onAuthenticated called without username');
                 }
             }
-            console.log('[AuthScreen] ========== GOOGLE SIGN-IN ATTEMPT END ==========');
+            if (__DEV__) console.log('[AuthScreen] ========== GOOGLE SIGN-IN ATTEMPT END ==========');
         } catch (e: any) {
-            console.error('[AuthScreen] ❌ GOOGLE SIGN-IN ERROR');
-            console.error('[AuthScreen] Error message:', e.message);
-            console.error('[AuthScreen] Error code:', e.code);
-            console.error('[AuthScreen] Error stack:', e.stack);
-            console.error('[AuthScreen] ========== GOOGLE SIGN-IN ATTEMPT FAILED ==========');
+            if (__DEV__) console.error('[AuthScreen] ❌ GOOGLE SIGN-IN ERROR');
+            if (__DEV__) console.error('[AuthScreen] Error message:', e.message || 'Unknown error');
+            if (__DEV__) console.error('[AuthScreen] Error code:', e.code || 'N/A');
+            if (__DEV__) console.error('[AuthScreen] Error stack:', e.stack ? e.stack.substring(0, 200) + '...' : 'N/A');
+            if (__DEV__) console.error('[AuthScreen] ========== GOOGLE SIGN-IN ATTEMPT FAILED ==========');
             if (e.message !== 'Sign-in was cancelled') {
                 setError(e.message);
             }
         } finally {
-            console.log('[AuthScreen] Setting isLoading to false (Google Sign-In)');
+            if (__DEV__) console.log('[AuthScreen] Setting isLoading to false (Google Sign-In)');
             setIsLoading(false);
         }
     };
 
     const handleAppleSignIn = async () => {
-        console.log('[AuthScreen] ========== APPLE SIGN-IN ATTEMPT START ==========');
+        if (__DEV__) console.log('[AuthScreen] ========== APPLE SIGN-IN ATTEMPT START ==========');
         setIsLoading(true);
         setError(null);
         try {
@@ -417,18 +417,18 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthenticated }) => {
             }
             
             const result = await signInWithApple();
-            console.log('[AuthScreen] Apple Sign-In result:', result.uid);
-            console.log('[AuthScreen] Is new user:', result.isNewUser);
+            if (__DEV__) console.log('[AuthScreen] Apple Sign-In result:', result.uid ? result.uid.substring(0, 8) + '...' : 'NULL');
+            if (__DEV__) console.log('[AuthScreen] Is new user:', result.isNewUser);
 
             if (result.isNewUser) {
-                console.log('[AuthScreen] 🆕 NEW USER - Creating profile...');
+                if (__DEV__) console.log('[AuthScreen] 🆕 NEW USER - Creating profile...');
                 // Generate a unique username for new Apple Sign-In users
                 const generatedUsername = 'traveler' + Math.floor(Math.random() * 100000);
                 await saveUserProfile(result.uid, generatedUsername, result.email || undefined);
-                console.log('[AuthScreen] 📞 Calling onAuthenticated for new user...');
+                if (__DEV__) console.log('[AuthScreen] 📞 Calling onAuthenticated for new user...');
                 onAuthenticated(generatedUsername);
             } else {
-                console.log('[AuthScreen] 👤 EXISTING USER - Fetching profile...');
+                if (__DEV__) console.log('[AuthScreen] 👤 EXISTING USER - Fetching profile...');
                 const { getUserProfile } = require('../services/userService');
                 try {
                     const profile = await getUserProfile(result.uid);
@@ -440,7 +440,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthenticated }) => {
                         onAuthenticated(fallbackUsername);
                     }
                 } catch (profileError: any) {
-                    console.warn('[AuthScreen] Failed to fetch profile:', profileError.message);
+                    if (__DEV__) console.warn('[AuthScreen] Failed to fetch profile:', profileError.message || 'Unknown error');
                     onAuthenticated();
                 }
             }

@@ -40,7 +40,7 @@ class ChallengeService {
         try {
             const user = getCurrentUser();
             if (!user) {
-                console.error('[ChallengeService] No user logged in');
+                if (__DEV__) console.error('[ChallengeService] No user logged in');
                 return null;
             }
 
@@ -50,7 +50,7 @@ class ChallengeService {
             ]);
 
             if (!challengerProfile || !opponentProfile) {
-                console.error('[ChallengeService] Could not load profiles');
+                if (__DEV__) console.error('[ChallengeService] Could not load profiles');
                 return null;
             }
 
@@ -80,22 +80,22 @@ class ChallengeService {
             };
 
             // Send push notification to opponent
-            console.log('[ChallengeService] About to call sendGameInvite for opponent:', opponentId);
-            console.log('[ChallengeService] notificationService exists:', !!notificationService);
-            console.log('[ChallengeService] sendGameInvite function exists:', typeof notificationService?.sendGameInvite);
+            if (__DEV__) console.log('[ChallengeService] About to call sendGameInvite for opponent:', opponentId ? opponentId.substring(0, 8) + '...' : 'NULL');
+            if (__DEV__) console.log('[ChallengeService] notificationService exists:', !!notificationService);
+            if (__DEV__) console.log('[ChallengeService] sendGameInvite function exists:', typeof notificationService?.sendGameInvite);
             const notifResult = await notificationService.sendGameInvite(opponentId, 'Flag Dash');
-            console.log('[ChallengeService] sendGameInvite result:', JSON.stringify(notifResult, null, 2));
+            if (__DEV__) console.log('[ChallengeService] sendGameInvite result (sanitized for security)');
             for (const step of notifResult.steps) {
-                console.log('[ChallengeService] Step:', step);
+                if (__DEV__) console.log('[ChallengeService] Step:', step || 'NONE');
             }
             if (!notifResult.success) {
-                console.warn('[ChallengeService] Notification failed:', notifResult.error);
+                if (__DEV__) console.warn('[ChallengeService] Notification failed:', notifResult.error || 'Unknown error');
             }
 
             logger.log('[ChallengeService] Challenge created:', challenge.id);
             return challenge;
-        } catch (error) {
-            console.error('[ChallengeService] Failed to create challenge:', error);
+        } catch (error: any) {
+            if (__DEV__) console.error('[ChallengeService] Failed to create challenge:', error?.message || 'Unknown error');
             return null;
         }
     }
@@ -112,8 +112,8 @@ class ChallengeService {
                     status: 'accepted',
                 });
             return true;
-        } catch (error) {
-            console.error('[ChallengeService] Failed to accept challenge:', error);
+        } catch (error: any) {
+            if (__DEV__) console.error('[ChallengeService] Failed to accept challenge:', error?.message || 'Unknown error');
             return false;
         }
     }
@@ -144,8 +144,8 @@ class ChallengeService {
                 });
             }
             return true;
-        } catch (error) {
-            console.error('[ChallengeService] Failed to start challenge attempt:', error);
+        } catch (error: any) {
+            if (__DEV__) console.error('[ChallengeService] Failed to start challenge attempt:', error?.message || 'Unknown error');
             return false;
         }
     }
@@ -203,7 +203,7 @@ class ChallengeService {
                 won: data.won,
             };
         } catch (error: any) {
-            console.error('[ChallengeService] Failed to submit score:', error);
+            if (__DEV__) console.error('[ChallengeService] Failed to submit score:', error?.message || 'Unknown error');
             // Handle specific Cloud Function errors
             if (error.code === 'functions/failed-precondition') {
                 return { completed: false, error: 'Time limit exceeded' };
@@ -220,8 +220,8 @@ class ChallengeService {
             const doc = await firestore().collection(CHALLENGES_COLLECTION).doc(challengeId).get();
             if (!doc.exists) return null;
             return { id: doc.id, ...doc.data() } as GameChallenge;
-        } catch (error) {
-            console.error('[ChallengeService] Failed to get challenge:', error);
+        } catch (error: any) {
+            if (__DEV__) console.error('[ChallengeService] Failed to get challenge:', error?.message || 'Unknown error');
             return null;
         }
     }
@@ -249,8 +249,8 @@ class ChallengeService {
                 .map(doc => ({ id: doc.id, ...doc.data() } as GameChallenge))
                 .filter(c => c.expiresAt > now)
                 .sort((a, b) => b.createdAt - a.createdAt);
-        } catch (error) {
-            console.error('[ChallengeService] Failed to get pending challenges:', error);
+        } catch (error: any) {
+            if (__DEV__) console.error('[ChallengeService] Failed to get pending challenges:', error?.message || 'Unknown error');
             return [];
         }
     }
@@ -259,7 +259,7 @@ class ChallengeService {
      * Subscribe to pending challenges for real-time updates
      */
     subscribeToPendingChallenges(userId: string, onUpdate: (challenges: GameChallenge[]) => void): () => void {
-        console.log('[ChallengeService] Subscribing to game challenges for:', userId);
+        if (__DEV__) console.log('[ChallengeService] Subscribing to game challenges for:', userId ? userId.substring(0, 8) + '...' : 'NULL');
         const unsubscribe = firestore()
             .collection(CHALLENGES_COLLECTION)
             .where('opponentId', '==', userId)
@@ -275,8 +275,8 @@ class ChallengeService {
 
                     onUpdate(challenges);
                 },
-                (error) => {
-                    console.error('[ChallengeService] Subscription error:', error);
+                (error: any) => {
+                    if (__DEV__) console.error('[ChallengeService] Subscription error:', error?.message || 'Unknown error');
                 }
             );
         return unsubscribe;
@@ -306,8 +306,8 @@ class ChallengeService {
             const unique = new Map();
             challenges.forEach(c => unique.set(c.id, c));
             return Array.from(unique.values()).sort((a, b) => b.createdAt - a.createdAt);
-        } catch (error) {
-            console.error('[ChallengeService] Failed to get active challenges:', error);
+        } catch (error: any) {
+            if (__DEV__) console.error('[ChallengeService] Failed to get active challenges:', error?.message || 'Unknown error');
             return [];
         }
     }
@@ -333,7 +333,7 @@ class ChallengeService {
                 c1 = snap.docs.map(d => ({ id: d.id, ...d.data() } as GameChallenge));
                 merge();
             }, e => {
-                console.log('Sub1 error', e);
+                if (__DEV__) console.log('Sub1 error', e?.message || 'Unknown error');
                 if (onError) onError(e);
             });
 
@@ -344,7 +344,7 @@ class ChallengeService {
                 c2 = snap.docs.map(d => ({ id: d.id, ...d.data() } as GameChallenge));
                 merge();
             }, e => {
-                console.log('Sub2 error', e);
+                if (__DEV__) console.log('Sub2 error', e?.message || 'Unknown error');
                 // We only report error if both fail? Or report all? Reporting all is safer for debug.
                 if (onError) onError(e);
             });

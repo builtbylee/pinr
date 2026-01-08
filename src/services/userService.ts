@@ -94,8 +94,8 @@ export const isUsernameTaken = async (username: string, excludeUid?: string): Pr
         }
 
         return true;
-    } catch (error) {
-        console.error('[UserService] Check username failed:', error);
+    } catch (error: any) {
+        if (__DEV__) console.error('[UserService] Check username failed:', error?.message || 'Unknown error');
         return false; // Assume available on error to not block user
     }
 };
@@ -117,8 +117,8 @@ export const getEmailByUsername = async (username: string): Promise<string | nul
 
         const data = snapshot.docs[0].data() as UserProfile;
         return data.email || null;
-    } catch (error) {
-        console.error('[UserService] Get email failed:', error);
+    } catch (error: any) {
+        if (__DEV__) console.error('[UserService] Get email failed:', error?.message || 'Unknown error');
         return null;
     }
 };
@@ -152,10 +152,10 @@ export const saveUserProfile = async (uid: string, username: string, email?: str
                 createdAt: firestore.Timestamp.now(),
             } as UserProfile);
         }
-        console.log('[UserService] Profile saved for:', uid);
+        if (__DEV__) console.log('[UserService] Profile saved for:', uid ? uid.substring(0, 8) + '...' : 'NULL');
         invalidateProfileCache(uid);
-    } catch (error) {
-        console.error('[UserService] Save profile failed:', error);
+    } catch (error: any) {
+        if (__DEV__) console.error('[UserService] Save profile failed:', error?.message || 'Unknown error');
         throw error;
     }
 };
@@ -172,10 +172,10 @@ export const saveUserAvatar = async (uid: string, avatarUrl: string): Promise<vo
                 updatedAt: firestore.Timestamp.now(),
             }, { merge: true });
         }
-        console.log('[UserService] Avatar saved for:', uid);
+        if (__DEV__) console.log('[UserService] Avatar saved for:', uid ? uid.substring(0, 8) + '...' : 'NULL');
         invalidateProfileCache(uid);
-    } catch (error) {
-        console.error('[UserService] Save avatar failed:', error);
+    } catch (error: any) {
+        if (__DEV__) console.error('[UserService] Save avatar failed:', error?.message || 'Unknown error');
         throw error;
     }
 };
@@ -190,10 +190,10 @@ export const saveUserPinColor = async (uid: string, pinColor: string): Promise<v
             pinColor,
             updatedAt: firestore.Timestamp.now(),
         }, { merge: true });
-        console.log('[UserService] Pin color saved for:', uid);
+        if (__DEV__) console.log('[UserService] Pin color saved for:', uid ? uid.substring(0, 8) + '...' : 'NULL');
         invalidateProfileCache(uid);
-    } catch (error) {
-        console.error('[UserService] Save pin color failed:', error);
+    } catch (error: any) {
+        if (__DEV__) console.error('[UserService] Save pin color failed:', error?.message || 'Unknown error');
         throw error;
     }
 };
@@ -208,10 +208,10 @@ export const saveUserBio = async (uid: string, bio: string): Promise<void> => {
             bio: bio.slice(0, 80), // Enforce 80 char limit
             updatedAt: firestore.Timestamp.now(),
         }, { merge: true });
-        console.log('[UserService] Bio saved for:', uid);
+        if (__DEV__) console.log('[UserService] Bio saved for:', uid ? uid.substring(0, 8) + '...' : 'NULL');
         invalidateProfileCache(uid);
-    } catch (error) {
-        console.error('[UserService] Save bio failed:', error);
+    } catch (error: any) {
+        if (__DEV__) console.error('[UserService] Save bio failed:', error?.message || 'Unknown error');
         throw error;
     }
 };
@@ -226,9 +226,9 @@ export const savePushToken = async (uid: string, pushToken: string): Promise<voi
             pushToken,
             updatedAt: firestore.Timestamp.now(),
         }, { merge: true });
-        console.log('[UserService] Push token saved for:', uid);
-    } catch (error) {
-        console.error('[UserService] Save push token failed:', error);
+        if (__DEV__) console.log('[UserService] Push token saved for:', uid ? uid.substring(0, 8) + '...' : 'NULL');
+    } catch (error: any) {
+        if (__DEV__) console.error('[UserService] Save push token failed:', error?.message || 'Unknown error');
         // Don't throw, just log. Not critical.
     }
 };
@@ -247,17 +247,17 @@ export const updatePinVisibility = async (currentUid: string, friendUid: string,
                 hidePinsFrom: firestore.FieldValue.arrayUnion(friendUid),
                 updatedAt: firestore.Timestamp.now(),
             });
-            console.log('[UserService] Hidden pins from friend:', friendUid);
+            if (__DEV__) console.log('[UserService] Hidden pins from friend:', friendUid ? friendUid.substring(0, 8) + '...' : 'NULL');
         } else {
             // Remove friend from hidePinsFrom array
             await userRef.update({
                 hidePinsFrom: firestore.FieldValue.arrayRemove(friendUid),
                 updatedAt: firestore.Timestamp.now(),
             });
-            console.log('[UserService] Unhidden pins from friend:', friendUid);
+            if (__DEV__) console.log('[UserService] Unhidden pins from friend:', friendUid ? friendUid.substring(0, 8) + '...' : 'NULL');
         }
-    } catch (error) {
-        console.error('[UserService] Update pin visibility failed:', error);
+    } catch (error: any) {
+        if (__DEV__) console.error('[UserService] Update pin visibility failed:', error?.message || 'Unknown error');
         throw error;
     }
 };
@@ -269,8 +269,8 @@ export const getHidePinsFrom = async (uid: string): Promise<string[]> => {
     try {
         const profile = await getUserProfile(uid);
         return profile?.hidePinsFrom || [];
-    } catch (error) {
-        console.error('[UserService] Get hidePinsFrom failed:', error);
+    } catch (error: any) {
+        if (__DEV__) console.error('[UserService] Get hidePinsFrom failed:', error?.message || 'Unknown error');
         return [];
     }
 };
@@ -297,7 +297,7 @@ export const addFriend = async (currentUid: string, friendUsername: string): Pro
  */
 export const removeFriend = async (currentUid: string, friendUid: string): Promise<void> => {
     try {
-        console.log(`[UserService] Attempting to remove friend: currentUid=${currentUid}, friendUid=${friendUid}`);
+        if (__DEV__) console.log(`[UserService] Attempting to remove friend: currentUid=${currentUid ? currentUid.substring(0, 8) + '...' : 'NULL'}, friendUid=${friendUid ? friendUid.substring(0, 8) + '...' : 'NULL'}`);
 
         let docToDelete: FirebaseFirestoreTypes.QueryDocumentSnapshot | null = null;
 
@@ -308,26 +308,26 @@ export const removeFriend = async (currentUid: string, friendUid: string): Promi
                 .where('participants', 'array-contains', currentUid)
                 .get();
 
-            console.log(`[UserService] Participants query returned ${participantsSnapshot.size} docs`);
+            if (__DEV__) console.log(`[UserService] Participants query returned ${participantsSnapshot.size} docs`);
 
             docToDelete = participantsSnapshot.docs.find(doc => {
                 const data = doc.data();
                 return data.participants?.includes(friendUid);
             }) || null;
         } catch (e) {
-            console.log('[UserService] Participants query failed, trying fallback:', e);
+            if (__DEV__) console.log('[UserService] Participants query failed, trying fallback:', e?.message || 'Unknown error');
         }
 
         // Query 2: Check if current user is fromUid (without status filter)
         if (!docToDelete) {
-            console.log('[UserService] Trying fromUid query...');
+            if (__DEV__) console.log('[UserService] Trying fromUid query...');
             const fromSnapshot = await firestore()
                 .collection(FRIEND_REQUESTS_COLLECTION)
                 .where('fromUid', '==', currentUid)
                 .where('toUid', '==', friendUid)
                 .get();
 
-            console.log(`[UserService] fromUid query returned ${fromSnapshot.size} docs`);
+            if (__DEV__) console.log(`[UserService] fromUid query returned ${fromSnapshot.size} docs`);
             if (!fromSnapshot.empty) {
                 docToDelete = fromSnapshot.docs[0];
             }
@@ -335,30 +335,30 @@ export const removeFriend = async (currentUid: string, friendUid: string): Promi
 
         // Query 3: Check if current user is toUid (without status filter)
         if (!docToDelete) {
-            console.log('[UserService] Trying toUid query...');
+            if (__DEV__) console.log('[UserService] Trying toUid query...');
             const toSnapshot = await firestore()
                 .collection(FRIEND_REQUESTS_COLLECTION)
                 .where('fromUid', '==', friendUid)
                 .where('toUid', '==', currentUid)
                 .get();
 
-            console.log(`[UserService] toUid query returned ${toSnapshot.size} docs`);
+            if (__DEV__) console.log(`[UserService] toUid query returned ${toSnapshot.size} docs`);
             if (!toSnapshot.empty) {
                 docToDelete = toSnapshot.docs[0];
             }
         }
 
         if (docToDelete) {
-            console.log(`[UserService] Found doc to delete: ${docToDelete.id}`, docToDelete.data());
+            if (__DEV__) console.log(`[UserService] Found doc to delete: ${docToDelete.id ? docToDelete.id.substring(0, 8) + '...' : 'NULL'}`);
             await docToDelete.ref.delete();
-            console.log(`[UserService] Successfully removed friend relationship: ${docToDelete.id}`);
+            if (__DEV__) console.log(`[UserService] Successfully removed friend relationship: ${docToDelete.id ? docToDelete.id.substring(0, 8) + '...' : 'NULL'}`);
         } else {
-            console.log('[UserService] No relationship document found to delete - friendship may already be removed');
+            if (__DEV__) console.log('[UserService] No relationship document found to delete - friendship may already be removed');
             // Don't throw - the friendship might already be gone, which is the desired state
         }
 
     } catch (error: any) {
-        console.error('[UserService] Remove friend failed:', error.message || error);
+        if (__DEV__) console.error('[UserService] Remove friend failed:', error?.message || 'Unknown error');
         throw error;
     }
 };
@@ -375,9 +375,9 @@ export const toggleHiddenFriend = async (uid: string, friendUid: string, hide: b
                 : firestore.FieldValue.arrayRemove(friendUid),
             updatedAt: firestore.Timestamp.now(),
         });
-        console.log(`[UserService] Friend ${friendUid} pins ${hide ? 'hidden' : 'shown'} for user ${uid}`);
-    } catch (error) {
-        console.error('[UserService] Toggle hidden friend failed:', error);
+        if (__DEV__) console.log(`[UserService] Friend ${friendUid ? friendUid.substring(0, 8) + '...' : 'NULL'} pins ${hide ? 'hidden' : 'shown'} for user ${uid ? uid.substring(0, 8) + '...' : 'NULL'}`);
+    } catch (error: any) {
+        if (__DEV__) console.error('[UserService] Toggle hidden friend failed:', error?.message || 'Unknown error');
         throw error;
     }
 };
@@ -394,9 +394,9 @@ export const toggleHiddenPin = async (uid: string, pinId: string, hide: boolean)
                 : firestore.FieldValue.arrayRemove(pinId),
             updatedAt: firestore.Timestamp.now(),
         });
-        console.log(`[UserService] Pin ${pinId} ${hide ? 'hidden' : 'shown'} for user ${uid}`);
-    } catch (error) {
-        console.error('[UserService] Toggle hidden pin failed:', error);
+        if (__DEV__) console.log(`[UserService] Pin ${pinId ? pinId.substring(0, 8) + '...' : 'NULL'} ${hide ? 'hidden' : 'shown'} for user ${uid ? uid.substring(0, 8) + '...' : 'NULL'}`);
+    } catch (error: any) {
+        if (__DEV__) console.error('[UserService] Toggle hidden pin failed:', error?.message || 'Unknown error');
         throw error;
     }
 };
@@ -432,10 +432,10 @@ export const updatePrivacySettings = async (
             updatedAt: firestore.Timestamp.now(),
         });
 
-        console.log('[UserService] Privacy settings updated for:', uid);
+        if (__DEV__) console.log('[UserService] Privacy settings updated for:', uid ? uid.substring(0, 8) + '...' : 'NULL');
         invalidateProfileCache(uid);
-    } catch (error) {
-        console.error('[UserService] Update privacy settings failed:', error);
+    } catch (error: any) {
+        if (__DEV__) console.error('[UserService] Update privacy settings failed:', error?.message || 'Unknown error');
         throw error;
     }
 };
@@ -461,7 +461,7 @@ export const updateNotificationSettings = async (
 
         // Handle missing user doc
         if (!doc.exists) {
-            console.log('[UserService] Profile missing for settings update, creating default...');
+            if (__DEV__) console.log('[UserService] Profile missing for settings update, creating default...');
 
             const defaultSettings = {
                 globalEnabled: true,
@@ -529,8 +529,8 @@ export const updateNotificationSettings = async (
             notificationSettings: newSettings,
             updatedAt: firestore.Timestamp.now(),
         });
-    } catch (error) {
-        console.error('[UserService] Update notification settings failed:', error);
+    } catch (error: any) {
+        if (__DEV__) console.error('[UserService] Update notification settings failed:', error?.message || 'Unknown error');
         throw error;
     }
 };
@@ -572,17 +572,17 @@ export const getUserProfile = async (uid: string, skipCache = false): Promise<Us
                 // Alert for successful fetch (TEMPORARY DEBUG)
                 // Alert.alert('Debug: Profile Found', `Loaded: ${profile.username}`);
             } else {
-                console.log('[UserService] Profile not found in SDK');
+                if (__DEV__) console.log('[UserService] Profile not found in SDK');
                 // Don't alert missing here, might check REST
             }
-        } catch (sdkError) {
-            console.warn('[UserService] SDK Fetch failed/timed out:', sdkError);
+        } catch (sdkError: any) {
+            if (__DEV__) console.warn('[UserService] SDK Fetch failed/timed out:', sdkError?.message || 'Unknown error');
             useRestFallback = true;
         }
 
         // REST Fallback logic
         if (!profile || useRestFallback) {
-            console.log('[UserService] Attempting REST Fallback...');
+            if (__DEV__) console.log('[UserService] Attempting REST Fallback...');
             try {
                 const currentUser = auth().currentUser;
                 if (currentUser) {
@@ -599,14 +599,14 @@ export const getUserProfile = async (uid: string, skipCache = false): Promise<Us
                         // Parse Firestore JSON format
                         if (data && data.fields) {
                             profile = parseFirestoreProfile(data.fields);
-                            console.log('[UserService] REST Fetch Success:', profile?.username);
+                            if (__DEV__) console.log('[UserService] REST Fetch Success:', profile?.username || 'NONE');
                         }
                     } else {
-                        console.warn('[UserService] REST Fallback Failed:', response.status);
+                        if (__DEV__) console.warn('[UserService] REST Fallback Failed:', response.status);
                     }
                 }
             } catch (restError: any) {
-                console.error('[UserService] REST Error:', restError);
+                if (__DEV__) console.error('[UserService] REST Error:', restError?.message || 'Unknown error');
             }
         }
 
@@ -615,14 +615,14 @@ export const getUserProfile = async (uid: string, skipCache = false): Promise<Us
             profileCache.set(uid, { profile, timestamp: Date.now() });
             return profile;
         } else {
-            console.warn('[UserService] Profile missing for doc:', uid);
+            if (__DEV__) console.warn('[UserService] Profile missing for doc:', uid ? uid.substring(0, 8) + '...' : 'NULL');
         }
 
         return null;
     } catch (error: any) {
         const { Alert } = require('react-native');
         // Alert.alert('Debug: Fetch Error', `Error: ${error.message}`);
-        console.error('[UserService] Get profile failed:', error);
+        if (__DEV__) console.error('[UserService] Get profile failed:', error?.message || 'Unknown error');
         return null;
     }
 };
@@ -671,8 +671,8 @@ export const getUserByUsername = async (username: string): Promise<UserProfileWi
 
         const doc = snapshot.docs[0];
         return { uid: doc.id, ...(doc.data() as UserProfile) };
-    } catch (error) {
-        console.error('[UserService] Get user by username failed:', error);
+    } catch (error: any) {
+        if (__DEV__) console.error('[UserService] Get user by username failed:', error?.message || 'Unknown error');
         return null;
     }
 };
@@ -690,21 +690,21 @@ export const subscribeToUserProfile = (uid: string, onUpdate: (profile: UserProf
     // This ensures the UI unblocks even if waitForFirestore() takes too long
     timeoutId = setTimeout(async () => {
         if (!hasReceivedCallback) {
-            console.warn('[UserService] ⚠️ Profile subscription timeout - no callback received');
-            console.warn('[UserService] Attempting REST fallback via getUserProfile...');
+            if (__DEV__) console.warn('[UserService] ⚠️ Profile subscription timeout - no callback received');
+            if (__DEV__) console.warn('[UserService] Attempting REST fallback via getUserProfile...');
 
             // Try to fetch profile via REST as fallback
             try {
                 const profile = await getUserProfile(uid, true); // Skip cache
                 if (profile) {
-                    console.log('[UserService] ✅ REST Fallback successful in subscription:', profile.username);
+                    if (__DEV__) console.log('[UserService] ✅ REST Fallback successful in subscription:', profile.username || 'NONE');
                     onUpdate(profile);
                 } else {
-                    console.warn('[UserService] ❌ REST Fallback returned null');
+                    if (__DEV__) console.warn('[UserService] ❌ REST Fallback returned null');
                     onUpdate(null);
                 }
-            } catch (error) {
-                console.warn('[UserService] ❌ REST Fallback failed:', error);
+            } catch (error: any) {
+                if (__DEV__) console.warn('[UserService] ❌ REST Fallback failed:', error?.message || 'Unknown error');
                 onUpdate(null);
             }
             hasReceivedCallback = true;
@@ -714,24 +714,24 @@ export const subscribeToUserProfile = (uid: string, onUpdate: (profile: UserProf
     // Wait for Firestore to be ready before subscribing
     const { waitForFirestore } = require('./firebaseInitService');
 
-    console.log('[UserService] ========== subscribeToUserProfile START ==========');
-    console.log('[UserService] User ID:', uid);
-    console.log('[UserService] Timestamp:', new Date().toISOString());
-    console.log('[UserService] Calling waitForFirestore()...');
+    if (__DEV__) console.log('[UserService] ========== subscribeToUserProfile START ==========');
+    if (__DEV__) console.log('[UserService] User ID:', uid ? uid.substring(0, 8) + '...' : 'NULL');
+    if (__DEV__) console.log('[UserService] Timestamp:', new Date().toISOString());
+    if (__DEV__) console.log('[UserService] Calling waitForFirestore()...');
 
     const waitStartTime = Date.now();
     waitForFirestore()
         .then(() => {
             const waitDuration = Date.now() - waitStartTime;
-            console.log('[UserService] ✅ waitForFirestore() completed');
-            console.log('[UserService] Wait duration:', waitDuration + 'ms');
-            console.log('[UserService] Firestore ready, subscribing to profile for:', uid);
+            if (__DEV__) console.log('[UserService] ✅ waitForFirestore() completed');
+            if (__DEV__) console.log('[UserService] Wait duration:', waitDuration + 'ms');
+            if (__DEV__) console.log('[UserService] Firestore ready, subscribing to profile for:', uid ? uid.substring(0, 8) + '...' : 'NULL');
 
             // First, try a simple get() to verify Firestore connectivity
             const testRef = firestore().collection(USERS_COLLECTION).doc(uid);
-            console.log('[UserService] 🔍 Testing Firestore connectivity with get()...');
-            console.log('[UserService] Collection:', USERS_COLLECTION);
-            console.log('[UserService] Document ID:', uid);
+            if (__DEV__) console.log('[UserService] 🔍 Testing Firestore connectivity with get()...');
+            if (__DEV__) console.log('[UserService] Collection:', USERS_COLLECTION);
+            if (__DEV__) console.log('[UserService] Document ID:', uid ? uid.substring(0, 8) + '...' : 'NULL');
 
             const getStartTime = Date.now();
 
@@ -741,48 +741,48 @@ export const subscribeToUserProfile = (uid: string, onUpdate: (profile: UserProf
             const shouldPerformConnectivityCheck = Platform.OS === 'android';
 
             const startSubscription = () => {
-                console.log('[UserService] 📡 Starting onSnapshot subscription...');
+                if (__DEV__) console.log('[UserService] 📡 Starting onSnapshot subscription...');
                 try {
-                    console.log('[UserService] Creating document reference...');
+                    if (__DEV__) console.log('[UserService] Creating document reference...');
                     const docRef = firestore().collection(USERS_COLLECTION).doc(uid);
-                    console.log('[UserService] ✅ Document reference created');
-                    console.log('[UserService] Calling onSnapshot()...');
+                    if (__DEV__) console.log('[UserService] ✅ Document reference created');
+                    if (__DEV__) console.log('[UserService] Calling onSnapshot()...');
                     const snapshotStartTime = Date.now();
 
                     unsubscribe = docRef.onSnapshot(
                         (doc) => {
                             const snapshotDuration = Date.now() - snapshotStartTime;
-                            console.log('[UserService] 🎉 onSnapshot SUCCESS callback fired!');
-                            console.log('[UserService] Snapshot received after:', snapshotDuration + 'ms');
-                            console.log('[UserService] Document exists:', doc.exists);
+                            if (__DEV__) console.log('[UserService] 🎉 onSnapshot SUCCESS callback fired!');
+                            if (__DEV__) console.log('[UserService] Snapshot received after:', snapshotDuration + 'ms');
+                            if (__DEV__) console.log('[UserService] Document exists:', doc.exists);
                             hasReceivedCallback = true;
                             if (timeoutId) {
                                 clearTimeout(timeoutId);
                                 timeoutId = null;
                             }
 
-                            console.log('[UserService] ✅ Snapshot received for:', uid, 'Exists:', doc.exists);
+                            if (__DEV__) console.log('[UserService] ✅ Snapshot received for:', uid ? uid.substring(0, 8) + '...' : 'NULL', 'Exists:', doc.exists);
                             if (doc.exists) {
                                 onUpdate(doc.data() as UserProfile);
                             } else {
-                                console.log('[UserService] Profile document does not exist for:', uid);
+                                if (__DEV__) console.log('[UserService] Profile document does not exist for:', uid ? uid.substring(0, 8) + '...' : 'NULL');
                                 onUpdate(null);
                             }
                         },
-                        (error) => {
+                        (error: any) => {
                             hasReceivedCallback = true;
                             if (timeoutId) {
                                 clearTimeout(timeoutId);
                                 timeoutId = null;
                             }
 
-                            console.error('[UserService] ❌ Profile subscription error:', error);
-                            console.error('[UserService] Error code:', error.code);
-                            console.error('[UserService] Error message:', error.message);
+                            if (__DEV__) console.error('[UserService] ❌ Profile subscription error:', error?.message || 'Unknown error');
+                            if (__DEV__) console.error('[UserService] Error code:', error.code || 'N/A');
+                            if (__DEV__) console.error('[UserService] Error message:', error.message || 'Unknown error');
 
                             // If it's a permission error, call onUpdate(null) to unblock UI
                             if (error.code === 'permission-denied' || error.code === 'unauthenticated') {
-                                console.error('[UserService] Permission denied - user may not be authenticated or security rules blocking');
+                                if (__DEV__) console.error('[UserService] Permission denied - user may not be authenticated or security rules blocking');
                                 onUpdate(null);
                             } else {
                                 // For other errors, still call onUpdate(null) to prevent hang
@@ -796,7 +796,7 @@ export const subscribeToUserProfile = (uid: string, onUpdate: (profile: UserProf
                         clearTimeout(timeoutId);
                         timeoutId = null;
                     }
-                    console.error('[UserService] ❌ Failed to create subscription:', error);
+                    if (__DEV__) console.error('[UserService] ❌ Failed to create subscription:', error?.message || 'Unknown error');
                     onUpdate(null);
                 }
             };
@@ -805,31 +805,31 @@ export const subscribeToUserProfile = (uid: string, onUpdate: (profile: UserProf
                 testRef.get()
                     .then((testDoc) => {
                         const getDuration = Date.now() - getStartTime;
-                        console.log('[UserService] ✅ Firestore get() succeeded');
-                        console.log('[UserService] Get duration:', getDuration + 'ms');
-                        console.log('[UserService] Document exists:', testDoc.exists);
+                        if (__DEV__) console.log('[UserService] ✅ Firestore get() succeeded');
+                        if (__DEV__) console.log('[UserService] Get duration:', getDuration + 'ms');
+                        if (__DEV__) console.log('[UserService] Document exists:', testDoc.exists);
                         if (testDoc.exists) {
-                            console.log('[UserService] Document data keys:', Object.keys(testDoc.data() || {}));
+                            if (__DEV__) console.log('[UserService] Document data keys:', Object.keys(testDoc.data() || {}));
                         }
                         startSubscription();
                     })
                     .catch((getError: any) => {
-                        console.error('[UserService] ❌ Firestore get() failed:', getError);
-                        console.error('[UserService] Error code:', getError.code);
-                        console.error('[UserService] Error message:', getError.message);
+                        if (__DEV__) console.error('[UserService] ❌ Firestore get() failed:', getError?.message || 'Unknown error');
+                        if (__DEV__) console.error('[UserService] Error code:', getError.code || 'N/A');
+                        if (__DEV__) console.error('[UserService] Error message:', getError.message || 'Unknown error');
                         // On Android, if get() fails, we might still want to try onSnapshot or fail here.
                         startSubscription();
                     });
             } else {
-                console.log('[UserService] iOS: Skipping blocking get() check for speed (Safe Fix)');
+                if (__DEV__) console.log('[UserService] iOS: Skipping blocking get() check for speed (Safe Fix)');
                 startSubscription();
             }
 
 
         })
-        .catch((error) => {
-            console.error('[UserService] ❌ Failed to wait for Firestore:', error);
-            console.error('[UserService] Error details:', error);
+        .catch((error: any) => {
+            if (__DEV__) console.error('[UserService] ❌ Failed to wait for Firestore:', error?.message || 'Unknown error');
+            if (__DEV__) console.error('[UserService] Error details:', error?.message || 'Unknown error');
             // Still call onUpdate(null) to unblock the UI
             onUpdate(null);
         });
@@ -870,8 +870,8 @@ export const searchUsers = async (query: string): Promise<UserProfileWithUid[]> 
             users.push({ uid: doc.id, ...(doc.data() as UserProfile) });
         });
         return users;
-    } catch (error) {
-        console.error('[UserService] Search users failed:', error);
+    } catch (error: any) {
+        if (__DEV__) console.error('[UserService] Search users failed:', error?.message || 'Unknown error');
         return [];
     }
 };
@@ -898,8 +898,8 @@ export const getUsername = async (uid: string): Promise<string | null> => {
             return profile.username;
         }
         return null;
-    } catch (error) {
-        console.error('[UserService] Get username failed:', error);
+    } catch (error: any) {
+        if (__DEV__) console.error('[UserService] Get username failed:', error?.message || 'Unknown error');
         return null;
     }
 };
@@ -978,7 +978,7 @@ export const sendFriendRequest = async (currentUid: string, currentUsername: str
 
         return { success: true, message: 'Friend request sent!' };
     } catch (error: any) {
-        console.error('[UserService] Send request failed:', error);
+        if (__DEV__) console.error('[UserService] Send request failed:', error?.message || 'Unknown error');
         return { success: false, message: error.message || 'Failed to send request.' };
     }
 };
@@ -1002,8 +1002,8 @@ export const getFriendRequests = async (currentUid: string): Promise<FriendReque
 
         // Sort client-side
         return requests.sort((a, b) => b.createdAt?.seconds - a.createdAt?.seconds);
-    } catch (error) {
-        console.error('[UserService] Get requests failed:', error);
+    } catch (error: any) {
+        if (__DEV__) console.error('[UserService] Get requests failed:', error?.message || 'Unknown error');
         return [];
     }
 };
@@ -1026,8 +1026,8 @@ export const subscribeToFriendRequests = (currentUid: string, onUpdate: (request
                 requests.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
                 onUpdate(requests);
             },
-            (error) => {
-                console.error('[UserService] Friend request subscription error:', error);
+            (error: any) => {
+                if (__DEV__) console.error('[UserService] Friend request subscription error:', error?.message || 'Unknown error');
             }
         );
 };
@@ -1050,8 +1050,8 @@ export const acceptFriendRequest = async (requestId: string, currentUid: string,
             updatedAt: firestore.Timestamp.now(),
         });
 
-    } catch (error) {
-        console.error('[UserService] Accept request failed:', error);
+    } catch (error: any) {
+        if (__DEV__) console.error('[UserService] Accept request failed:', error?.message || 'Unknown error');
         throw error;
     }
 };
@@ -1100,8 +1100,8 @@ export const getFriends = async (currentUid: string): Promise<string[]> => {
         });
 
         return Array.from(friendIds);
-    } catch (error) {
-        console.error('[UserService] Get friends failed:', error);
+    } catch (error: any) {
+        if (__DEV__) console.error('[UserService] Get friends failed:', error?.message || 'Unknown error');
         return [];
     }
 };
@@ -1112,8 +1112,8 @@ export const getFriends = async (currentUid: string): Promise<string[]> => {
 export const rejectFriendRequest = async (requestId: string): Promise<void> => {
     try {
         await firestore().collection(FRIEND_REQUESTS_COLLECTION).doc(requestId).delete();
-    } catch (error) {
-        console.error('[UserService] Reject request failed:', error);
+    } catch (error: any) {
+        if (__DEV__) console.error('[UserService] Reject request failed:', error?.message || 'Unknown error');
         throw error;
     }
 };
@@ -1183,17 +1183,17 @@ export const deleteUserData = async (uid: string) => {
             const listResult = await storageRef.listAll();
             const deletePromises = listResult.items.map(item => item.delete());
             await Promise.all(deletePromises);
-            console.log(`[UserService] Deleted ${deletePromises.length} files from storage for user ${uid}`);
-        } catch (storageError) {
+            if (__DEV__) console.log(`[UserService] Deleted ${deletePromises.length} files from storage for user ${uid ? uid.substring(0, 8) + '...' : 'NULL'}`);
+        } catch (storageError: any) {
             // If folder doesn't exist or permission denied, just log it. 
             // We don't want to stop the account deletion process.
-            console.log('[UserService] Storage cleanup skipped or failed (might be empty):', storageError);
+            if (__DEV__) console.log('[UserService] Storage cleanup skipped or failed (might be empty):', storageError?.message || 'Unknown error');
         }
         await batch.commit();
-        console.log(`[UserService] Deleted data for user ${uid}`);
+        if (__DEV__) console.log(`[UserService] Deleted data for user ${uid ? uid.substring(0, 8) + '...' : 'NULL'}`);
         return true;
-    } catch (error) {
-        console.error('[UserService] Delete user data failed:', error);
+    } catch (error: any) {
+        if (__DEV__) console.error('[UserService] Delete user data failed:', error?.message || 'Unknown error');
         throw error;
     }
 };
@@ -1209,7 +1209,7 @@ export const deleteUserData = async (uid: string) => {
 export const addToBucketList = async (uid: string, item: BucketListItem): Promise<void> => {
     try {
         if (!item.locationName) {
-            console.error('[UserService] Invalid bucket list item:', item);
+            if (__DEV__) console.error('[UserService] Invalid bucket list item (sanitized for security)');
             return;
         }
 

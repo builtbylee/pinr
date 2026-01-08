@@ -80,8 +80,8 @@ export const DestinationCard: React.FC<DestinationCardProps> = ({ memory, onClos
                             // Close the card and deselect
                             selectMemory(null);
                             onClose();
-                        } catch (error) {
-                            console.error('[DestinationCard] Delete failed:', error);
+                        } catch (error: any) {
+                            if (__DEV__) console.error('[DestinationCard] Delete failed:', error?.message || 'Unknown error');
                             Alert.alert('Error', 'Failed to delete pin. Please try again.');
                         }
                     },

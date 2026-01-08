@@ -30,6 +30,20 @@ function fail(name, details = '') {
 }
 
 // AUTH
+// Helper function for fetch with timeout
+async function fetchWithTimeout(url, options = {}, timeoutMs = 30000) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+        const response = await fetch(url, { ...options, signal: controller.signal });
+        clearTimeout(timeoutId);
+        return response;
+    } catch (error) {
+        clearTimeout(timeoutId);
+        throw error;
+    }
+}
+
 async function getAccessToken() {
     const now = Math.floor(Date.now() / 1000);
     const payload = {
@@ -41,7 +55,7 @@ async function getAccessToken() {
         scope: 'https://www.googleapis.com/auth/datastore'
     };
     const token = jwt.sign(payload, serviceAccount.private_key, { algorithm: 'RS256' });
-    const response = await fetch('https://oauth2.googleapis.com/token', {
+    const response = await fetchWithTimeout('https://oauth2.googleapis.com/token', {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: `grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&assertion=${token}`
@@ -51,14 +65,14 @@ async function getAccessToken() {
 
 // FIRESTORE HELPERS
 async function firestoreGet(token, path) {
-    const response = await fetch(`${BASE_URL}/${path}`, {
+    const response = await fetchWithTimeout(`${BASE_URL}/${path}`, {
         headers: { 'Authorization': `Bearer ${token}` }
     });
     return response.json();
 }
 
 async function firestoreCreate(token, collection, data) {
-    const response = await fetch(`${BASE_URL}/${collection}`, {
+    const response = await fetchWithTimeout(`${BASE_URL}/${collection}`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ fields: toFirestore(data) })
@@ -68,7 +82,7 @@ async function firestoreCreate(token, collection, data) {
 
 async function firestorePatch(token, path, data) {
     const fieldPaths = Object.keys(data).map(k => `updateMask.fieldPaths=${k}`).join('&');
-    const response = await fetch(`${BASE_URL}/${path}?${fieldPaths}`, {
+    const response = await fetchWithTimeout(`${BASE_URL}/${path}?${fieldPaths}`, {
         method: 'PATCH',
         headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ fields: toFirestore(data) })
@@ -77,7 +91,7 @@ async function firestorePatch(token, path, data) {
 }
 
 async function firestoreDelete(token, path) {
-    await fetch(`${BASE_URL}/${path}`, {
+    await fetchWithTimeout(`${BASE_URL}/${path}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
     });
@@ -140,7 +154,7 @@ async function main() {
     const token = await getAccessToken();
 
     // Get test users
-    const usersResp = await fetch(`${BASE_URL}/users?pageSize=5`, { headers: { 'Authorization': `Bearer ${token}` } });
+    const usersResp = await fetchWithTimeout(`${BASE_URL}/users?pageSize=5`, { headers: { 'Authorization': `Bearer ${token}` } });
     const usersJson = await usersResp.json();
     if (!usersJson.documents || usersJson.documents.length < 2) {
         console.error('❌ Not enough users for testing'); process.exit(1);
@@ -151,7 +165,7 @@ async function main() {
     log(`Test Users: ${challenger.username} vs ${opponent.username}\n`);
 
     // Cleanup - delete existing test challenges
-    const cleanupResp = await fetch(`${BASE_URL}/game_challenges?pageSize=100`, { headers: { 'Authorization': `Bearer ${token}` } });
+    const cleanupResp = await fetchWithTimeout(`${BASE_URL}/game_challenges?pageSize=100`, { headers: { 'Authorization': `Bearer ${token}` } });
     const cleanupJson = await cleanupResp.json();
     let cleanedCount = 0;
     for (const doc of cleanupJson.documents || []) {
@@ -454,7 +468,7 @@ async function main() {
 
     // Test 6.1: Check Leaderboard Collection Exists
     {
-        const resp = await fetch(`${BASE_URL}/leaderboards?pageSize=1`, { headers: { 'Authorization': `Bearer ${token}` } });
+        const resp = await fetchWithTimeout(`${BASE_URL}/leaderboards?pageSize=1`, { headers: { 'Authorization': `Bearer ${token}` } });
         const json = await resp.json();
         if (resp.ok) pass('Leaderboard Collection', 'Accessible');
         else fail('Leaderboard Collection', 'Not accessible');

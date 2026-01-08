@@ -163,7 +163,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             }
 
         } catch (error: any) {
-            console.error('[Settings] Biometric Enable Error:', error);
+            if (__DEV__) console.error('[Settings] Biometric Enable Error:', error?.message || 'Unknown error');
             if (error.code === 'auth/wrong-password') {
                 setBiometricError('Incorrect password');
             } else {
@@ -247,8 +247,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                     pinColor: fProfile.pinColor
                                 });
                             }
-                        } catch (e) {
-                            console.warn('[Settings] Profile Fetch Error:', e);
+                        } catch (e: any) {
+                            if (__DEV__) console.warn('[Settings] Profile Fetch Error:', e?.message || 'Unknown error');
                         }
                     }
                     setFriends(friendList);
@@ -364,7 +364,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 }
                 await updateNotificationSettings(user.uid, { globalEnabled: value });
             } catch (error: any) {
-                console.error('[Settings] Failed to toggle push notifications:', error);
+                if (__DEV__) console.error('[Settings] Failed to toggle push notifications:', error?.message || 'Unknown error');
                 // Revert on failure
                 setPushEnabled(previousValue);
                 Alert.alert('Error', 'Failed to update notification settings. Please try again.');
@@ -398,8 +398,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 // Sync with global store so map updates immediately
                 const currentFriends = useMemoryStore.getState().friends;
                 useMemoryStore.getState().setFriends(currentFriends.filter(id => id !== friendUid));
-            } catch (error) {
-                console.error('[SettingsModal] Failed to remove friend:', error);
+            } catch (error: any) {
+                if (__DEV__) console.error('[SettingsModal] Failed to remove friend:', error?.message || 'Unknown error');
                 Alert.alert('Error', 'Failed to remove friend. Please try again.');
             }
         }
@@ -455,8 +455,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         try {
             await rejectFriendRequest(requestId);
             setFriendRequests(prev => prev.filter(r => r.id !== requestId));
-        } catch (e) {
-            console.error(e);
+        } catch (e: any) {
+            if (__DEV__) console.error('[SettingsModal] Reject friend request error:', e?.message || 'Unknown error');
         }
     };
 
@@ -508,7 +508,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             setNewPassword('');
             setConfirmPassword('');
         } catch (error: any) {
-            console.error('Change password failed:', error);
+            if (__DEV__) console.error('Change password failed:', error?.message || 'Unknown error');
             if (error.code === 'auth/wrong-password' || error.message?.includes('Incorrect')) {
                 setChangePasswordError('Current password is incorrect');
             } else if (error.code === 'auth/weak-password') {
@@ -542,7 +542,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 const { deleteUserData } = require('../services/userService');
                 await deleteUserData(user.uid);
             } catch (dataError: any) {
-                console.error('[Settings] Data deletion error:', dataError);
+                if (__DEV__) console.error('[Settings] Data deletion error:', dataError?.message || 'Unknown error');
                 // Prompt user to continue or abort
                 const forceDelete = await new Promise<boolean>((resolve) => {
                     Alert.alert(
@@ -568,7 +568,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             onClose();
 
         } catch (error: any) {
-            console.error('Delete failed:', error);
+            if (__DEV__) console.error('Delete failed:', error?.message || 'Unknown error');
             if (error.code === 'auth/wrong-password') {
                 setDeleteError('Incorrect password');
             } else {

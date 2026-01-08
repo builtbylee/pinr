@@ -126,7 +126,7 @@ export const CreationModal: React.FC<CreationModalProps> = ({ visible, onClose, 
             }
         } catch (error: any) {
             if (error.code !== 'E_PICKER_CANCELLED') {
-                console.error('[CreationModal] Error picking image:', error);
+                if (__DEV__) console.error('[CreationModal] Error picking image:', error?.message || 'Unknown error');
             }
         }
     };
@@ -157,8 +157,8 @@ export const CreationModal: React.FC<CreationModalProps> = ({ visible, onClose, 
         try {
             const results = await searchPlaces(query);
             setSuggestions(results);
-        } catch (error) {
-            console.error('[Autocomplete] Error fetching suggestions:', error);
+        } catch (error: any) {
+            if (__DEV__) console.error('[Autocomplete] Error fetching suggestions:', error?.message || 'Unknown error');
         } finally {
             setIsSearching(false);
         }
@@ -336,7 +336,7 @@ export const CreationModal: React.FC<CreationModalProps> = ({ visible, onClose, 
 
     // Initialize temp picker state when opening
     const openYearPicker = () => {
-        console.log('[CreationModal] Opening Year Picker');
+        if (__DEV__) console.log('[CreationModal] Opening Year Picker');
         setTempPickerYear(dayjs(currentDate).year());
         setTempPickerMonth(dayjs(currentDate).month());
         setShowYearPicker(true);
@@ -497,7 +497,7 @@ export const CreationModal: React.FC<CreationModalProps> = ({ visible, onClose, 
                                                     }
                                                 } catch (error: any) {
                                                     if (error.code !== 'E_PICKER_CANCELLED') {
-                                                        console.error('[CreationModal] Error opening native editor:', error);
+                                                        if (__DEV__) console.error('[CreationModal] Error opening native editor:', error?.message || 'Unknown error');
                                                         Alert.alert('Error', 'Failed to open photo editor');
                                                     }
                                                 }

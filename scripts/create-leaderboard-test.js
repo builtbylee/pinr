@@ -2,7 +2,21 @@ process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 
 const fetch = require('node-fetch');
 const jwt = require('jsonwebtoken');
-const serviceAccount = require('/Users/lee/Downloads/days-c4ad4-firebase-adminsdk-fbsvc-1c60eaee2a.json');
+const serviceAccount = require('/Users/lee/Downloads/days-c4ad4-firebase-adminsdk-fbsvc-1c60ee2a.json');
+
+// Helper function for fetch with timeout
+async function fetchWithTimeout(url, options = {}, timeoutMs = 30000) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+        const response = await fetch(url, { ...options, signal: controller.signal });
+        clearTimeout(timeoutId);
+        return response;
+    } catch (error) {
+        clearTimeout(timeoutId);
+        throw error;
+    }
+}
 
 // --- Helper: Get Access Token ---
 async function getAccessToken() {
@@ -16,7 +30,7 @@ async function getAccessToken() {
         scope: 'https://www.googleapis.com/auth/datastore'
     };
     const token = jwt.sign(payload, serviceAccount.private_key, { algorithm: 'RS256' });
-    const response = await fetch('https://oauth2.googleapis.com/token', {
+    const response = await fetchWithTimeout('https://oauth2.googleapis.com/token', {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: `grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&assertion=${token}`
@@ -52,7 +66,7 @@ async function main() {
 
         // A. Create User Profile
         console.log(`\nProcessing ${user.name} (${uid})...`);
-        await fetch(`https://firestore.googleapis.com/v1/projects/days-c4ad4/databases/(default)/documents/users/${uid}`, {
+        await fetchWithTimeout(`https://firestore.googleapis.com/v1/projects/days-c4ad4/databases/(default)/documents/users/${uid}`, {
             method: 'PATCH',
             headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -67,7 +81,7 @@ async function main() {
         });
 
         // B. Add Score to Leaderboard
-        await fetch(`https://firestore.googleapis.com/v1/projects/days-c4ad4/databases/(default)/documents/game_leaderboard`, {
+        await fetchWithTimeout(`https://firestore.googleapis.com/v1/projects/days-c4ad4/databases/(default)/documents/game_leaderboard`, {
             method: 'POST',
             headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -83,7 +97,7 @@ async function main() {
         });
 
         // C. Send Friend Request to leetest2
-        await fetch(`https://firestore.googleapis.com/v1/projects/days-c4ad4/databases/(default)/documents/friend_requests`, {
+        await fetchWithTimeout(`https://firestore.googleapis.com/v1/projects/days-c4ad4/databases/(default)/documents/friend_requests`, {
             method: 'POST',
             headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
             body: JSON.stringify({

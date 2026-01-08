@@ -59,10 +59,10 @@ async function ensureFirebaseReady() {
  * Sign in with Google
  */
 export const signInWithGoogle = async (): Promise<{ uid: string; email: string | null; displayName: string | null; isNewUser: boolean }> => {
-    console.log('[AuthService] ========== signInWithGoogle START ==========');
+    if (__DEV__) console.log('[AuthService] ========== signInWithGoogle START ==========');
 
     // Try to ensure Firebase is ready, but don't block if it fails
-    console.log('[AuthService] 🔍 Checking Firebase readiness...');
+    if (__DEV__) console.log('[AuthService] 🔍 Checking Firebase readiness...');
     try {
         await ensureFirebaseReady();
         if (__DEV__) console.log('[AuthService] ✅ Firebase is ready');

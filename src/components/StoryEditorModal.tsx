@@ -93,8 +93,8 @@ export const StoryEditorModal: React.FC<StoryEditorModalProps> = ({
                     Alert.alert('Error', result.error || 'Failed to create story.');
                 }
             }
-        } catch (e) {
-            console.error(e);
+        } catch (e: any) {
+            if (__DEV__) console.error('[StoryEditorModal] Error:', e?.message || 'Unknown error');
             Alert.alert('Error', 'An unexpected error occurred.');
         } finally {
             setIsSaving(false);

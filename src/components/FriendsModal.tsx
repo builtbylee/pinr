@@ -116,8 +116,8 @@ export const FriendsModal: React.FC<FriendsModalProps> = ({ visible, onClose, on
                                 pinColor: friendProfile.pinColor || 'orange',
                             });
                         }
-                    } catch (e) {
-                        console.warn('Error fetching profile for:', friendUid, e);
+                    } catch (e: any) {
+                        if (__DEV__) console.warn('Error fetching profile for:', friendUid ? friendUid.substring(0, 8) + '...' : 'NULL', e?.message || 'Unknown error');
                     }
                 }
                 // Sort alphabetically
@@ -126,8 +126,8 @@ export const FriendsModal: React.FC<FriendsModalProps> = ({ visible, onClose, on
             } else {
                 setFriends([]);
             }
-        } catch (error) {
-            console.error('Error loading friends list:', error);
+        } catch (error: any) {
+            if (__DEV__) console.error('Error loading friends list:', error?.message || 'Unknown error');
             // Don't throw, continue to requests
         }
 
@@ -135,8 +135,8 @@ export const FriendsModal: React.FC<FriendsModalProps> = ({ visible, onClose, on
         try {
             const requestsData = await getFriendRequests(currentUserId);
             setFriendRequests(requestsData);
-        } catch (error) {
-            console.error('Error loading friend requests:', error);
+        } catch (error: any) {
+            if (__DEV__) console.error('Error loading friend requests:', error?.message || 'Unknown error');
         }
     };
 
@@ -200,7 +200,7 @@ export const FriendsModal: React.FC<FriendsModalProps> = ({ visible, onClose, on
             await acceptFriendRequest(request.id, currentUserId, request.fromUid);
             loadFriendData();
         } catch (error: any) {
-            console.error('[FriendsModal] Accept failed:', error);
+            if (__DEV__) console.error('[FriendsModal] Accept failed:', error?.message || 'Unknown error');
             Alert.alert('Error', error.message || 'Failed to accept request');
         }
     };
@@ -280,8 +280,8 @@ export const FriendsModal: React.FC<FriendsModalProps> = ({ visible, onClose, on
                 Alert.alert('Invalid Code', 'Could not read username from QR code.');
                 setScanned(false);
             }
-        } catch (error) {
-            console.error('Scan error:', error);
+        } catch (error: any) {
+            if (__DEV__) console.error('Scan error:', error?.message || 'Unknown error');
             setScanned(false);
         } finally {
             setIsProcessingScan(false);

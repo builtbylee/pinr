@@ -38,11 +38,16 @@ async function getAccessToken() {
         scope: 'https://www.googleapis.com/auth/datastore'
     };
     const token = jwt.sign(payload, serviceAccount.private_key, { algorithm: 'RS256' });
+    // Add timeout to fetch call
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
     const response = await fetch('https://oauth2.googleapis.com/token', {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: `grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&assertion=${token}`
+        body: `grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&assertion=${token}`,
+        signal: controller.signal
     });
+    clearTimeout(timeoutId);
     return (await response.json()).access_token;
 }
 
@@ -57,11 +62,16 @@ async function main() {
         const query = 'London';
         // Use Authorization header instead of URL parameter for security
         const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json?types=place&limit=1`;
+        // Add timeout to fetch call
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
         const resp = await fetch(url, {
             headers: {
                 'Authorization': `Bearer ${MAPBOX_TOKEN}`
-            }
+            },
+            signal: controller.signal
         });
+        clearTimeout(timeoutId);
         if (resp.ok) {
             const data = await resp.json();
             if (data.features && data.features.length > 0) {
@@ -81,11 +91,15 @@ async function main() {
     console.log(`Using Test User: ${TEST_UID}`);
 
     // Create User Doc
+    const controller1 = new AbortController();
+    const timeoutId1 = setTimeout(() => controller1.abort(), 30000);
     await fetch(`${BASE_URL}/${USERS_COLLECTION}?documentId=${TEST_UID}`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fields: { username: { stringValue: 'ExplorerTest' }, bucketList: { arrayValue: { values: [] } } } })
+        body: JSON.stringify({ fields: { username: { stringValue: 'ExplorerTest' }, bucketList: { arrayValue: { values: [] } } } }),
+        signal: controller1.signal
     });
+    clearTimeout(timeoutId1);
 
     // Add Item
     const item = {
@@ -112,13 +126,19 @@ async function main() {
     });
 
     // Simplification for REST Script: READ -> PUSH -> WRITE
+    const controller2 = new AbortController();
+    const timeoutId2 = setTimeout(() => controller2.abort(), 30000);
     const readResp = await fetch(`${BASE_URL}/${USERS_COLLECTION}/${TEST_UID}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
+        headers: { 'Authorization': `Bearer ${token}` },
+        signal: controller2.signal
     });
+    clearTimeout(timeoutId2);
     const readDoc = await readResp.json();
     let currentBucket = readDoc.fields.bucketList?.arrayValue?.values || [];
     currentBucket.push(firestoreItem);
 
+    const controller3 = new AbortController();
+    const timeoutId3 = setTimeout(() => controller3.abort(), 30000);
     const updateResp = await fetch(`${BASE_URL}/${USERS_COLLECTION}/${TEST_UID}?updateMask.fieldPaths=bucketList`, {
         method: 'PATCH',
         headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
@@ -126,8 +146,10 @@ async function main() {
             fields: {
                 bucketList: { arrayValue: { values: currentBucket } }
             }
-        })
+        }),
+        signal: controller3.signal
     });
+    clearTimeout(timeoutId3);
 
     if (updateResp.ok) {
         console.log('✅ Bucket List Updated');
@@ -137,9 +159,13 @@ async function main() {
     }
 
     // Verify
+    const controller4 = new AbortController();
+    const timeoutId4 = setTimeout(() => controller4.abort(), 30000);
     const verifyResp = await fetch(`${BASE_URL}/${USERS_COLLECTION}/${TEST_UID}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
+        headers: { 'Authorization': `Bearer ${token}` },
+        signal: controller4.signal
     });
+    clearTimeout(timeoutId4);
     const verifyDoc = await verifyResp.json();
     const list = verifyDoc.fields.bucketList.arrayValue.values;
     const hasItem = list.some(i => i.mapValue.fields.locationName.stringValue === 'Eiffel Tower');
@@ -152,10 +178,14 @@ async function main() {
 
     // Cleanup
     console.log('\n--- Cleanup ---');
+    const controller5 = new AbortController();
+    const timeoutId5 = setTimeout(() => controller5.abort(), 30000);
     await fetch(`${BASE_URL}/${USERS_COLLECTION}/${TEST_UID}`, {
         method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` }
+        headers: { 'Authorization': `Bearer ${token}` },
+        signal: controller5.signal
     });
+    clearTimeout(timeoutId5);
     console.log('✅ Test User Deleted');
 }
 

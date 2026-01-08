@@ -39,13 +39,13 @@ export const addPin = async (memory: Memory): Promise<string> => {
         };
 
         const docRef = await firestore().collection(PINS_COLLECTION).add(pinData);
-        console.log('[Firestore] Pin added:', docRef.id);
+        if (__DEV__) console.log('[Firestore] Pin added:', docRef.id ? docRef.id.substring(0, 8) + '...' : 'NULL');
 
 
 
         return docRef.id;
-    } catch (error) {
-        console.error('[Firestore] Add pin failed:', error);
+    } catch (error: any) {
+        if (__DEV__) console.error('[Firestore] Add pin failed:', error?.message || 'Unknown error');
         throw error;
     }
 };
@@ -56,9 +56,9 @@ export const addPin = async (memory: Memory): Promise<string> => {
 export const deletePin = async (pinId: string): Promise<void> => {
     try {
         await firestore().collection(PINS_COLLECTION).doc(pinId).delete();
-        console.log('[Firestore] Pin deleted:', pinId);
-    } catch (error) {
-        console.error('[Firestore] Delete pin failed:', error);
+        if (__DEV__) console.log('[Firestore] Pin deleted:', pinId ? pinId.substring(0, 8) + '...' : 'NULL');
+    } catch (error: any) {
+        if (__DEV__) console.error('[Firestore] Delete pin failed:', error?.message || 'Unknown error');
         throw error;
     }
 };
@@ -86,9 +86,9 @@ export const updatePin = async (pinId: string, updates: Partial<Memory>): Promis
         Object.keys(pinUpdates).forEach(key => pinUpdates[key as keyof FirestorePin] === undefined && delete pinUpdates[key as keyof FirestorePin]);
 
         await firestore().collection(PINS_COLLECTION).doc(pinId).update(pinUpdates);
-        console.log('[Firestore] Pin updated:', pinId);
-    } catch (error) {
-        console.error('[Firestore] Update pin failed:', error);
+        if (__DEV__) console.log('[Firestore] Pin updated:', pinId ? pinId.substring(0, 8) + '...' : 'NULL');
+    } catch (error: any) {
+        if (__DEV__) console.error('[Firestore] Update pin failed:', error?.message || 'Unknown error');
         throw error;
     }
 };
@@ -139,9 +139,9 @@ export const subscribeToPins = (
 
         // Opportunistically delete expired pins
         if (expiredPinIds.length > 0) {
-            console.log('[Firestore] Found expired pins (cleanup):', expiredPinIds.length);
+            if (__DEV__) console.log('[Firestore] Found expired pins (cleanup):', expiredPinIds.length);
             // We don't wait for this; fire and forget
-            expiredPinIds.forEach(id => deletePin(id).catch(err => console.warn('Failed to delete expired pin:', id, err)));
+            expiredPinIds.forEach(id => deletePin(id).catch(err => { if (__DEV__) console.warn('Failed to delete expired pin:', id ? id.substring(0, 8) + '...' : 'NULL', err?.message || 'Unknown error'); }));
         }
 
         callback(memories);
@@ -154,7 +154,7 @@ export const subscribeToPins = (
 
     waitForFirestore()
         .then(() => {
-            console.log('[Firestore] Firestore ready, subscribing to pins...');
+            if (__DEV__) console.log('[Firestore] Firestore ready, subscribing to pins...');
 
             // Set timeout: if no snapshot after 10s (Android) or 500ms (iOS), call REST fallback
             // AGGRESSIVE FIX: Go to REST almost immediately on iOS (onSnapshot is too slow)
@@ -162,7 +162,7 @@ export const subscribeToPins = (
 
             timeoutId = setTimeout(async () => {
                 if (!hasReceivedSnapshot) {
-                    console.warn(`[Firestore] ⚠️ Pins subscription timeout after ${timeoutMs}ms, trying REST API query...`);
+                    if (__DEV__) console.warn(`[Firestore] ⚠️ Pins subscription timeout after ${timeoutMs}ms, trying REST API query...`);
                     // Alert.alert('Debug: Pins Timeout', 'SDK timed out, trying REST...');
                     try {
                         // Use REST API to query pins collection
@@ -198,7 +198,7 @@ export const subscribeToPins = (
 
                             if (response.ok) {
                                 const results = await response.json();
-                                console.log('[Firestore] ✅ REST query succeeded, results:', results.length);
+                                if (__DEV__) console.log('[Firestore] ✅ REST query succeeded, results:', results.length);
 
                                 // Parse REST API response (array of result objects)
                                 rawPins = [];
@@ -236,15 +236,15 @@ export const subscribeToPins = (
                                 processPins();
                                 hasReceivedSnapshot = true;
                             } else {
-                                console.error('[Firestore] ❌ REST query failed:', response.status);
+                                if (__DEV__) console.error('[Firestore] ❌ REST query failed:', response.status);
                                 callback([]);
                             }
                         } else {
-                            console.error('[Firestore] ❌ No authenticated user for REST fallback');
+                            if (__DEV__) console.error('[Firestore] ❌ No authenticated user for REST fallback');
                             callback([]);
                         }
                     } catch (error: any) {
-                        console.error('[Firestore] ❌ REST query failed:', error);
+                        if (__DEV__) console.error('[Firestore] ❌ REST query failed:', error?.message || 'Unknown error');
                         callback([]);
                     }
                 }
@@ -255,7 +255,7 @@ export const subscribeToPins = (
                 .orderBy('createdAt', 'desc')
                 .onSnapshot(
                     (snapshot) => {
-                        console.log('[Firestore] ✅ Pins snapshot received, count:', snapshot.docs.length);
+                        if (__DEV__) console.log('[Firestore] ✅ Pins snapshot received, count:', snapshot.docs.length);
                         hasReceivedSnapshot = true;
                         if (timeoutId) {
                             clearTimeout(timeoutId);
@@ -268,10 +268,10 @@ export const subscribeToPins = (
                         // Process immediately
                         processPins();
                     },
-                    (error) => {
-                        console.error('[Firestore] ❌ Pins snapshot error:', error);
-                        console.error('[Firestore] Error code:', error.code);
-                        console.error('[Firestore] Error message:', error.message);
+                    (error: any) => {
+                        if (__DEV__) console.error('[Firestore] ❌ Pins snapshot error:', error?.message || 'Unknown error');
+                        if (__DEV__) console.error('[Firestore] Error code:', error.code || 'N/A');
+                        if (__DEV__) console.error('[Firestore] Error message:', error.message || 'Unknown error');
                         // Call callback with empty array on error to prevent hang
                         callback([]);
                     }
@@ -280,8 +280,8 @@ export const subscribeToPins = (
             // Setup interval to re-check every 30 seconds (in case app stays open)
             intervalId = setInterval(processPins, 30000);
         })
-        .catch((error) => {
-            console.error('[Firestore] ❌ Failed to wait for Firestore:', error);
+        .catch((error: any) => {
+            if (__DEV__) console.error('[Firestore] ❌ Failed to wait for Firestore:', error?.message || 'Unknown error');
             // Call callback with empty array to prevent hang
             callback([]);
         });

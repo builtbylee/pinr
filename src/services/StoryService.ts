@@ -50,11 +50,11 @@ class StoryService {
                 return { success: false, error: response.error || 'Failed to create story' };
             }
 
-            console.log('[StoryService] Created story via Cloud Function:', response.storyId);
+            if (__DEV__) console.log('[StoryService] Created story via Cloud Function:', response.storyId ? response.storyId.substring(0, 8) + '...' : 'NULL');
             return { success: true, storyId: response.storyId };
 
         } catch (error: any) {
-            console.error('[StoryService] Error creating story:', error);
+            if (__DEV__) console.error('[StoryService] Error creating story:', error?.message || 'Unknown error');
             // Handle specific error codes
             if (error.code === 'functions/resource-exhausted') {
                 return { success: false, error: `You can only have up to ${MAX_STORIES_PER_USER} stories.` };
@@ -80,7 +80,7 @@ class StoryService {
         friends: string[]
     ): Promise<{ success: boolean; storyId?: string; error?: string }> {
         try {
-            console.log('[StoryService] Starting batch story creation:', storyTitle);
+            if (__DEV__) console.log('[StoryService] Starting batch story creation:', storyTitle || 'NONE');
 
             // 1. Validate limits
             if (pinDrafts.length > MAX_PINS_PER_STORY) {
@@ -119,10 +119,10 @@ class StoryService {
                     };
 
                     const newPinId = await addPin(pinData as any);
-                    console.log('[StoryService] Created pin:', newPinId);
+                    if (__DEV__) console.log('[StoryService] Created pin:', newPinId ? newPinId.substring(0, 8) + '...' : 'NULL');
                     return newPinId;
-                } catch (pinError) {
-                    console.error('[StoryService] Error creating pin:', pinError);
+                } catch (pinError: any) {
+                    if (__DEV__) console.error('[StoryService] Error creating pin:', pinError?.message || 'Unknown error');
                     return null;
                 }
             });
@@ -153,11 +153,11 @@ class StoryService {
                 notificationService.notifyNewStory(friendUid, creatorName, storyTitle);
             }
 
-            console.log('[StoryService] Story created successfully:', result.storyId);
+            if (__DEV__) console.log('[StoryService] Story created successfully:', result.storyId ? result.storyId.substring(0, 8) + '...' : 'NULL');
             return result;
 
-        } catch (error) {
-            console.error('[StoryService] Error in batch story creation:', error);
+        } catch (error: any) {
+            if (__DEV__) console.error('[StoryService] Error in batch story creation:', error?.message || 'Unknown error');
             return { success: false, error: 'Failed to create story.' };
         }
     }
@@ -172,7 +172,7 @@ class StoryService {
         pinDrafts: PinDraft[]
     ): Promise<{ success: boolean; error?: string }> {
         try {
-            console.log('[StoryService] Starting story update:', storyTitle);
+            if (__DEV__) console.log('[StoryService] Starting story update:', storyTitle || 'NONE');
             const { updatePin } = require('./firestoreService');
 
             // 1. Separate new vs existing pins
@@ -205,8 +205,8 @@ class StoryService {
                         const newPinId = await addPin(pinData as any);
                         newPinIdMap[draft.tempId] = newPinId;
                         return newPinId;
-                    } catch (e) {
-                        console.error('[StoryService] Error creating new pin for update:', e);
+                    } catch (e: any) {
+                        if (__DEV__) console.error('[StoryService] Error creating new pin for update:', e?.message || 'Unknown error');
                         return null;
                     }
                 });
@@ -224,8 +224,8 @@ class StoryService {
                         locationName: draft.location?.name,
                         date: draft.visitDate ? new Date(draft.visitDate).toISOString() : undefined
                     });
-                } catch (e) {
-                    console.error('[StoryService] Error updating pin:', draft.tempId, e);
+                } catch (e: any) {
+                    if (__DEV__) console.error('[StoryService] Error updating pin:', draft.tempId ? draft.tempId.substring(0, 8) + '...' : 'NULL', e?.message || 'Unknown error');
                 }
             });
             await Promise.all(updatePromises);
@@ -247,8 +247,8 @@ class StoryService {
 
             return { success: true };
 
-        } catch (error) {
-            console.error('[StoryService] Error in updateStoryWithPhotos:', error);
+        } catch (error: any) {
+            if (__DEV__) console.error('[StoryService] Error in updateStoryWithPhotos:', error?.message || 'Unknown error');
             return { success: false, error: 'Failed to update story.' };
         }
     }
@@ -267,10 +267,10 @@ class StoryService {
                 updatedAt: Date.now(),
             });
 
-            console.log('[StoryService] Updated story:', storyId);
+            if (__DEV__) console.log('[StoryService] Updated story:', storyId ? storyId.substring(0, 8) + '...' : 'NULL');
             return { success: true };
-        } catch (error) {
-            console.error('[StoryService] Error updating story:', error);
+        } catch (error: any) {
+            if (__DEV__) console.error('[StoryService] Error updating story:', error?.message || 'Unknown error');
             return { success: false, error: 'Failed to update story.' };
         }
     }
@@ -286,18 +286,18 @@ class StoryService {
 
             // 2. Delete all associated pins
             if (story.pinIds && story.pinIds.length > 0) {
-                console.log(`[StoryService] Deleting ${story.pinIds.length} pins for story ${storyId}`);
+                if (__DEV__) console.log(`[StoryService] Deleting ${story.pinIds.length} pins for story ${storyId ? storyId.substring(0, 8) + '...' : 'NULL'}`);
                 await Promise.all(story.pinIds.map(pinId => deletePin(pinId).catch(e => {
-                    console.warn(`[StoryService] Failed to delete pin ${pinId}:`, e);
+                    if (__DEV__) console.warn(`[StoryService] Failed to delete pin ${pinId ? pinId.substring(0, 8) + '...' : 'NULL'}:`, e?.message || 'Unknown error');
                 })));
             }
 
             // 3. Delete story document
             await firestore().collection(STORIES_COLLECTION).doc(storyId).delete();
-            console.log('[StoryService] Deleted story:', storyId);
+            if (__DEV__) console.log('[StoryService] Deleted story:', storyId ? storyId.substring(0, 8) + '...' : 'NULL');
             return true;
-        } catch (error) {
-            console.error('[StoryService] Error deleting story:', error);
+        } catch (error: any) {
+            if (__DEV__) console.error('[StoryService] Error deleting story:', error?.message || 'Unknown error');
             return false;
         }
     }
@@ -314,8 +314,8 @@ class StoryService {
                 .get();
 
             return snapshot.docs.map(doc => doc.data() as Story);
-        } catch (error) {
-            console.error('[StoryService] Error fetching user stories:', error);
+        } catch (error: any) {
+            if (__DEV__) console.error('[StoryService] Error fetching user stories:', error?.message || 'Unknown error');
             return [];
         }
     }
@@ -330,8 +330,8 @@ class StoryService {
                 return doc.data() as Story;
             }
             return null;
-        } catch (error) {
-            console.error('[StoryService] Error fetching story:', error);
+        } catch (error: any) {
+            if (__DEV__) console.error('[StoryService] Error fetching story:', error?.message || 'Unknown error');
             return null;
         }
     }
@@ -378,7 +378,7 @@ class StoryService {
 
         timeoutId = setTimeout(async () => {
             if (!hasReceivedSnapshot) {
-                console.warn(`[StoryService] ⚠️ Stories subscription timeout after ${timeoutMs}ms, trying REST API...`);
+                if (__DEV__) console.warn(`[StoryService] ⚠️ Stories subscription timeout after ${timeoutMs}ms, trying REST API...`);
                 try {
                     const auth = require('@react-native-firebase/auth').default;
                     const currentUser = auth().currentUser;
@@ -419,7 +419,7 @@ class StoryService {
 
                         if (response.ok) {
                             const results = await response.json();
-                            console.log(`[StoryService] ✅ REST query succeeded, found ${results.length - 1} possible stories`); // -1 because runQuery often returns a readTime only object at end
+                            if (__DEV__) console.log(`[StoryService] ✅ REST query succeeded, found ${results.length - 1} possible stories`); // -1 because runQuery often returns a readTime only object at end
 
                             const stories: Story[] = [];
                             for (const result of results) {
@@ -441,11 +441,11 @@ class StoryService {
                             callback(stories);
 
                         } else {
-                            console.error('[StoryService] ❌ REST query failed:', response.status);
+                            if (__DEV__) console.error('[StoryService] ❌ REST query failed:', response.status);
                         }
                     }
-                } catch (e) {
-                    console.error('[StoryService] ❌ REST query error:', e);
+                } catch (e: any) {
+                    if (__DEV__) console.error('[StoryService] ❌ REST query error:', e?.message || 'Unknown error');
                 }
             }
         }, timeoutMs);
@@ -465,9 +465,9 @@ class StoryService {
                 },
                 (error: any) => {
                     if (error?.code === 'firestore/permission-denied') {
-                        console.log('[StoryService] Subscription ended (user logged out)');
+                        if (__DEV__) console.log('[StoryService] Subscription ended (user logged out)');
                     } else {
-                        console.error('[StoryService] Subscription error:', error);
+                        if (__DEV__) console.error('[StoryService] Subscription error:', error?.message || 'Unknown error');
                     }
                 }
             );
