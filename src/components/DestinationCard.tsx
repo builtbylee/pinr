@@ -267,8 +267,8 @@ const styles = StyleSheet.create({
         width: '100%',
     },
     blurOverlayAndroid: {
-        // Higher opacity on Android to compensate for grainy blur
-        backgroundColor: 'rgba(255, 255, 255, 0.3)',
+        // TEST: High opacity (80%) to verify changes are being applied
+        backgroundColor: 'rgba(255, 255, 255, 0.8)',
     },
     frostedPill: {
         flexDirection: 'column',
