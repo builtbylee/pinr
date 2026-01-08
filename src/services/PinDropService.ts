@@ -97,6 +97,9 @@ class PinDropService {
     private timerInterval: NodeJS.Timeout | null = null;
     private startTime: number = 0;
     private listeners: ((state: PinDropState) => void)[] = [];
+    private isTimerPaused: boolean = false;
+    private pausedAtTime: number = 0;
+    private pausedElapsed: number = 0;
 
     constructor() {
         this.state = this.getInitialState();
@@ -205,9 +208,13 @@ class PinDropService {
 
     private startTimer() {
         if (this.timerInterval) clearInterval(this.timerInterval);
+        this.isTimerPaused = false;
+        this.pausedElapsed = 0;
 
         this.timerInterval = setInterval(() => {
-            const elapsed = Math.floor((Date.now() - this.startTime) / 1000);
+            if (this.isTimerPaused) return; // Don't update when paused
+
+            const elapsed = Math.floor((Date.now() - this.startTime) / 1000) - this.pausedElapsed;
             const remaining = ROUND_TIME[this.state.difficulty] - elapsed;
 
             if (remaining <= 0) {
@@ -232,6 +239,29 @@ class PinDropService {
         if (this.timerInterval) {
             clearInterval(this.timerInterval);
             this.timerInterval = null;
+        }
+        this.isTimerPaused = false;
+        this.pausedElapsed = 0;
+    }
+
+    // Battery optimization: Pause timer when app is backgrounded
+    pauseTimer() {
+        if (this.timerInterval && this.state.isPlaying && !this.isTimerPaused) {
+            this.isTimerPaused = true;
+            this.pausedAtTime = Date.now();
+            // Calculate elapsed time so far
+            const currentElapsed = Math.floor((this.pausedAtTime - this.startTime) / 1000);
+            this.pausedElapsed = currentElapsed;
+        }
+    }
+
+    // Resume timer when app becomes active
+    resumeTimer() {
+        if (this.isTimerPaused && this.state.isPlaying) {
+            this.isTimerPaused = false;
+            // Adjust startTime to account for paused duration
+            const pauseDuration = Math.floor((Date.now() - this.pausedAtTime) / 1000);
+            this.startTime += pauseDuration * 1000; // Add pause duration to startTime
         }
     }
 

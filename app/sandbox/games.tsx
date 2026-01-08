@@ -1,6 +1,6 @@
 import firestore from '@react-native-firebase/firestore';
 import React, { useEffect, useState, useRef, useMemo } from 'react';
-import { StyleSheet, Text, View, TouchableOpacity, ScrollView, Animated, Modal, ActivityIndicator, FlatList, BackHandler, useWindowDimensions } from 'react-native';
+import { StyleSheet, Text, View, TouchableOpacity, ScrollView, Animated, Modal, ActivityIndicator, FlatList, BackHandler, useWindowDimensions, AppState, AppStateStatus } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 import { Feather } from '@expo/vector-icons';
@@ -180,10 +180,20 @@ export default function GameSandbox() {
             const Platform = require('react-native').Platform;
 
             if (Platform.OS === 'ios') {
-                // iOS: REST API Fallback
+                // iOS: REST API Fallback (gRPC hangs on iOS)
+                // Battery optimization: Increased interval and pause when backgrounded
                 const { RestService } = require('@/src/services/RestService');
 
+                let intervalId: NodeJS.Timeout | null = null;
+                const POLL_INTERVAL_ACTIVE = 30000; // 30 seconds when active (reduced from 10s for battery)
+                const POLL_INTERVAL_BACKGROUND = 60000; // 60 seconds when backgrounded
+
                 const pollGames = () => {
+                    // Don't poll if app is backgrounded
+                    if (AppState.currentState !== 'active') {
+                        return;
+                    }
+
                     if (__DEV__) console.log('[GameSandbox] 🔄 iOS: Polling REST API...');
                     RestService.fetchActiveGames(uid).then((res: { active: any[], pending: any[] }) => {
                         if (__DEV__) console.log(`[GameSandbox] REST Success: ${res.active.length} active, ${res.pending.length} pending`);
@@ -196,12 +206,33 @@ export default function GameSandbox() {
                     });
                 };
 
-                // Initial fetch + poll every 10s
+                const startPolling = (interval: number) => {
+                    if (intervalId) clearInterval(intervalId);
+                    intervalId = setInterval(pollGames, interval);
+                };
+
+                // Initial fetch
                 pollGames();
-                const intervalId = setInterval(pollGames, 10000);
+                // Start with active interval
+                startPolling(POLL_INTERVAL_ACTIVE);
+
+                // Battery optimization: Adjust polling frequency based on app state
+                const appStateSubscription = AppState.addEventListener('change', (nextAppState: AppStateStatus) => {
+                    if (nextAppState === 'active') {
+                        // App became active - resume faster polling
+                        startPolling(POLL_INTERVAL_ACTIVE);
+                        // Immediate poll when becoming active
+                        pollGames();
+                    } else {
+                        // App backgrounded - reduce polling frequency
+                        startPolling(POLL_INTERVAL_BACKGROUND);
+                    }
+                });
+
                 const originalUnsub = unsubChallenges;
                 unsubChallenges = () => {
-                    clearInterval(intervalId);
+                    if (intervalId) clearInterval(intervalId);
+                    appStateSubscription.remove();
                     if (originalUnsub) originalUnsub();
                 };
             } else {

@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState, useRef } from 'react';
-import { StyleSheet, View, Text, TouchableOpacity, Animated, useWindowDimensions, ActivityIndicator } from 'react-native';
+import { StyleSheet, View, Text, TouchableOpacity, Animated, useWindowDimensions, ActivityIndicator, AppState, AppStateStatus } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { Image } from 'expo-image';
@@ -36,9 +36,27 @@ export const TravelBattleGame: React.FC<TravelBattleGameProps> = ({ difficulty, 
         const unsubscribe = gameService.subscribe(setState);
         gameService.startGame(difficulty, gameMode);
 
+        // Battery optimization: Pause game timer when app is backgrounded
+        const handleAppStateChange = (nextAppState: AppStateStatus) => {
+            if (nextAppState === 'background' || nextAppState === 'inactive') {
+                // Pause timer when backgrounded
+                if (gameService.getState().isPlaying) {
+                    gameService.pauseTimer?.();
+                }
+            } else if (nextAppState === 'active') {
+                // Resume timer when app becomes active (if game is still playing)
+                if (gameService.getState().isPlaying) {
+                    gameService.resumeTimer?.();
+                }
+            }
+        };
+
+        const appStateSubscription = AppState.addEventListener('change', handleAppStateChange);
+
         return () => {
             gameService.stopGame();
             unsubscribe();
+            appStateSubscription.remove();
         };
     }, []);
 

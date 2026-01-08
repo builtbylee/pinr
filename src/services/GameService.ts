@@ -60,6 +60,9 @@ const HIGH_SCORE_PREFIX = 'flagdash_highscore_';
 class GameService {
     private state: GameState;
     private timerInterval: NodeJS.Timeout | null = null;
+    private isTimerPaused: boolean = false;
+    private pausedAtTime: number = 0;
+    private pausedTimeLeft: number = 0;
     private onStateChange: ((state: GameState) => void) | null = null;
     private startTime: number = 0;
     private ROUND_TIME = 30;
@@ -181,7 +184,9 @@ class GameService {
 
     private startTimer() {
         if (this.timerInterval) clearInterval(this.timerInterval);
+        this.isTimerPaused = false;
         this.timerInterval = setInterval(() => {
+            if (this.isTimerPaused) return; // Don't decrement when paused
             if (this.state.timeLeft > 0) {
                 this.state.timeLeft -= 1;
                 this.emit();
@@ -189,6 +194,23 @@ class GameService {
                 this.endGame();
             }
         }, 1000);
+    }
+
+    // Battery optimization: Pause timer when app is backgrounded
+    public pauseTimer() {
+        if (this.timerInterval && this.state.isPlaying && !this.isTimerPaused) {
+            this.isTimerPaused = true;
+            this.pausedTimeLeft = this.state.timeLeft;
+            this.pausedAtTime = Date.now();
+        }
+    }
+
+    // Resume timer when app becomes active
+    public resumeTimer() {
+        if (this.isTimerPaused && this.state.isPlaying) {
+            this.isTimerPaused = false;
+            // Timer will resume automatically in the interval
+        }
     }
 
     public submitAnswer(optionId: string): boolean {
@@ -300,6 +322,7 @@ class GameService {
 
     public stopGame() {
         if (this.timerInterval) clearInterval(this.timerInterval);
+        this.isTimerPaused = false;
         this.state.isPlaying = false;
         this.emit();
     }

@@ -39,8 +39,17 @@ export const useMapClusters = ({ points, bounds, zoom }: UseMapClustersProps) =>
     }, [points]);
 
     // Update clusters when bounds/zoom change
+    // Battery optimization: Skip clustering when zoomed in very close (individual pins visible)
     useEffect(() => {
         if (superclusterRef.current && points.length > 0) {
+            // Battery optimization: When zoomed in very close (zoom > 8), show individual pins
+            // Clustering is only needed at lower zoom levels
+            if (zoom > 8) {
+                // At high zoom, return individual points (no clustering needed)
+                setClusters(points);
+                return;
+            }
+
             // Get clusters for current view
             try {
                 // FIX: Always use world bounds to ensure pins render immediately.
@@ -50,7 +59,7 @@ export const useMapClusters = ({ points, bounds, zoom }: UseMapClustersProps) =>
                 const clusteredPoints = superclusterRef.current.getClusters(worldBounds, Math.floor(zoom));
                 setClusters(clusteredPoints);
             } catch (error) {
-                console.warn('[useMapClusters] Failed to get clusters:', error);
+                if (__DEV__) console.warn('[useMapClusters] Failed to get clusters:', error);
                 setClusters([]);
             }
         } else if (points.length === 0) {

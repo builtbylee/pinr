@@ -6,7 +6,7 @@
  */
 
 import React, { useState, useEffect, useRef } from 'react';
-import { StyleSheet, View, Text, TouchableOpacity, Modal, Animated, BackHandler, Image, ScrollView, useWindowDimensions, Platform } from 'react-native';
+import { StyleSheet, View, Text, TouchableOpacity, Modal, Animated, BackHandler, Image, ScrollView, useWindowDimensions, Platform, AppState, AppStateStatus } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Mapbox, { MapView, Camera, PointAnnotation, MarkerView } from '@rnmapbox/maps';
 import { Feather } from '@expo/vector-icons';
@@ -69,10 +69,28 @@ export const PinDropGame: React.FC<PinDropGameProps> = ({
     useEffect(() => {
         const unsubscribe = pinDropService.subscribe(setState);
 
+        // Battery optimization: Pause game timer when app is backgrounded
+        const handleAppStateChange = (nextAppState: AppStateStatus) => {
+            if (nextAppState === 'background' || nextAppState === 'inactive') {
+                // Pause timer when backgrounded
+                if (pinDropService.getState().isPlaying) {
+                    pinDropService.pauseTimer();
+                }
+            } else if (nextAppState === 'active') {
+                // Resume timer when app becomes active (if game is still playing)
+                if (pinDropService.getState().isPlaying) {
+                    pinDropService.resumeTimer();
+                }
+            }
+        };
+
+        const appStateSubscription = AppState.addEventListener('change', handleAppStateChange);
+
         // Clean up and reset on unmount
         return () => {
             unsubscribe();
             pinDropService.reset();
+            appStateSubscription.remove();
         };
     }, []);
 
