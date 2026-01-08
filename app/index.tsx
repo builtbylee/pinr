@@ -1069,9 +1069,13 @@ export default function App() {
                     }
 
                     await updatePin(pinId, updates);
-                } catch (e) {
+                } catch (e: any) {
                     if (__DEV__) console.error('[App] Update failed:', e?.message || 'Unknown error');
-                    Alert.alert('Error', 'Failed to update pin.');
+                    // Show specific error message for content moderation failures
+                    const errorMessage = e?.message?.includes('content guidelines') || e?.message?.includes('violates')
+                        ? e.message
+                        : 'Failed to update pin.';
+                    Alert.alert('Error', errorMessage);
                 }
             })();
 
@@ -1177,8 +1181,15 @@ export default function App() {
                 }
 
                 // The Firestore listener will receive the update and replace our temp memory
-            } catch (error) {
+            } catch (error: any) {
                 if (__DEV__) console.error('[App] Error syncing memory to cloud:', error?.message || 'Unknown error');
+                // Show specific error message for content moderation failures
+                const errorMessage = error?.message?.includes('content guidelines') || error?.message?.includes('violates')
+                    ? error.message
+                    : 'Failed to create pin. Please try again.';
+                Alert.alert('Error', errorMessage);
+                // Remove optimistic update if upload failed
+                deletePin(tempId);
             }
         })();
 
@@ -1894,9 +1905,13 @@ export default function App() {
                                 });
                                 setIsStoryCreationVisible(false);
                                 useMemoryStore.getState().showToast('Pin created!', 'success');
-                            } catch (error) {
+                            } catch (error: any) {
                                 if (__DEV__) console.error('[App] Pin creation error:', error?.message || 'Unknown error');
-                                useMemoryStore.getState().showToast('Failed to create pin', 'error');
+                                // Show specific error message for content moderation failures
+                                const errorMessage = error?.message?.includes('content guidelines') || error?.message?.includes('violates')
+                                    ? error.message
+                                    : 'Failed to create pin';
+                                useMemoryStore.getState().showToast(errorMessage, 'error');
                             }
                         }}
                         onComplete={async (storyTitle, pinDrafts) => {
