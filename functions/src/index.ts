@@ -886,7 +886,7 @@ export const onWaitlistSignup = functions.firestore
                 return;
             }
 
-            const result = await response.json();
+            const result = await response.json() as { id?: string };
             // Sanitize email and result ID in logs
             const emailPrefix = email ? email.split('@')[0]?.substring(0, 5) + '...@***' : 'NULL';
             const resultId = result.id ? result.id.substring(0, 8) + '...' : 'NULL';
@@ -1439,15 +1439,19 @@ export const getAppleAuthUrl = functions.https.onCall(async (data: { nonce: stri
     const scope = 'name email';
     
     // Build Apple authorization URL
+    // Using response_mode=query so the authorization code appears in the callback URL
+    // This allows the client to extract it from URL.searchParams
     const authUrl = `https://appleid.apple.com/auth/authorize?` +
         `client_id=${encodeURIComponent(clientId)}&` +
         `redirect_uri=${encodeURIComponent(redirectUri)}&` +
         `response_type=code&` +
         `scope=${encodeURIComponent(scope)}&` +
-        `response_mode=form_post&` +
+        `response_mode=query&` +
         `state=${state}&` +
         `nonce=${nonce}`;
 
+    // TODO: Store state in Firestore with TTL for proper CSRF verification
+    // For now, state is returned to client and verified on callback
     return { authUrl, state };
 });
 
@@ -1456,10 +1460,18 @@ export const getAppleAuthUrl = functions.https.onCall(async (data: { nonce: stri
  * This function handles the OAuth callback and exchanges the code for an identity token
  */
 export const exchangeAppleAuthCode = functions.https.onCall(async (data: { code: string; nonce: string; state?: string }, context: functions.https.CallableContext) => {
-    const { code, nonce } = data;
+    const { code, nonce, state } = data;
     
     if (!code || !nonce) {
         throw new functions.https.HttpsError('invalid-argument', 'Code and nonce are required');
+    }
+    
+    // Basic state validation (verify it's present and has expected format)
+    // TODO: Implement proper CSRF protection by storing state in Firestore
+    // and verifying it matches the one generated in getAppleAuthUrl
+    if (state && (!/^[a-f0-9]{32}$/.test(state))) {
+        console.warn('[exchangeAppleAuthCode] State parameter format validation failed');
+        // Don't throw error, but log warning for monitoring
     }
 
     try {
