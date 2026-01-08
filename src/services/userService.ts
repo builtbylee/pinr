@@ -1225,7 +1225,7 @@ export const addToBucketList = async (uid: string, item: BucketListItem): Promis
                 createdAt: firestore.Timestamp.now(),
                 updatedAt: firestore.Timestamp.now(),
             });
-            console.log('[UserService] Created new user profile with bucket list item:', item.locationName);
+            if (__DEV__) console.log('[UserService] Created new user profile with bucket list item:', item.locationName || 'NONE');
             return;
         }
 
@@ -1234,7 +1234,7 @@ export const addToBucketList = async (uid: string, item: BucketListItem): Promis
 
         // Check for duplicates
         if (currentList.some(i => i.locationName === item.locationName)) {
-            console.log('[UserService] Item already in bucket list:', item.locationName);
+            if (__DEV__) console.log('[UserService] Item already in bucket list:', item.locationName || 'NONE');
             return;
         }
 
@@ -1246,9 +1246,9 @@ export const addToBucketList = async (uid: string, item: BucketListItem): Promis
         // Invalidate cache so profile reads return fresh data
         invalidateProfileCache(uid);
 
-        console.log('[UserService] Added to bucket list:', item.locationName);
-    } catch (error) {
-        console.error('[UserService] Add to bucket list failed:', error);
+        if (__DEV__) console.log('[UserService] Added to bucket list:', item.locationName || 'NONE');
+    } catch (error: any) {
+        if (__DEV__) console.error('[UserService] Add to bucket list failed:', error?.message || 'Unknown error');
         throw error;
     }
 };
@@ -1268,9 +1268,9 @@ export const removeFromBucketList = async (uid: string, item: BucketListItem): P
         // Invalidate cache so profile reads return fresh data
         invalidateProfileCache(uid);
 
-        console.log('[UserService] Removed from bucket list:', item.locationName);
-    } catch (error) {
-        console.error('[UserService] Remove from bucket list failed:', error);
+        if (__DEV__) console.log('[UserService] Removed from bucket list:', item.locationName || 'NONE');
+    } catch (error: any) {
+        if (__DEV__) console.error('[UserService] Remove from bucket list failed:', error?.message || 'Unknown error');
         throw error;
     }
 };
@@ -1368,8 +1368,8 @@ export const checkExplorationStreak = async (uid: string): Promise<ExploreStreak
 
         return result;
 
-    } catch (error) {
-        console.error('[UserService] Check streak failed:', error);
+    } catch (error: any) {
+        if (__DEV__) console.error('[UserService] Check streak failed:', error?.message || 'Unknown error');
         return { streak: 0, increased: false };
     }
 };
@@ -1400,9 +1400,9 @@ export const updateBucketListStatus = async (uid: string, locationName: string, 
         // Invalidate cache so profile reads return fresh data
         invalidateProfileCache(uid);
 
-        console.log(`[UserService] Updated bucketlist status for ${locationName} to ${newStatus}`);
-    } catch (error) {
-        console.error('[UserService] Update bucketlist status failed:', error);
+        if (__DEV__) console.log(`[UserService] Updated bucketlist status for ${locationName || 'NONE'} to ${newStatus || 'NONE'}`);
+    } catch (error: any) {
+        if (__DEV__) console.error('[UserService] Update bucketlist status failed:', error?.message || 'Unknown error');
         throw error;
     }
 };
