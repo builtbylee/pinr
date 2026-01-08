@@ -1137,21 +1137,27 @@ const styles = StyleSheet.create({
     },
     gridCardOverlay: {
         position: 'absolute',
-        bottom: 0,
-        left: 0,
-        right: 0,
+        bottom: 12, // Add margin from bottom to create pill effect
+        left: 12, // Add margin from sides
+        right: 12,
         backgroundColor: 'transparent',
         zIndex: 10,
     },
     gridCardTitleContainer: {
-        // Frosted glass container at bottom of tile
-        borderBottomLeftRadius: 12, // Match card corner radius
-        borderBottomRightRadius: 12,
+        // Frosted glass pill container
+        borderRadius: 24, // Pill shape
         overflow: 'hidden',
+        borderWidth: 1,
+        borderColor: 'rgba(255, 255, 255, 0.5)', // Lighter border for light frosted glass
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.2,
+        shadowRadius: 12,
+        elevation: 8,
     },
     gridCardTitleOverlay: {
         backgroundColor: 'rgba(255, 255, 255, 0.15)', // Light overlay for frosted glass effect (iOS default)
-        paddingHorizontal: 10,
+        paddingHorizontal: 12,
         paddingVertical: 8,
         width: '100%',
     },
