@@ -144,11 +144,11 @@ export const DestinationCard: React.FC<DestinationCardProps> = ({ memory, onClos
                 {/* 3. Compact Frosted Pill (Bottom) - LiquidGlass for both platforms */}
                 <View style={styles.pillContainer}>
                     <LiquidGlass
-                        intensity={Platform.OS === 'ios' ? 40 : 60}
+                        intensity={Platform.OS === 'ios' ? 40 : 40}
                         tint="light"
                         style={styles.blurPill}
                     >
-                        <View style={styles.blurOverlay}>
+                        <View style={[styles.blurOverlay, Platform.OS === 'android' && styles.blurOverlayAndroid]}>
                             <View style={styles.frostedPillContent}>
                                 {/* Line 1: Title */}
                                 <Text style={styles.pillTitleGlass} numberOfLines={1}>{memory.title}</Text>
@@ -262,6 +262,10 @@ const styles = StyleSheet.create({
     blurOverlay: {
         backgroundColor: 'rgba(255, 255, 255, 0.15)', // Light overlay for frosted glass effect
         width: '100%',
+    },
+    blurOverlayAndroid: {
+        // Slightly more opaque overlay on Android to help smooth out the grainy blur
+        backgroundColor: 'rgba(255, 255, 255, 0.2)',
     },
     frostedPill: {
         flexDirection: 'column',
