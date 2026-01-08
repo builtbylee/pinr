@@ -11,6 +11,7 @@ import { CountryPickerModal } from './CountryPickerModal';
 import { EditProfileModal } from './EditProfileModal';
 import { Country, COUNTRIES } from '../data/countries';
 import { BucketListActionModal } from './BucketListActionModal';
+import { LiquidGlass } from './LiquidGlass';
 
 const { width, height } = Dimensions.get('window');
 
@@ -460,9 +461,18 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                                                     </View>
                                                 )}
                                                 <View style={styles.gridCardOverlay}>
-                                                    <View style={styles.gridCardTitleContainer}>
-                                                        <Text style={styles.gridCardTitle} numberOfLines={2}>{pin.title || pin.locationName}</Text>
-                                                    </View>
+                                                    <LiquidGlass
+                                                        intensity={40}
+                                                        tint="light"
+                                                        style={styles.gridCardTitleContainer}
+                                                    >
+                                                        <View style={[
+                                                            styles.gridCardTitleOverlay,
+                                                            Platform.OS === 'android' ? styles.gridCardTitleOverlayAndroid : null
+                                                        ]}>
+                                                            <Text style={styles.gridCardTitle} numberOfLines={2}>{pin.title || pin.locationName}</Text>
+                                                        </View>
+                                                    </LiquidGlass>
                                                 </View>
                                             </Pressable>
                                         ))
@@ -499,9 +509,18 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                                                         contentFit="cover"
                                                     />
                                                     <View style={styles.gridCardOverlay}>
-                                                        <View style={styles.gridCardTitleContainer}>
-                                                            <Text style={styles.gridCardTitle} numberOfLines={1}>{story.title}</Text>
-                                                        </View>
+                                                        <LiquidGlass
+                                                            intensity={40}
+                                                            tint="light"
+                                                            style={styles.gridCardTitleContainer}
+                                                        >
+                                                            <View style={[
+                                                                styles.gridCardTitleOverlay,
+                                                                Platform.OS === 'android' ? styles.gridCardTitleOverlayAndroid : null
+                                                            ]}>
+                                                                <Text style={styles.gridCardTitle} numberOfLines={1}>{story.title}</Text>
+                                                            </View>
+                                                        </LiquidGlass>
                                                     </View>
                                                     {isMe && (
                                                         <TouchableOpacity
@@ -544,9 +563,18 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                                                         contentFit="cover"
                                                     />
                                                     <View style={styles.gridCardOverlay}>
-                                                        <View style={styles.gridCardTitleContainer}>
-                                                            <Text style={styles.gridCardTitle} numberOfLines={2}>{item.locationName}</Text>
-                                                        </View>
+                                                        <LiquidGlass
+                                                            intensity={40}
+                                                            tint="light"
+                                                            style={styles.gridCardTitleContainer}
+                                                        >
+                                                            <View style={[
+                                                                styles.gridCardTitleOverlay,
+                                                                Platform.OS === 'android' ? styles.gridCardTitleOverlayAndroid : null
+                                                            ]}>
+                                                                <Text style={styles.gridCardTitle} numberOfLines={2}>{item.locationName}</Text>
+                                                            </View>
+                                                        </LiquidGlass>
                                                     </View>
                                                     {/* Status Badge */}
                                                     {item.status === 'visited' && (
@@ -1116,13 +1144,20 @@ const styles = StyleSheet.create({
         zIndex: 10,
     },
     gridCardTitleContainer: {
-        // Dark bar at bottom of tile
-        backgroundColor: 'rgba(0,0,0,0.6)',
-        paddingHorizontal: 10,
-        paddingVertical: 8,
+        // Frosted glass container at bottom of tile
         borderBottomLeftRadius: 12, // Match card corner radius
         borderBottomRightRadius: 12,
         overflow: 'hidden',
+    },
+    gridCardTitleOverlay: {
+        backgroundColor: 'rgba(255, 255, 255, 0.15)', // Light overlay for frosted glass effect (iOS default)
+        paddingHorizontal: 10,
+        paddingVertical: 8,
+        width: '100%',
+    },
+    gridCardTitleOverlayAndroid: {
+        // Darker shade of white on Android to match iOS appearance
+        backgroundColor: 'rgba(100, 100, 100, 0.5)',
     },
     gridCardTitle: {
         color: 'white',
