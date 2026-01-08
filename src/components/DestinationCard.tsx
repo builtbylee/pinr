@@ -154,14 +154,20 @@ export const DestinationCard: React.FC<DestinationCardProps> = ({ memory, onClos
                                 <Text style={styles.pillTitleGlass} numberOfLines={1}>{memory.title}</Text>
                                 {/* Line 2: Location & Date */}
                                 <View style={styles.pillDetailsRow}>
-                                    <Feather name="map-pin" size={12} color="#FFFFFF" />
+                                    <View style={styles.iconContainer}>
+                                        <Feather name="map-pin" size={12} color="#FFFFFF" />
+                                    </View>
                                     <Text style={styles.pillDetailGlass} numberOfLines={1}>{memory.locationName?.split(',')[0] || 'Unknown'}</Text>
-                                    <Feather name="calendar" size={12} color="#FFFFFF" />
+                                    <View style={styles.iconContainer}>
+                                        <Feather name="calendar" size={12} color="#FFFFFF" />
+                                    </View>
                                     <Text style={styles.pillDetailGlass}>{formatMemoryDate(memory.date, memory.endDate)}</Text>
                                     {/* Expiry Badge if needed */}
                                     {remainingTime && (
                                         <>
-                                            <Feather name="clock" size={12} color="#FBBF24" />
+                                            <View style={styles.iconContainer}>
+                                                <Feather name="clock" size={12} color="#FBBF24" />
+                                            </View>
                                             <Text style={[styles.pillDetailGlass, { color: '#FBBF24' }]}>{remainingTime}</Text>
                                         </>
                                     )}
@@ -299,9 +305,6 @@ const styles = StyleSheet.create({
         color: '#FFFFFF',
         fontSize: 12,
         fontWeight: '600',
-        textShadowColor: 'rgba(0,0,0,0.6)',
-        textShadowOffset: { width: 0, height: 1 },
-        textShadowRadius: 3,
     },
     pillTitle: {
         color: '#1a1a1a',
@@ -313,6 +316,14 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         gap: 6,
+    },
+    iconContainer: {
+        // Ensure icons have no shadows
+        shadowColor: 'transparent',
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 0,
+        shadowRadius: 0,
+        elevation: 0, // Android
     },
     pillDetail: {
         color: 'rgba(0, 0, 0, 0.6)',
