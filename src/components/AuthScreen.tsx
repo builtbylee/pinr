@@ -405,17 +405,6 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthenticated }) => {
         setIsLoading(true);
         setError(null);
         try {
-            // Check platform before attempting sign-in
-            if (Platform.OS === 'android') {
-                Alert.alert(
-                    'Not Available',
-                    'Apple Sign-In is currently only available on iOS devices. Please use Google Sign-In or email/password on Android.',
-                    [{ text: 'OK' }]
-                );
-                setIsLoading(false);
-                return;
-            }
-            
             const result = await signInWithApple();
             if (__DEV__) console.log('[AuthScreen] Apple Sign-In result:', result.uid ? result.uid.substring(0, 8) + '...' : 'NULL');
             if (__DEV__) console.log('[AuthScreen] Is new user:', result.isNewUser);

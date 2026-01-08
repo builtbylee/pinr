@@ -1,4 +1,7 @@
 node_modules/
+
+# Apple Sign-In private key (security)
+functions/src/apple-config.ts
 .expo/
 dist/
 web-build/

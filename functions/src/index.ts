@@ -8,6 +8,16 @@
 
 import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
+import * as crypto from 'crypto';
+import * as jwt from 'jsonwebtoken';
+
+// Try to import Apple config (if it exists)
+let APPLE_CONFIG: { APPLE_PRIVATE_KEY?: string } = {};
+try {
+    APPLE_CONFIG = require('./apple-config');
+} catch (e) {
+    // Config file doesn't exist, will use environment variables
+}
 
 admin.initializeApp();
 
@@ -1053,7 +1063,7 @@ export const adminDeletePin = functions.https.onCall(async (data, context) => {
  * NOTE: Requires Cloud Vision API to be enabled in your GCP project
  * https://console.cloud.google.com/apis/library/vision.googleapis.com
  */
-export const moderateImage = functions.https.onCall(async (data, context) => {
+export const moderateImage = functions.https.onCall(async (data: any, context: functions.https.CallableContext) => {
     if (!context.auth) {
         throw new functions.https.HttpsError(
             'unauthenticated',
@@ -1245,7 +1255,7 @@ export const onReportCreated = functions.firestore
  * Approve a reported pin (admin only)
  * Removes underReview flag and marks report as resolved
  */
-export const approveReportedPin = functions.https.onCall(async (data, context) => {
+export const approveReportedPin = functions.https.onCall(async (data: { pinId: string; reportId: string }, context: functions.https.CallableContext) => {
     if (!context.auth || !ADMIN_UIDS.includes(context.auth.uid)) {
         throw new functions.https.HttpsError(
             'permission-denied',
@@ -1289,7 +1299,7 @@ export const approveReportedPin = functions.https.onCall(async (data, context) =
 /**
  * Reject a reported pin (admin only) - deletes the pin
  */
-export const rejectReportedPin = functions.https.onCall(async (data, context) => {
+export const rejectReportedPin = functions.https.onCall(async (data: { pinId: string; reportId: string }, context: functions.https.CallableContext) => {
     if (!context.auth || !ADMIN_UIDS.includes(context.auth.uid)) {
         throw new functions.https.HttpsError(
             'permission-denied',
@@ -1333,7 +1343,7 @@ export const rejectReportedPin = functions.https.onCall(async (data, context) =>
  * Fetch active games and pending challenges via HTTPS
  * Bypasses client-side gRPC connection issues on iOS
  */
-export const fetchActiveGames = functions.https.onCall(async (data, context) => {
+export const fetchActiveGames = functions.https.onCall(async (data: any, context: functions.https.CallableContext) => {
     // 1. Verify authentication
     if (!context.auth) {
         throw new functions.https.HttpsError(
@@ -1401,6 +1411,152 @@ export const fetchActiveGames = functions.https.onCall(async (data, context) => 
         throw new functions.https.HttpsError(
             'internal',
             error?.message || 'Failed to fetch games.'
+        );
+    }
+});
+
+// ============================================
+// APPLE SIGN-IN FOR ANDROID
+// ============================================
+
+/**
+ * Generate OAuth URL for Apple Sign-In on Android
+ * This function creates the authorization URL that the Android app will open in a browser
+ */
+export const getAppleAuthUrl = functions.https.onCall(async (data: { nonce: string }, context: functions.https.CallableContext) => {
+    const nonce = data.nonce;
+    if (!nonce) {
+        throw new functions.https.HttpsError('invalid-argument', 'Nonce is required');
+    }
+
+    // Generate state for CSRF protection
+    const state = crypto.randomBytes(16).toString('hex');
+    
+    // Get configuration from environment variables or Secrets
+    // These can be set via Firebase Console → Functions → Configuration → Secrets
+    const clientId = process.env.APPLE_CLIENT_ID || functions.config().apple?.client_id || 'com.builtbylee.app80days.service';
+    const redirectUri = process.env.APPLE_REDIRECT_URI || functions.config().apple?.redirect_uri || 'https://getpinr.com/auth/apple/callback';
+    const scope = 'name email';
+    
+    // Build Apple authorization URL
+    const authUrl = `https://appleid.apple.com/auth/authorize?` +
+        `client_id=${encodeURIComponent(clientId)}&` +
+        `redirect_uri=${encodeURIComponent(redirectUri)}&` +
+        `response_type=code&` +
+        `scope=${encodeURIComponent(scope)}&` +
+        `response_mode=form_post&` +
+        `state=${state}&` +
+        `nonce=${nonce}`;
+
+    return { authUrl, state };
+});
+
+/**
+ * Exchange Apple authorization code for ID token
+ * This function handles the OAuth callback and exchanges the code for an identity token
+ */
+export const exchangeAppleAuthCode = functions.https.onCall(async (data: { code: string; nonce: string; state?: string }, context: functions.https.CallableContext) => {
+    const { code, nonce } = data;
+    
+    if (!code || !nonce) {
+        throw new functions.https.HttpsError('invalid-argument', 'Code and nonce are required');
+    }
+
+    try {
+        // Apple Sign-In configuration
+        // TODO: Move these to environment variables once Firebase CLI is working
+        // For now, using values from Firebase Console Authentication settings
+        const teamId = process.env.APPLE_TEAM_ID || functions.config().apple?.team_id || 'CMBSFLQ5V6';
+        const keyId = process.env.APPLE_KEY_ID || functions.config().apple?.key_id || '8TV72LRP85';
+        const clientId = process.env.APPLE_CLIENT_ID || functions.config().apple?.client_id || 'com.builtbylee.app80days.service';
+        const redirectUri = process.env.APPLE_REDIRECT_URI || functions.config().apple?.redirect_uri || 'https://getpinr.com/auth/apple/callback';
+        
+        // Private key - get from config file, environment, or Firebase config
+        // Priority: config file > environment variable > Firebase config
+        const privateKey = (APPLE_CONFIG.APPLE_PRIVATE_KEY as string) || 
+                          process.env.APPLE_PRIVATE_KEY || 
+                          functions.config().apple?.private_key;
+        
+        if (!privateKey) {
+            throw new functions.https.HttpsError(
+                'failed-precondition',
+                'Apple Sign-In private key is missing. Please set APPLE_PRIVATE_KEY as an environment variable or add it to Firebase Functions config. You can copy it from Firebase Console → Authentication → Sign-in method → Apple.'
+            );
+        }
+        
+        // Generate client secret (JWT signed with private key)
+        const clientSecret = jwt.sign(
+            {
+                iss: teamId,
+                iat: Math.floor(Date.now() / 1000),
+                exp: Math.floor(Date.now() / 1000) + 3600, // 1 hour expiration
+                aud: 'https://appleid.apple.com',
+                sub: clientId,
+            },
+            privateKey.replace(/\\n/g, '\n'), // Handle escaped newlines
+            {
+                algorithm: 'ES256',
+                keyid: keyId,
+            }
+        );
+
+        // Exchange authorization code for tokens
+        const tokenResponse = await fetch('https://appleid.apple.com/auth/token', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: new URLSearchParams({
+                client_id: clientId,
+                client_secret: clientSecret,
+                code: code,
+                grant_type: 'authorization_code',
+                redirect_uri: redirectUri,
+            }),
+        });
+
+        if (!tokenResponse.ok) {
+            const errorText = await tokenResponse.text();
+            console.error('[exchangeAppleAuthCode] Token exchange failed:', errorText);
+            throw new functions.https.HttpsError('internal', `Token exchange failed: ${errorText}`);
+        }
+
+        const tokens = await tokenResponse.json() as { id_token?: string; access_token?: string; token_type?: string };
+        const idToken = tokens.id_token;
+
+        if (!idToken) {
+            throw new functions.https.HttpsError('internal', 'No ID token received from Apple');
+        }
+
+        // Decode ID token to extract user info (without verification - Firebase will verify)
+        const decoded = jwt.decode(idToken, { complete: true }) as any;
+        
+        if (!decoded || !decoded.payload) {
+            throw new functions.https.HttpsError('internal', 'Failed to decode ID token');
+        }
+
+        // Verify nonce matches (security check)
+        if (decoded.payload.nonce !== nonce) {
+            throw new functions.https.HttpsError('invalid-argument', 'Nonce mismatch');
+        }
+
+        // Return ID token and user info
+        return {
+            identityToken: idToken,
+            email: decoded.payload.email || null,
+            fullName: decoded.payload.name ? {
+                givenName: decoded.payload.name.given_name || null,
+                familyName: decoded.payload.name.family_name || null,
+            } : null,
+        };
+    } catch (error: any) {
+        console.error('[exchangeAppleAuthCode] Error:', error?.message || 'Unknown error');
+        if (error instanceof functions.https.HttpsError) {
+            throw error;
+        }
+        throw new functions.https.HttpsError(
+            'internal',
+            error?.message || 'Failed to exchange authorization code'
         );
     }
 });

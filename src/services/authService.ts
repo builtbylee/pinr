@@ -1,6 +1,8 @@
 import auth from '@react-native-firebase/auth';
 import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
 import { Platform } from 'react-native';
+import * as WebBrowser from 'expo-web-browser';
+import * as Linking from 'expo-linking';
 
 // Configure Google Sign-In (call this once at app startup)
 const GOOGLE_WEB_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID;
@@ -160,16 +162,17 @@ export const signInWithGoogle = async (): Promise<{ uid: string; email: string |
 };
 
 /**
- * Sign in with Apple (iOS only)
- * Uses lazy imports to avoid loading native modules on Android or when not needed
+ * Sign in with Apple (iOS and Android)
+ * iOS: Uses native expo-apple-authentication
+ * Android: Uses Firebase Auth web-based OAuth flow via browser
  */
 export const signInWithApple = async (): Promise<{ uid: string; email: string | null; displayName: string | null; isNewUser: boolean }> => {
     if (__DEV__) console.log('[AuthService] ========== signInWithApple START ==========');
     if (__DEV__) console.log('[AuthService] Platform:', Platform.OS);
 
-    // Check if we're on Android - expo-apple-authentication is iOS-only
+    // Android: Use web-based OAuth flow
     if (Platform.OS === 'android') {
-        throw new Error('Apple Sign-In is currently only available on iOS. Please use Google Sign-In or email/password on Android.');
+        return await signInWithAppleAndroid();
     }
 
     // Lazy import native modules only when needed (prevents crash if module not linked)
@@ -292,6 +295,130 @@ export const signInWithApple = async (): Promise<{ uid: string; email: string | 
         throw new Error(errorMessage);
     }
 };
+
+/**
+ * Sign in with Apple on Android using Firebase Auth web-based OAuth flow
+ * This requires:
+ * 1. Apple Developer account with Service ID configured
+ * 2. Firebase project with Apple provider enabled
+ * 3. Redirect URI configured in Apple Developer portal
+ * 4. Cloud Functions: getAppleAuthUrl and exchangeAppleAuthCode
+ */
+async function signInWithAppleAndroid(): Promise<{ uid: string; email: string | null; displayName: string | null; isNewUser: boolean }> {
+    if (__DEV__) console.log('[AuthService] ========== signInWithAppleAndroid START ==========');
+    
+    try {
+        await ensureFirebaseReady();
+        if (__DEV__) console.log('[AuthService] ✅ Firebase is ready');
+    } catch (error: any) {
+        if (__DEV__) console.warn('[AuthService] ⚠️ Firebase wait failed, will retry on actual call');
+    }
+
+    try {
+        // Generate a secure nonce
+        const Crypto = require('expo-crypto');
+        const randomBytes = Crypto.getRandomBytes(16);
+        const nonce = Array.from(randomBytes, byte => byte.toString(16).padStart(2, '0')).join('');
+        const hashedNonce = await Crypto.digestStringAsync(
+            Crypto.CryptoDigestAlgorithm.SHA256,
+            nonce
+        );
+        if (__DEV__) console.log('[AuthService] Generated nonce for Android');
+
+        // Use Firebase Cloud Functions to handle OAuth flow
+        const functions = require('@react-native-firebase/functions').default();
+        
+        try {
+            if (__DEV__) console.log('[AuthService] Attempting to use Cloud Function for Apple Sign-In...');
+            
+            // Call Cloud Function to get OAuth URL
+            const getAppleAuthUrl = functions().httpsCallable('getAppleAuthUrl');
+            const urlResult = await getAppleAuthUrl({ nonce: hashedNonce });
+            
+            if (urlResult.data?.authUrl) {
+                // Open browser for OAuth flow
+                const authUrl = urlResult.data.authUrl;
+                if (__DEV__) console.log('[AuthService] Opening OAuth URL in browser...');
+                
+                // Use HTTPS callback URL (Service IDs only support HTTPS, not custom schemes)
+                const redirectUri = 'https://getpinr.com/auth/apple/callback';
+                const result = await WebBrowser.openAuthSessionAsync(
+                    authUrl,
+                    redirectUri
+                );
+                
+                if (result.type === 'success' && result.url) {
+                    // Extract authorization code from callback URL
+                    const url = new URL(result.url);
+                    const code = url.searchParams.get('code');
+                    const state = url.searchParams.get('state');
+                    
+                    if (!code) {
+                        throw new Error('No authorization code received from Apple');
+                    }
+                    
+                    // Exchange authorization code for ID token via Cloud Function
+                    const exchangeCode = functions().httpsCallable('exchangeAppleAuthCode');
+                    const tokenResult = await exchangeCode({ 
+                        code, 
+                        nonce: hashedNonce,
+                        state 
+                    });
+                    
+                    if (tokenResult.data?.identityToken) {
+                        const identityToken = tokenResult.data.identityToken;
+                        const email = tokenResult.data.email || null;
+                        const fullName = tokenResult.data.fullName || null;
+                        
+                        // Create Firebase credential
+                        const firebaseCredential = auth.AppleAuthProvider.credential(identityToken, nonce);
+                        
+                        // Sign in with credential
+                        const userCredential = await auth().signInWithCredential(firebaseCredential);
+                        
+                        const isNewUser = userCredential.additionalUserInfo?.isNewUser ?? false;
+                        const displayName = fullName
+                            ? `${fullName.givenName || ''} ${fullName.familyName || ''}`.trim()
+                            : userCredential.user.displayName;
+                        
+                        if (__DEV__) console.log('[AuthService] ✅ Apple Sign-In on Android succeeded');
+                        
+                        return {
+                            uid: userCredential.user.uid,
+                            email: email || userCredential.user.email,
+                            displayName: displayName,
+                            isNewUser: isNewUser,
+                        };
+                    } else {
+                        throw new Error('Failed to exchange authorization code for ID token');
+                    }
+                } else if (result.type === 'cancel') {
+                    throw new Error('Sign-in was cancelled');
+                } else {
+                    throw new Error('Apple Sign-In failed: ' + (result.type || 'Unknown error'));
+                }
+            } else {
+                throw new Error('Cloud Function did not return OAuth URL');
+            }
+        } catch (cloudFunctionError: any) {
+            if (__DEV__) console.error('[AuthService] Cloud Function approach failed:', cloudFunctionError?.message || 'Unknown error');
+            
+            // Fallback: Show helpful error message
+            throw new Error(
+                'Apple Sign-In on Android requires backend setup. ' +
+                'Please configure the Apple Sign-In Cloud Functions or use Google Sign-In instead.'
+            );
+        }
+    } catch (error: any) {
+        if (__DEV__) console.error('[AuthService] ❌ Apple Sign-In on Android failed:', error?.message || 'Unknown error');
+        
+        if (error.message === 'Sign-in was cancelled') {
+            throw new Error('Sign-in was cancelled');
+        }
+        
+        throw error;
+    }
+}
 
 /**
  * Link an implementation-email/password credential to the current anonymous user.
