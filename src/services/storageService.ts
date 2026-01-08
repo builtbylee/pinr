@@ -1,5 +1,6 @@
 // Firebase Storage Service
 import storage from '@react-native-firebase/storage';
+import { moderateImage } from './ModerationService';
 // Image compression settings
 const MAX_IMAGE_DIMENSION = 1200; // Max width or height
 const IMAGE_QUALITY = 0.9; // 90% quality (nearly lossless)
@@ -12,7 +13,7 @@ const IMAGE_QUALITY = 0.9; // 90% quality (nearly lossless)
  */
 const compressImage = async (uri: string): Promise<string> => {
     try {
-        console.log('[Storage] Compressing image...');
+        if (__DEV__) console.log('[Storage] Compressing image...');
 
         // Lazy load ImageManipulator to prevent startup crashes on old APKs
         // that don't have the native module installed yet.
@@ -27,10 +28,10 @@ const compressImage = async (uri: string): Promise<string> => {
             }
         );
 
-        console.log('[Storage] Compression complete:', result.uri);
+        if (__DEV__) console.log('[Storage] Compression complete:', result.uri);
         return result.uri;
     } catch (error) {
-        console.warn('[Storage] Compression failed or module missing, using original:', error);
+        if (__DEV__) console.warn('[Storage] Compression failed or module missing, using original:', error);
         return uri; // Fallback to original if compression fails or module missing
     }
 };
@@ -57,16 +58,33 @@ export const uploadImage = async (
         const reference = storage().ref(`pins/${userId}/${pinId}.jpg`);
 
         // Upload the file
-        console.log('[Storage] Uploading image...', imageUri);
+        if (__DEV__) console.log('[Storage] Uploading image...', imageUri);
         await reference.putFile(imageUri);
 
         // Get the download URL
         const downloadUrl = await reference.getDownloadURL();
-        console.log('[Storage] Upload complete:', downloadUrl);
+        if (__DEV__) console.log('[Storage] Upload complete:', downloadUrl);
 
+        // Moderate the uploaded image
+        if (__DEV__) console.log('[Storage] Checking image moderation...');
+        const moderationResult = await moderateImage(downloadUrl);
+
+        if (!moderationResult.approved) {
+            // Image failed moderation - delete it and throw error
+            if (__DEV__) console.warn('[Storage] Image failed moderation:', moderationResult.reason);
+            try {
+                await reference.delete();
+                if (__DEV__) console.log('[Storage] Deleted image that failed moderation');
+            } catch (deleteError) {
+                if (__DEV__) console.error('[Storage] Failed to delete moderated image:', deleteError);
+            }
+            throw new Error(moderationResult.reason || 'This image violates our content guidelines and cannot be uploaded.');
+        }
+
+        if (__DEV__) console.log('[Storage] Image passed moderation');
         return downloadUrl;
     } catch (error) {
-        console.error('[Storage] Upload failed:', error);
+        if (__DEV__) console.error('[Storage] Upload failed:', error);
         throw error;
     }
 };
@@ -80,9 +98,9 @@ export const deleteImage = async (userId: string, pinId: string): Promise<void> 
     try {
         const reference = storage().ref(`pins/${userId}/${pinId}.jpg`);
         await reference.delete();
-        console.log('[Storage] Image deleted');
+        if (__DEV__) console.log('[Storage] Image deleted');
     } catch (error) {
-        console.error('[Storage] Delete failed:', error);
+        if (__DEV__) console.error('[Storage] Delete failed:', error);
         // Don't throw - image might not exist
     }
 };

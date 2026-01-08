@@ -1016,7 +1016,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
                         {/* Privacy Policy */}
                         <TouchableOpacity style={styles.settingRow} onPress={() => {
-                            Linking.openURL('https://builtbylee.github.io/pinr/');
+                            Linking.openURL('https://getpinr.com/privacy-policy.html');
                         }}>
                             <View style={styles.settingInfo}>
                                 <Feather name="shield" size={22} color="#1a1a1a" />

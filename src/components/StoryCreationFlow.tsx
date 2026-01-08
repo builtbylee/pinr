@@ -342,7 +342,11 @@ export const StoryCreationFlow: React.FC<StoryCreationFlowProps> = ({
                 handleClose();
             } catch (error: any) {
                 if (__DEV__) console.error('[StoryCreation] Single pin error:', error?.message || 'Unknown error');
-                Alert.alert('Error', 'Failed to create pin. Please try again.');
+                // Show specific error message for content moderation failures
+                const errorMessage = error?.message?.includes('content guidelines') || error?.message?.includes('violates')
+                    ? error.message
+                    : 'Failed to create pin. Please try again.';
+                Alert.alert('Error', errorMessage);
             } finally {
                 setIsSubmitting(false);
             }
@@ -539,7 +543,11 @@ export const StoryCreationFlow: React.FC<StoryCreationFlowProps> = ({
             handleClose();
         } catch (error: any) {
             if (__DEV__) console.error('[StoryCreation] Submit error:', error?.message || 'Unknown error');
-            Alert.alert('Error', 'Failed to create journey. Please try again.');
+            // Show specific error message for content moderation failures
+            const errorMessage = error?.message?.includes('content guidelines') || error?.message?.includes('violates')
+                ? error.message
+                : 'Failed to create journey. Please try again.';
+            Alert.alert('Error', errorMessage);
         } finally {
             setIsSubmitting(false);
         }
