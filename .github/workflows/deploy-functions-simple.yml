@@ -41,4 +41,4 @@ jobs:
       
       - name: Deploy Functions
         run: |
-          firebase deploy --only functions --project days-c4ad4 --non-interactive
+          firebase deploy --only functions:getAppleAuthUrl,functions:exchangeAppleAuthCode --project days-c4ad4 --non-interactive --force
