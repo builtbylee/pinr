@@ -145,7 +145,7 @@ export const DestinationCard: React.FC<DestinationCardProps> = ({ memory, onClos
                 <View style={styles.pillContainer}>
                     <LiquidGlass
                         intensity={Platform.OS === 'ios' ? 40 : 60}
-                        tint="dark"
+                        tint="light"
                         style={styles.blurPill}
                     >
                         <View style={styles.blurOverlay}>
@@ -246,7 +246,7 @@ const styles = StyleSheet.create({
         overflow: 'hidden',
         maxWidth: '90%',
         borderWidth: 1,
-        borderColor: 'rgba(255, 255, 255, 0.3)',
+        borderColor: 'rgba(255, 255, 255, 0.5)', // Lighter border for light frosted glass
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 8 },
         shadowOpacity: 0.2,
@@ -254,7 +254,7 @@ const styles = StyleSheet.create({
         elevation: 8,
     },
     blurOverlay: {
-        backgroundColor: 'rgba(0, 0, 0, 0.3)', // Darker overlay for better text contrast
+        backgroundColor: 'rgba(255, 255, 255, 0.15)', // Light overlay for frosted glass effect
         width: '100%',
     },
     frostedPill: {
