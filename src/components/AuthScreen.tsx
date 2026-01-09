@@ -3,7 +3,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { Image } from 'expo-image';
 import React, { useState, useEffect } from 'react';
 import { Dimensions, StyleSheet, Text, TouchableOpacity, View, Alert, TextInput, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, Modal } from 'react-native';
-import { signInEmailPassword, signUpWithEmail, signInWithGoogle, deleteCurrentUser } from '../services/authService';
+import { signInEmailPassword, signUpWithEmail, signInWithGoogle, signInWithApple, deleteCurrentUser } from '../services/authService';
 import Svg, { Path } from 'react-native-svg';
 import { saveUserProfile, isUsernameTaken, getEmailByUsername } from '../services/userService';
 import { sendPasswordReset } from '../services/authService';
@@ -400,6 +400,88 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthenticated }) => {
         }
     };
 
+    const handleAppleSignIn = async () => {
+        console.log('[AuthScreen] ========== APPLE SIGN-IN ATTEMPT START ==========');
+        setIsLoading(true);
+        setError(null);
+        try {
+            console.log('[AuthScreen]  Calling signInWithApple...');
+            const startTime = Date.now();
+            const result = await signInWithApple();
+            const duration = Date.now() - startTime;
+            console.log('[AuthScreen] ✅ Apple sign-in succeeded');
+            console.log('[AuthScreen] Sign-in duration:', duration + 'ms');
+            console.log('[AuthScreen] User ID:', result.uid);
+            console.log('[AuthScreen] Email:', result.email);
+            console.log('[AuthScreen] Display name:', result.displayName);
+            console.log('[AuthScreen] Is new user:', result.isNewUser);
+            const { saveUserProfile, isUsernameTaken, getUserProfile } = require('../services/userService');
+
+            console.log('[AuthScreen] Processing Apple sign-in result...');
+
+            if (result.isNewUser) {
+                console.log('[AuthScreen] 🆕 New user (Apple) - creating profile...');
+                let baseUsername: string;
+
+                if (result.displayName) {
+                    baseUsername = result.displayName.replace(/\s+/g, '').toLowerCase().substring(0, 12);
+                } else {
+                    baseUsername = 'user'; // Apple often hides name
+                }
+
+                let finalUsername = baseUsername + Math.floor(Math.random() * 10000);
+                let isTaken = await isUsernameTaken(finalUsername, result.uid);
+                let attempts = 0;
+                while (isTaken && attempts < 5) {
+                    finalUsername = baseUsername + Math.floor(Math.random() * 100000);
+                    isTaken = await isUsernameTaken(finalUsername, result.uid);
+                    attempts++;
+                }
+
+                console.log('[AuthScreen] Saving profile for new user...');
+                await saveUserProfile(result.uid, finalUsername, result.email || undefined);
+                onAuthenticated(finalUsername);
+            } else {
+                console.log('[AuthScreen] 👤 Existing user (Apple) - fetching profile...');
+                try {
+                    const profileStartTime = Date.now();
+                    const profilePromise = getUserProfile(result.uid);
+                    const timeoutPromise = new Promise((_, reject) =>
+                        setTimeout(() => reject(new Error('Profile fetch timeout')), 15000)
+                    );
+                    const profile = await Promise.race([profilePromise, timeoutPromise]) as any;
+                    console.log('[AuthScreen] ✅ Profile fetched for existing user');
+
+                    if (profile?.username) {
+                        onAuthenticated(profile.username);
+                    } else {
+                        console.warn('[AuthScreen] ⚠️ Existing user has no username - creating fallback...');
+                        const fallbackUsername = 'user' + Math.floor(Math.random() * 100000);
+                        try {
+                            await saveUserProfile(result.uid, fallbackUsername, result.email || undefined);
+                        } catch (saveError) {
+                            console.warn('[AuthScreen] Failed to save profile (non-blocking):', saveError);
+                        }
+                        onAuthenticated(fallbackUsername);
+                    }
+                } catch (profileError: any) {
+                    console.warn('[AuthScreen] ⚠️ Failed to fetch profile (non-blocking)');
+                    onAuthenticated();
+                }
+            }
+            console.log('[AuthScreen] ========== APPLE SIGN-IN ATTEMPT END ==========');
+        } catch (e: any) {
+            console.error('[AuthScreen] ❌ APPLE SIGN-IN ERROR');
+            console.error('[AuthScreen] Error message:', e.message);
+            // Ignore cancel errors
+            if (e.message !== 'Sign-in cancelled' && !e.message.includes('canceled')) {
+                setError(e.message);
+            }
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     const resetForm = () => {
         setError(null);
         setEmailOrUsername('');
@@ -584,6 +666,16 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthenticated }) => {
                     <Path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z" />
                 </Svg>
                 <Text style={styles.googleButtonText}>Continue with Google</Text>
+            </TouchableOpacity>
+
+            {/* Apple Sign-In Button */}
+            <TouchableOpacity
+                style={[styles.googleButton, { backgroundColor: '#000000', marginTop: 12, borderWidth: 0 }]}
+                onPress={handleAppleSignIn}
+                disabled={isLoading}
+            >
+                <MaterialCommunityIcons name="apple" size={24} color="white" />
+                <Text style={[styles.googleButtonText, { color: 'white' }]}>Continue with Apple</Text>
             </TouchableOpacity>
 
 
