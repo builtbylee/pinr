@@ -318,6 +318,8 @@ export const signInWithApple = async (): Promise<{ uid: string; email: string | 
         throw error;
     }
 };
+/**
+ * Link an email/password credential to the current anonymous user.
  * This effectively "upgrades" the anonymous account to a permanent one.
  */
 export const linkEmailPassword = async (email: string, password: string): Promise<void> => {
