@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FAQ - Pinr</title>
+    <link rel="icon" href="favicon-v4.png" type="image/png">
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #ffffff;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            color: #1a1a1a;
+        }
+
+        .subtitle {
+            color: #6b7280;
+            font-size: 1.1rem;
+            margin-bottom: 40px;
+        }
+
+        .faq-section {
+            margin-bottom: 50px;
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #1a1a1a;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e5e7eb;
+        }
+
+        .faq-item {
+            margin-bottom: 25px;
+            background: #f9fafb;
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid #e5e7eb;
+            transition: all 0.2s;
+        }
+
+        .faq-item:hover {
+            border-color: #d1d5db;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .faq-question {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #1a1a1a;
+            margin-bottom: 12px;
+        }
+
+        .faq-answer {
+            color: #4b5563;
+            line-height: 1.7;
+        }
+
+        .faq-answer ul,
+        .faq-answer ol {
+            margin: 10px 0;
+            padding-left: 25px;
+        }
+
+        .faq-answer li {
+            margin-bottom: 8px;
+        }
+
+        .faq-answer strong {
+            color: #1a1a1a;
+            font-weight: 600;
+        }
+
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            color: #6b7280;
+            text-decoration: none;
+            font-size: 0.95rem;
+            margin-bottom: 30px;
+            transition: color 0.2s;
+        }
+
+        .back-link:hover {
+            color: #1a1a1a;
+        }
+
+        .back-link svg {
+            width: 16px;
+            height: 16px;
+            margin-right: 8px;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px 16px;
+            }
+
+            h1 {
+                font-size: 2rem;
+            }
+
+            .faq-item {
+                padding: 16px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Top Navigation -->
+    <nav style="position: fixed; top: 0; right: 0; padding: 16px 24px; z-index: 100; display: flex; gap: 20px;">
+        <a href="index.html"
+            style="color: #6b7280; font-size: 13px; text-decoration: none; font-weight: 500; transition: color 0.2s;"
+            onmouseover="this.style.color='#1a1a1a'" onmouseout="this.style.color='#6b7280'">Home</a>
+        <a href="privacy-policy.html"
+            style="color: #6b7280; font-size: 13px; text-decoration: none; font-weight: 500; transition: color 0.2s;"
+            onmouseover="this.style.color='#1a1a1a'" onmouseout="this.style.color='#6b7280'">Privacy Policy</a>
+        <a href="mailto:lee@getpinr.com"
+            style="color: #6b7280; font-size: 13px; text-decoration: none; font-weight: 500; transition: color 0.2s;"
+            onmouseover="this.style.color='#1a1a1a'" onmouseout="this.style.color='#6b7280'">Support</a>
+    </nav>
+
+    <div class="container">
+        <a href="index.html" class="back-link">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+            </svg>
+            Back to Home
+        </a>
+
+        <h1>Frequently Asked Questions</h1>
+        <p class="subtitle">Everything you need to know about Pinr</p>
+
+        <!-- Pins Section -->
+        <div class="faq-section">
+            <h2 class="section-title">Pins & Memories</h2>
+
+            <div class="faq-item">
+                <div class="faq-question">What is a Pin?</div>
+                <div class="faq-answer">
+                    A Pin is a travel memory you create to mark a special place you've visited. Each Pin includes a photo, location, date, and optional description. Pins appear on your map and can be shared with friends.
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-question">How do I create a Pin?</div>
+                <div class="faq-answer">
+                    To create a Pin:
+                    <ol>
+                        <li>Tap the <strong>+</strong> button (floating action button) on the map</li>
+                        <li>Take a photo or select one from your gallery</li>
+                        <li>Add a title and optional description</li>
+                        <li>Set the date (or date range) for when you visited</li>
+                        <li>Confirm your location (automatically detected or manually set)</li>
+                        <li>Tap "Create Pin" to save</li>
+                    </ol>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-question">Can I edit or delete a Pin?</div>
+                <div class="faq-answer">
+                    Yes! Tap on any Pin to view its details, then tap the edit icon. You can modify the photo, title, description, date, or location. To delete a Pin, open it and use the delete option. Note: Deleting a Pin is permanent and cannot be undone.
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-question">What are date ranges for Pins?</div>
+                <div class="faq-answer">
+                    For trips or experiences that span multiple days, you can set a date range instead of a single date. This allows you to mark the start and end dates of your visit to a location.
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-question">Can I hide Pins from my map?</div>
+                <div class="faq-answer">
+                    Yes, you can hide individual Pins from your map view. Tap on a Pin and use the hide option. Hidden Pins are not deleted and can be unhidden later. You can also hide all Pins from a specific friend if needed.
+                </div>
+            </div>
+        </div>
+
+        <!-- Friends Section -->
+        <div class="faq-section">
+            <h2 class="section-title">Friends & Social</h2>
+
+            <div class="faq-item">
+                <div class="faq-question">How do I add friends?</div>
+                <div class="faq-answer">
+                    There are three ways to add friends:
+                    <ol>
+                        <li><strong>Search by username:</strong> Open the Friends menu, go to the "Add" tab, and search for your friend's username</li>
+                        <li><strong>Scan QR code:</strong> Use the "Scan" tab to scan your friend's QR code</li>
+                        <li><strong>Share your QR code:</strong> Use the "Code" tab to show your QR code for others to scan</li>
+                    </ol>
+                    After sending a friend request, your friend will receive a notification and can accept or decline.
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-question">How do friend requests work?</div>
+                <div class="faq-answer">
+                    When you send a friend request, the other person receives a notification. They can accept or decline the request. Once accepted, you'll be able to see each other's Pins on the map (unless hidden). You'll also be able to challenge each other in games and see each other on leaderboards.
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-question">Can I remove a friend?</div>
+                <div class="faq-answer">
+                    Yes, you can remove a friend at any time. Open the Friends menu, find the friend in your list, and use the remove option. This will unfriend them and they will no longer see your Pins or be able to challenge you.
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-question">Can I hide a friend's Pins?</div>
+                <div class="faq-answer">
+                    Yes, you can hide all Pins from a specific friend without removing them. This is useful if you want to stay friends but temporarily hide their Pins from your map view. You can unhide them later.
+                </div>
+            </div>
+        </div>
+
+        <!-- Games Section -->
+        <div class="faq-section">
+            <h2 class="section-title">Games</h2>
+
+            <div class="faq-item">
+                <div class="faq-question">What games are available in Pinr?</div>
+                <div class="faq-answer">
+                    Pinr features three geography-based games:
+                    <ul>
+                        <li><strong>Pin Drop:</strong> Drop a pin on a map to guess the location of a place shown in a photo</li>
+                        <li><strong>Flag Dash:</strong> Identify countries by their flags as quickly as possible</li>
+                        <li><strong>Travel Battle:</strong> Compete in geography trivia questions</li>
+                    </ul>
+                    All games have multiple difficulty levels (Easy, Medium, Hard) and timed gameplay.
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-question">How do I play a game?</div>
+                <div class="faq-answer">
+                    Open the Games menu from the main screen. Select a game type and difficulty level, then start playing. Each game has different mechanics:
+                    <ul>
+                        <li><strong>Pin Drop:</strong> View a photo and tap on the map where you think it was taken</li>
+                        <li><strong>Flag Dash:</strong> Match flag images to country names before time runs out</li>
+                        <li><strong>Travel Battle:</strong> Answer multiple-choice geography questions correctly</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-question">What are game streaks?</div>
+                <div class="faq-answer">
+                    Game streaks track how many consecutive days you've played at least one game. Your streak increases each day you play, and resets if you miss a day. You can see your current streak and longest streak ever achieved in your profile.
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-question">How do leaderboards work?</div>
+                <div class="faq-answer">
+                    Leaderboards show the highest scores for each game among you and your friends. You can view:
+                    <ul>
+                        <li>Your personal best score for each game</li>
+                        <li>Your friends' best scores</li>
+                        <li>Overall rankings across all games</li>
+                    </ul>
+                    Leaderboards are updated in real-time as you and your friends achieve new high scores.
+                </div>
+            </div>
+        </div>
+
+        <!-- Challenges Section -->
+        <div class="faq-section">
+            <h2 class="section-title">Challenges</h2>
+
+            <div class="faq-item">
+                <div class="faq-question">How do I challenge a friend?</div>
+                <div class="faq-answer">
+                    To challenge a friend:
+                    <ol>
+                        <li>Open the Games menu</li>
+                        <li>Select a game type and difficulty</li>
+                        <li>Before starting, tap "Challenge Friend"</li>
+                        <li>Select a friend from your friends list</li>
+                        <li>Play the game and try to beat their score</li>
+                    </ol>
+                    Your friend will receive a notification about the challenge and can play to try to beat your score.
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-question">What happens when I complete a challenge?</div>
+                <div class="faq-answer">
+                    When you complete a challenge, your friend receives a notification showing your score. They can then play the same game to try to beat your score. The person with the higher score wins the challenge. Challenge results are tracked and visible in your game history.
+                </div>
+            </div>
+        </div>
+
+        <!-- Stories Section -->
+        <div class="faq-section">
+            <h2 class="section-title">Stories</h2>
+
+            <div class="faq-item">
+                <div class="faq-question">What are Stories?</div>
+                <div class="faq-answer">
+                    Stories are collections of Pins that tell a narrative about a trip or experience. You can create a Story by selecting multiple Pins and arranging them in a sequence. Stories can be shared with friends and provide a way to showcase your travel adventures.
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-question">How do I create a Story?</div>
+                <div class="faq-answer">
+                    To create a Story:
+                    <ol>
+                        <li>Open the Stories menu</li>
+                        <li>Tap "Create Story"</li>
+                        <li>Select multiple Pins to include in your Story</li>
+                        <li>Arrange them in the order you want</li>
+                        <li>Add a title and description</li>
+                        <li>Share with friends or keep it private</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+
+        <!-- Map & Location Section -->
+        <div class="faq-section">
+            <h2 class="section-title">Map & Location</h2>
+
+            <div class="faq-item">
+                <div class="faq-question">How does the map work?</div>
+                <div class="faq-answer">
+                    The map shows all your Pins and your friends' Pins (if you've added them). You can:
+                    <ul>
+                        <li>Zoom in and out to explore different areas</li>
+                        <li>Tap on Pins to view details</li>
+                        <li>See clusters when many Pins are close together</li>
+                        <li>Use the search bar to find specific locations</li>
+                        <li>View your current location (if location permissions are granted)</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-question">Why do I need location permissions?</div>
+                <div class="faq-answer">
+                    Location permissions allow Pinr to:
+                    <ul>
+                        <li>Automatically tag your Pins with your current location</li>
+                        <li>Show your position on the map</li>
+                        <li>Help you find nearby places when creating Pins</li>
+                    </ul>
+                    Your location is only used when creating Pins and is never shared without your permission.
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-question">What are exploration streaks?</div>
+                <div class="faq-answer">
+                    Exploration streaks track how many consecutive days you've explored new locations on the map. Each day you view or interact with Pins in a new area, your streak increases. This encourages you to discover new places and engage with the map regularly.
+                </div>
+            </div>
+        </div>
+
+        <!-- Account & Settings Section -->
+        <div class="faq-section">
+            <h2 class="section-title">Account & Settings</h2>
+
+            <div class="faq-item">
+                <div class="faq-question">How do I change my username?</div>
+                <div class="faq-answer">
+                    Open the Settings menu (tap your profile icon), then select "Edit Profile". You can change your username, avatar photo, and pin color. Your username must be unique and can only be changed if it's not already taken by another user.
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-question">What is a pin color?</div>
+                <div class="faq-answer">
+                    Your pin color is the color that represents you on the map. When friends view your Pins, they'll see them in your chosen color. You can select from a variety of colors in your profile settings.
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-question">How do I sign in?</div>
+                <div class="faq-answer">
+                    Pinr supports multiple sign-in methods:
+                    <ul>
+                        <li><strong>Google Sign-In:</strong> Sign in with your Google account</li>
+                        <li><strong>Apple Sign-In:</strong> Sign in with your Apple ID (iOS only)</li>
+                    </ul>
+                    Your account is securely linked to your chosen authentication method.
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-question">Can I delete my account?</div>
+                <div class="faq-answer">
+                    Account deletion is available through the Settings menu. This will permanently delete all your Pins, Stories, game scores, and friend connections. This action cannot be undone, so please be certain before proceeding.
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-question">How do notifications work?</div>
+                <div class="faq-answer">
+                    Pinr sends push notifications for:
+                    <ul>
+                        <li>New friend requests</li>
+                        <li>Accepted friend requests</li>
+                        <li>Game challenges from friends</li>
+                        <li>Challenge results</li>
+                        <li>New Pins from friends</li>
+                        <li>New Stories from friends</li>
+                    </ul>
+                    You can manage notification preferences in your device's Settings app.
+                </div>
+            </div>
+        </div>
+
+        <!-- General Section -->
+        <div class="faq-section">
+            <h2 class="section-title">General</h2>
+
+            <div class="faq-item">
+                <div class="faq-question">Is Pinr free to use?</div>
+                <div class="faq-answer">
+                    Yes, Pinr is free to download and use. All core features including creating Pins, adding friends, playing games, and creating Stories are available at no cost.
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-question">What platforms is Pinr available on?</div>
+                <div class="faq-answer">
+                    Pinr is available for both iOS and Android devices. You can download it from the App Store (iOS) or Google Play Store (Android).
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-question">How do I report a problem or bug?</div>
+                <div class="faq-answer">
+                    If you encounter any issues or bugs, please contact our support team at <a href="mailto:lee@getpinr.com" style="color: #0066FF; text-decoration: underline;">lee@getpinr.com</a>. Please include as much detail as possible about the issue, including your device type and app version.
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-question">How do I share feedback or suggestions?</div>
+                <div class="faq-answer">
+                    We love hearing from our users! Send your feedback, suggestions, or feature requests to <a href="mailto:lee@getpinr.com" style="color: #0066FF; text-decoration: underline;">lee@getpinr.com</a>. Your input helps us improve Pinr for everyone.
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-question">Is my data private and secure?</div>
+                <div class="faq-answer">
+                    Yes, we take your privacy seriously. Your Pins and personal information are stored securely. Only your friends can see your Pins (unless you choose to share them publicly). For more details, please review our <a href="privacy-policy.html" style="color: #0066FF; text-decoration: underline;">Privacy Policy</a>.
+                </div>
+            </div>
+        </div>
+
+        <!-- Contact Section -->
+        <div style="margin-top: 60px; padding-top: 40px; border-top: 2px solid #e5e7eb; text-align: center; color: #6b7280;">
+            <p style="margin-bottom: 10px;">Still have questions?</p>
+            <p><a href="mailto:lee@getpinr.com" style="color: #0066FF; text-decoration: underline; font-weight: 500;">Contact Support</a></p>
+        </div>
+    </div>
+</body>
+
+</html>
