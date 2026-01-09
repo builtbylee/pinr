@@ -1,0 +1,17 @@
+/node_modules
+/android
+/ios
+/.expo
+/dist
+/web-build
+*.aab
+*.apk
+*.ipa
+*.zip
+*.tar.gz
+*.log
+*.tmp
+/builds
+/play-store-assets
+/functions/node_modules
+/google-cloud-sdk

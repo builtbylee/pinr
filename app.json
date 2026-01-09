@@ -31,7 +31,7 @@
       }
     },
     "android": {
-      "versionCode": 2,
+      "versionCode": 6,
       "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/android-icon-foreground.png",
@@ -110,7 +110,7 @@
         "expo-build-properties",
         {
           "android": {
-            "kotlinVersion": "1.9.25"
+            "gradleVersion": "8.10.2"
           },
           "ios": {
             "useFrameworks": "static"
