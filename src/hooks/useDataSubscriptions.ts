@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { subscribeToPins } from '../services/firestoreService';
 import { subscribeToUserProfile, UserProfile } from '../services/userService';
-import { Memory } from '../store/useMemoryStore';
+import { Memory, useMemoryStore } from '../store/useMemoryStore';
 
 export const useDataSubscriptions = (currentUserId: string | null) => {
     const [allPins, setAllPins] = useState<Memory[]>([]);

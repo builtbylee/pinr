@@ -911,7 +911,6 @@ const styles = StyleSheet.create({
         backgroundColor: 'red', // Debug: SOLID RED (Undeniable)
         zIndex: 9999, // Force top
         elevation: 10,
-        elevation: 10,
         height: 60, // Force height
     },
     navArrow: {
