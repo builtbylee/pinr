@@ -66,6 +66,7 @@ const { width, height } = Dimensions.get('window');
 
 export const FriendsModal: React.FC<FriendsModalProps> = ({ visible, onClose, onSelectUser }) => {
     const { currentUserId, username, avatarUri, pinColor, hiddenFriendIds, toggleHiddenFriend: toggleHiddenFriendLocal, friends: globalFriends, setFriends: setGlobalFriends } = useMemoryStore();
+    const [lastUpdated, setLastUpdated] = useState(Date.now());
     const [activeTab, setActiveTab] = useState<Tab>('list');
 
     // Search / List State
@@ -88,12 +89,18 @@ export const FriendsModal: React.FC<FriendsModalProps> = ({ visible, onClose, on
     // Load friends and requests
     useEffect(() => {
         if (visible && currentUserId) {
-            loadFriendData();
+            loadFriendData(true); // Always fresh refresh on open
             // Reset scan state on open
             setScanned(false);
             setIsProcessingScan(false);
         }
-    }, [visible, currentUserId, globalFriends]);
+    }, [visible, currentUserId]); // Removed globalFriends dependency to avoid loops
+
+    useEffect(() => {
+        if (visible && currentUserId) {
+            loadFriendData(true);
+        }
+    }, [lastUpdated]);
 
     const loadFriendData = async (forceRefresh = false) => {
         if (!currentUserId) return;
@@ -203,7 +210,8 @@ export const FriendsModal: React.FC<FriendsModalProps> = ({ visible, onClose, on
         if (!currentUserId) return;
         try {
             await acceptFriendRequest(request.id, currentUserId, request.fromUid);
-            loadFriendData(true);
+            // Add small delay to allow Firestore to propagate
+            setTimeout(() => setLastUpdated(Date.now()), 500);
         } catch (error: any) {
             console.error('[FriendsModal] Accept failed:', error);
             Alert.alert('Error', error.message || 'Failed to accept request');
@@ -213,7 +221,7 @@ export const FriendsModal: React.FC<FriendsModalProps> = ({ visible, onClose, on
     const handleRejectRequest = async (requestId: string) => {
         try {
             await rejectFriendRequest(requestId);
-            loadFriendData(true);
+            setTimeout(() => setLastUpdated(Date.now()), 500);
         } catch (error) {
             Alert.alert('Error', 'Failed to reject request');
         }
@@ -229,7 +237,7 @@ export const FriendsModal: React.FC<FriendsModalProps> = ({ visible, onClose, on
                     if (!currentUserId) return;
                     try {
                         await removeFriend(currentUserId, friendUid);
-                        loadFriendData(true);
+                        setTimeout(() => setLastUpdated(Date.now()), 500);
                     } catch (error) {
                         Alert.alert('Error', 'Failed to remove friend');
                     }
