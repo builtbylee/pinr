@@ -10,327 +10,25 @@ import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
 import * as crypto from 'crypto';
 import * as jwt from 'jsonwebtoken';
-import { APPLE_PRIVATE_KEY } from './apple-config';
 
-// Create APPLE_CONFIG object for use in exchangeAppleAuthCode
-const APPLE_CONFIG = {
-    APPLE_PRIVATE_KEY: APPLE_PRIVATE_KEY
-};
+// Try to import Apple config (if it exists)
+let APPLE_CONFIG: { APPLE_PRIVATE_KEY?: string } = {};
+try {
+    APPLE_CONFIG = require('./apple-config');
+} catch (e) {
+    // Config file doesn't exist, will use environment variables
+}
 
 admin.initializeApp();
 
 const db = admin.firestore();
 const USERS_COLLECTION = 'users';
 
-// ============================================
-// APPLE SIGN IN FUNCTIONS
-// ============================================
-
-// ============================================
-// APPLE SIGN-IN FOR ANDROID
-// ============================================
-
-/**
- * Generate OAuth URL for Apple Sign-In on Android
- * This function creates the authorization URL that the Android app will open in a browser
- */
-export const getAppleAuthUrl = functions.https.onCall(async (data: { nonce: string }, context: functions.https.CallableContext) => {
-    const nonce = data.nonce;
-    if (!nonce) {
-        throw new functions.https.HttpsError('invalid-argument', 'Nonce is required');
-    }
-
-    // Generate state for CSRF protection
-    const state = crypto.randomBytes(16).toString('hex');
-
-    // Get configuration from environment variables or Secrets
-    const clientId = process.env.APPLE_CLIENT_ID || functions.config().apple?.client_id || 'com.builtbylee.app80days.service';
-    const redirectUri = process.env.APPLE_REDIRECT_URI || functions.config().apple?.redirect_uri || 'https://us-central1-days-c4ad4.cloudfunctions.net/appleAuthCallback';
-
-    // NOTE: We don't request 'name email' scope because Apple requires response_mode=form_post
-    // for those scopes, which requires a server endpoint. The email is still available in the
-    // ID token after code exchange. Name can be collected in-app if needed.
-
-    // Build Apple authorization URL
-    // Using response_mode=query so the authorization code appears in the callback URL
-    const authUrl = `https://appleid.apple.com/auth/authorize?` +
-        `client_id=${encodeURIComponent(clientId)}&` +
-        `redirect_uri=${encodeURIComponent(redirectUri)}&` +
-        `response_type=code&` +
-        `response_mode=query&` +
-        `state=${state}&` +
-        `nonce=${nonce}`;
-
-    return { authUrl, state };
-});
-
-/**
- * Exchange Apple authorization code for ID token
- * This function handles the OAuth callback and exchanges the code for an identity token
- */
-export const exchangeAppleAuthCode = functions.https.onCall(async (data: { code: string; nonce: string; state?: string }, context: functions.https.CallableContext) => {
-    const { code, nonce, state: _state } = data; // _state available for future CSRF validation
-
-    if (!code || !nonce) {
-        throw new functions.https.HttpsError('invalid-argument', 'Code and nonce are required');
-    }
-
-    try {
-        const teamId = process.env.APPLE_TEAM_ID || functions.config().apple?.team_id || 'CMBSFLQ5V6';
-        const keyId = process.env.APPLE_KEY_ID || functions.config().apple?.key_id || '8TV72LRP85';
-        const clientId = process.env.APPLE_CLIENT_ID || functions.config().apple?.client_id || 'com.builtbylee.app80days.service';
-        const redirectUri = process.env.APPLE_REDIRECT_URI || functions.config().apple?.redirect_uri || 'https://us-central1-days-c4ad4.cloudfunctions.net/appleAuthCallback';
-
-        // Private key - get from config file, environment, or Firebase config
-        let privateKey = (APPLE_CONFIG.APPLE_PRIVATE_KEY as string) ||
-            process.env.APPLE_PRIVATE_KEY ||
-            functions.config().apple?.private_key;
-
-        if (!privateKey) {
-            // Fallback: Try to load from local file for deployment convenience if not in env
-            try {
-                const localConfig = require('./apple-config');
-                if (localConfig.APPLE_PRIVATE_KEY) privateKey = localConfig.APPLE_PRIVATE_KEY;
-            } catch (e) {
-                // Ignore
-            }
-
-            if (!privateKey) {
-                throw new functions.https.HttpsError(
-                    'failed-precondition',
-                    'Apple Sign-In private key is missing.'
-                );
-            }
-        }
-
-        // Generate client secret (JWT signed with private key)
-        const clientSecret = jwt.sign(
-            {
-                iss: teamId,
-                iat: Math.floor(Date.now() / 1000),
-                exp: Math.floor(Date.now() / 1000) + 3600, // 1 hour expiration
-                aud: 'https://appleid.apple.com',
-                sub: clientId,
-            },
-            privateKey.replace(/\\n/g, '\n'), // Handle escaped newlines
-            {
-                algorithm: 'ES256',
-                keyid: keyId,
-            }
-        );
-
-        // Exchange authorization code for tokens
-        const tokenResponse = await fetch('https://appleid.apple.com/auth/token', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-            },
-            body: new URLSearchParams({
-                client_id: clientId,
-                client_secret: clientSecret,
-                code: code,
-                grant_type: 'authorization_code',
-                redirect_uri: redirectUri,
-            }),
-        });
-
-        if (!tokenResponse.ok) {
-            const errorText = await tokenResponse.text();
-            console.error('[exchangeAppleAuthCode] Token exchange failed:', errorText);
-            throw new functions.https.HttpsError('internal', `Token exchange failed: ${errorText}`);
-        }
-
-        const tokens = await tokenResponse.json() as { id_token?: string; access_token?: string; token_type?: string };
-        const idToken = tokens.id_token;
-
-        if (!idToken) {
-            throw new functions.https.HttpsError('internal', 'No ID token received from Apple');
-        }
-
-        // Decode ID token to extract user info (without verification - Firebase will verify)
-        const decoded = jwt.decode(idToken, { complete: true }) as any;
-
-        if (!decoded || !decoded.payload) {
-            throw new functions.https.HttpsError('internal', 'Failed to decode ID token');
-        }
-
-        // Return ID token and user info
-        return {
-            identityToken: idToken,
-            email: decoded.payload.email || null,
-            fullName: decoded.payload.name ? {
-                givenName: decoded.payload.name.given_name || null,
-                familyName: decoded.payload.name.family_name || null,
-            } : null,
-        };
-    } catch (error: any) {
-        console.error('[exchangeAppleAuthCode] Error:', error?.message || 'Unknown error');
-        if (error instanceof functions.https.HttpsError) {
-            throw error;
-        }
-        throw new functions.https.HttpsError(
-            'internal',
-            error?.message || 'Failed to exchange authorization code'
-        );
-    }
-});
-
-/**
- * HTTP endpoint to handle Apple OAuth callback
- * Apple redirects here after user authenticates, then we redirect to the app via deep link
- */
-export const appleAuthCallback = functions.https.onRequest(async (req, res) => {
-    const code = req.query.code as string | undefined;
-    const state = req.query.state as string | undefined;
-    const error = req.query.error as string | undefined;
-
-    // Build the HTML response
-    const html = `
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Signing in to Pinr...</title>
-    <style>
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-            margin: 0;
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-            color: white;
-        }
-        .container {
-            text-align: center;
-            padding: 40px;
-        }
-        .spinner {
-            width: 50px;
-            height: 50px;
-            border: 4px solid rgba(255,255,255,0.3);
-            border-top-color: white;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 20px;
-        }
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-        h1 {
-            font-size: 24px;
-            margin-bottom: 10px;
-        }
-        p {
-            color: rgba(255,255,255,0.7);
-            margin-bottom: 30px;
-        }
-        .manual-link {
-            display: inline-block;
-            padding: 12px 24px;
-            background: white;
-            color: #1a1a2e;
-            text-decoration: none;
-            border-radius: 8px;
-            font-weight: 600;
-            margin-top: 20px;
-        }
-        .error {
-            color: #ff6b6b;
-            margin-top: 20px;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        ${error ? `
-            <h1>Sign-in Error</h1>
-            <p class="error">${error}</p>
-        ` : !code ? `
-            <h1>Error</h1>
-            <p class="error">No authorization code received</p>
-        ` : `
-            <div class="spinner"></div>
-            <h1>Signing you in...</h1>
-            <p id="status">Redirecting back to Pinr</p>
-            <a id="manualLink" class="manual-link" style="display:none;">Open Pinr</a>
-        `}
-    </div>
-
-    ${code ? `
-    <script>
-        (function() {
-            var code = ${JSON.stringify(code)};
-            var state = ${JSON.stringify(state || '')};
-
-            // Build the deep link URL
-            var deepLink = 'pinr://auth/apple/callback?' +
-                'code=' + encodeURIComponent(code) +
-                (state ? '&state=' + encodeURIComponent(state) : '');
-
-            // Set up manual link
-            var manualLink = document.getElementById('manualLink');
-            manualLink.href = deepLink;
-
-            console.log('Redirecting to:', deepLink);
-
-            // Try to open the app
-            window.location.href = deepLink;
-
-            // Show manual button after delay if still here
-            setTimeout(function() {
-                manualLink.style.display = 'inline-block';
-                document.getElementById('status').textContent = 'If the app didn\\'t open, tap below:';
-            }, 1500);
-        })();
-    </script>
-    ` : ''}
-</body>
-</html>
-    `;
-
-    res.status(200).send(html);
-});
-
-/**
- * Save iOS Apple Authorization Code
- * Used by the iOS client to store the auth code for backend processing/refresh token generation
- */
-export const saveiOSAppleAuth = functions.https.onCall(async (data: { code: string }, context: functions.https.CallableContext) => {
-    if (!context.auth) {
-        throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated.');
-    }
-    const { code } = data;
-    if (!code) {
-        throw new functions.https.HttpsError('invalid-argument', 'Authorization code is required.');
-    }
-
-    const uid = context.auth.uid;
-    console.log(`[saveiOSAppleAuth] Saving auth code for user: ${uid}`);
-
-    try {
-        // Store in a private subcollection or document
-        await db.collection('users').doc(uid).collection('private').doc('apple_auth').set({
-            authorizationCode: code,
-            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-            platform: 'ios'
-        }, { merge: true });
-
-        return { success: true };
-    } catch (error: any) {
-        console.error('[saveiOSAppleAuth] Error:', error);
-        throw new functions.https.HttpsError('internal', 'Failed to save auth code.');
-    }
-});
-
-/**
- * Exchange Apple Auth Code (Android/Generic)
- * Used to exchange the auth code for a refresh token directly on the backend
- */
-
+// Helper to sanitize UIDs in logs (truncate to first 8 chars)
+function sanitizeUid(uid: string | undefined | null): string {
+    if (!uid) return 'NULL';
+    return uid.length > 8 ? uid.substring(0, 8) + '...' : uid;
+}
 
 // ============================================
 // RATE LIMITING UTILITY
@@ -372,7 +70,7 @@ async function checkRateLimit(
 
         if (data.count >= config.maxRequests) {
             // Rate limit exceeded
-            console.warn(`[RateLimit] User ${uid} exceeded limit for ${action}`);
+            console.warn(`[RateLimit] User ${sanitizeUid(uid)} exceeded limit for ${action}`);
             return { allowed: false, remaining: 0 };
         }
 
@@ -382,8 +80,8 @@ async function checkRateLimit(
         });
 
         return { allowed: true, remaining: config.maxRequests - data.count - 1 };
-    } catch (error) {
-        console.error('[RateLimit] Error checking rate limit:', error);
+    } catch (error: any) {
+        console.error('[RateLimit] Error checking rate limit:', error?.message || 'Unknown error');
         // Fail open to avoid blocking legitimate users
         return { allowed: true, remaining: config.maxRequests };
     }
@@ -493,7 +191,7 @@ export const addFriend = functions.https.onCall(async (data: AddFriendData, cont
         if (error instanceof functions.https.HttpsError) {
             throw error;
         }
-        console.error('[addFriend] Error:', error);
+        console.error('[addFriend] Error:', error?.message || 'Unknown error');
         throw new functions.https.HttpsError(
             'internal',
             error.message || 'Failed to add friend.'
@@ -554,7 +252,7 @@ export const removeFriend = functions.https.onCall(async (data: RemoveFriendData
             message: 'Friend removed.',
         };
     } catch (error: any) {
-        console.error('[removeFriend] Error:', error);
+        console.error('[removeFriend] Error:', error?.message || 'Unknown error');
         throw new functions.https.HttpsError(
             'internal',
             error.message || 'Failed to remove friend.'
@@ -671,7 +369,7 @@ export const acceptFriendRequest = functions.https.onCall(async (data: AcceptFri
         if (error instanceof functions.https.HttpsError) {
             throw error;
         }
-        console.error('[acceptFriendRequest] Error:', error);
+        console.error('[acceptFriendRequest] Error:', error?.message || 'Unknown error');
         throw new functions.https.HttpsError(
             'internal',
             error.message || 'Failed to accept friend request.'
@@ -759,7 +457,7 @@ export const submitGameScore = functions.https.onCall(async (data: SubmitGameSco
     // 3. Validate game time (30 seconds = 30000ms, give some buffer)
     const MAX_GAME_TIME_MS = 35000; // 35 seconds max
     if (gameTimeMs > MAX_GAME_TIME_MS) {
-        console.warn(`[submitGameScore] Suspiciously long game time: ${gameTimeMs}ms from ${uid}`);
+        console.warn(`[submitGameScore] Suspiciously long game time: ${gameTimeMs}ms from ${sanitizeUid(uid)}`);
         // Don't reject, but log it
     }
 
@@ -791,7 +489,7 @@ export const submitGameScore = functions.https.onCall(async (data: SubmitGameSco
     // 5. Check for score manipulation
     const scoreDifference = Math.abs(serverScore - clientScore);
     if (scoreDifference > 10) { // Allow small rounding differences
-        console.warn(`[submitGameScore] Score mismatch! Client: ${clientScore}, Server: ${serverScore}, User: ${uid}`);
+        console.warn(`[submitGameScore] Score mismatch! Client: ${clientScore}, Server: ${serverScore}, User: ${sanitizeUid(uid)}`);
         // Use server score, not client score
     }
 
@@ -835,7 +533,7 @@ export const submitGameScore = functions.https.onCall(async (data: SubmitGameSco
         timestamp: Date.now(),
     });
 
-    console.log(`[submitGameScore] New high score: ${serverScore} for ${uid} on ${gameType}`);
+    console.log(`[submitGameScore] New high score: ${serverScore} for ${sanitizeUid(uid)} on ${gameType}`);
 
     return {
         success: true,
@@ -906,7 +604,7 @@ export const submitChallengeScore = functions.https.onCall(async (data: SubmitCh
     const startedAt = challenge[startedAtField];
 
     if (startedAt && gameTimeMs > TIME_LIMIT_MS) {
-        console.warn(`[submitChallengeScore] Time exceeded: ${gameTimeMs}ms from ${uid}`);
+        console.warn(`[submitChallengeScore] Time exceeded: ${gameTimeMs}ms from ${sanitizeUid(uid)}`);
         // Strict: Reject scores that exceed time limit
         throw new functions.https.HttpsError(
             'failed-precondition',
@@ -934,7 +632,7 @@ export const submitChallengeScore = functions.https.onCall(async (data: SubmitCh
 
     // 6. Log score mismatches
     if (Math.abs(serverScore - clientScore) > 10) {
-        console.warn(`[submitChallengeScore] Score mismatch! Client: ${clientScore}, Server: ${serverScore}, User: ${uid}`);
+        console.warn(`[submitChallengeScore] Score mismatch! Client: ${clientScore}, Server: ${serverScore}, User: ${sanitizeUid(uid)}`);
     }
 
     // 7. Update challenge with validated score
@@ -965,7 +663,7 @@ export const submitChallengeScore = functions.https.onCall(async (data: SubmitCh
 
     await challengeRef.update(updateData);
 
-    console.log(`[submitChallengeScore] Score ${serverScore} saved for ${uid} on challenge ${challengeId}`);
+    console.log(`[submitChallengeScore] Score ${serverScore} saved for ${sanitizeUid(uid)} on challenge ${sanitizeUid(challengeId)}`);
 
     return {
         success: true,
@@ -1055,7 +753,7 @@ export const createStory = functions.https.onCall(async (data: CreateStoryData, 
 
     await storyRef.set(storyData);
 
-    console.log(`[createStory] Created story ${storyRef.id} for ${uid}`);
+    console.log(`[createStory] Created story ${sanitizeUid(storyRef.id)} for ${sanitizeUid(uid)}`);
 
     return {
         success: true,
@@ -1095,12 +793,16 @@ export const onWaitlistSignup = functions.firestore
 
         // Skip if email already sent (shouldn't happen on create, but safety check)
         if (data.emailSent) {
-            console.log(`[onWaitlistSignup] Email already sent to ${email}, skipping`);
+            // Sanitize email in logs (show only first part before @)
+            const emailPrefix = email ? email.split('@')[0]?.substring(0, 5) + '...@***' : 'NULL';
+            console.log(`[onWaitlistSignup] Email already sent to ${emailPrefix}, skipping`);
             return;
         }
 
         const platform = data.platform || 'unknown';
-        console.log(`[onWaitlistSignup] New signup: ${email} (${platform})`);
+        // Sanitize email in logs
+        const emailPrefix = email ? email.split('@')[0]?.substring(0, 5) + '...@***' : 'NULL';
+        console.log(`[onWaitlistSignup] New signup: ${emailPrefix} (${platform})`);
 
         // Platform detection for personalized messaging
         const LANDING_PAGE = 'https://getpinr.com';
@@ -1180,18 +882,21 @@ export const onWaitlistSignup = functions.firestore
 
             if (!response.ok) {
                 const errorBody = await response.text();
-                console.error(`[onWaitlistSignup] Resend API error: ${response.status} - ${errorBody}`);
+                console.error(`[onWaitlistSignup] Resend API error: ${response.status} - ${errorBody?.substring(0, 200) || 'Unknown error'}`);
                 return;
             }
 
             const result = await response.json();
-            console.log(`[onWaitlistSignup] Email sent to ${email}, ID: ${result.id}`);
+            // Sanitize email and result ID in logs
+            const emailPrefix = email ? email.split('@')[0]?.substring(0, 5) + '...@***' : 'NULL';
+            const resultId = result.id ? result.id.substring(0, 8) + '...' : 'NULL';
+            console.log(`[onWaitlistSignup] Email sent to ${emailPrefix}, ID: ${resultId}`);
 
             // Mark email as sent
             await snapshot.ref.update({ emailSent: true });
 
         } catch (error: any) {
-            console.error('[onWaitlistSignup] Failed to send email:', error.message);
+            console.error('[onWaitlistSignup] Failed to send email:', error?.message || 'Unknown error');
         }
     });
 
@@ -1245,14 +950,14 @@ export const banUser = functions.https.onCall(async (data, context) => {
             });
             await batch.commit();
 
-            console.log(`[banUser] Deleted ${pinsSnapshot.size} pins for user ${userId}`);
+            console.log(`[banUser] Deleted ${pinsSnapshot.size} pins for user ${sanitizeUid(userId)}`);
         }
 
-        console.log(`[banUser] User ${userId} banned by ${context.auth.uid}`);
+        console.log(`[banUser] User ${sanitizeUid(userId)} banned by ${sanitizeUid(context.auth.uid)}`);
         return { success: true, message: 'User banned successfully.' };
 
     } catch (error: any) {
-        console.error('[banUser] Error:', error.message);
+        console.error('[banUser] Error:', error?.message || 'Unknown error');
         throw new functions.https.HttpsError('internal', 'Failed to ban user.');
     }
 });
@@ -1284,11 +989,11 @@ export const unbanUser = functions.https.onCall(async (data, context) => {
             unbannedBy: context.auth.uid,
         });
 
-        console.log(`[unbanUser] User ${userId} unbanned by ${context.auth.uid}`);
+        console.log(`[unbanUser] User ${sanitizeUid(userId)} unbanned by ${sanitizeUid(context.auth.uid)}`);
         return { success: true, message: 'User unbanned successfully.' };
 
     } catch (error: any) {
-        console.error('[unbanUser] Error:', error.message);
+        console.error('[unbanUser] Error:', error?.message || 'Unknown error');
         throw new functions.https.HttpsError('internal', 'Failed to unban user.');
     }
 });
@@ -1315,7 +1020,7 @@ export const checkBanStatus = functions.https.onCall(async (data, context) => {
         };
 
     } catch (error: any) {
-        console.error('[checkBanStatus] Error:', error.message);
+        console.error('[checkBanStatus] Error:', error?.message || 'Unknown error');
         return { banned: false };
     }
 });
@@ -1342,11 +1047,11 @@ export const adminDeletePin = functions.https.onCall(async (data, context) => {
 
     try {
         await db.collection('pins').doc(pinId).delete();
-        console.log(`[adminDeletePin] Pin ${pinId} deleted by ${context.auth.uid}`);
+        console.log(`[adminDeletePin] Pin ${sanitizeUid(pinId)} deleted by ${sanitizeUid(context.auth.uid)}`);
         return { success: true };
 
     } catch (error: any) {
-        console.error('[adminDeletePin] Error:', error.message);
+        console.error('[adminDeletePin] Error:', error?.message || 'Unknown error');
         throw new functions.https.HttpsError('internal', 'Failed to delete pin.');
     }
 });
@@ -1358,7 +1063,7 @@ export const adminDeletePin = functions.https.onCall(async (data, context) => {
  * NOTE: Requires Cloud Vision API to be enabled in your GCP project
  * https://console.cloud.google.com/apis/library/vision.googleapis.com
  */
-export const moderateImage = functions.https.onCall(async (data, context) => {
+export const moderateImage = functions.https.onCall(async (data: any, context: functions.https.CallableContext) => {
     if (!context.auth) {
         throw new functions.https.HttpsError(
             'unauthenticated',
@@ -1390,7 +1095,9 @@ export const moderateImage = functions.https.onCall(async (data, context) => {
 
         // Check for explicit content
         // Likelihood levels: UNKNOWN, VERY_UNLIKELY, UNLIKELY, POSSIBLE, LIKELY, VERY_LIKELY
-        const BLOCK_LEVELS = ['LIKELY', 'VERY_LIKELY'];
+        // Only block VERY_LIKELY to reduce false positives (innocent content like art, medical images, etc.)
+        // This ensures we only block clearly inappropriate content, not borderline cases
+        const BLOCK_LEVELS = ['VERY_LIKELY'];
 
         const issues: string[] = [];
 
@@ -1415,7 +1122,7 @@ export const moderateImage = functions.https.onCall(async (data, context) => {
         return { approved: true, reason: null };
 
     } catch (error: any) {
-        console.error('[moderateImage] Error:', error.message);
+        console.error('[moderateImage] Error:', error?.message || 'Unknown error');
         // On error, allow the image (fail open) but log for review
         // In production, you may want to fail closed instead
         return { approved: true, reason: null, error: 'Moderation check failed' };
@@ -1433,7 +1140,9 @@ export const onReportCreated = functions.firestore
         const reportData = snapshot.data();
         const reportId = context.params.reportId;
 
-        console.log(`[onReportCreated] New report ${reportId}:`, reportData.reason);
+        // Sanitize report ID in logs
+        const sanitizedReportId = reportId ? reportId.substring(0, 8) + '...' : 'NULL';
+        console.log(`[onReportCreated] New report ${sanitizedReportId}:`, reportData.reason || 'NONE');
 
         try {
             // Get reporter info
@@ -1465,7 +1174,7 @@ export const onReportCreated = functions.firestore
                 `;
                 targetLink = `https://console.firebase.google.com/project/days-c4ad4/firestore/data/~2Fpins~2F${reportData.reportedPinId}`;
 
-                console.log(`[onReportCreated] Pin ${reportData.reportedPinId} marked as under review`);
+                console.log(`[onReportCreated] Pin ${sanitizeUid(reportData.reportedPinId)} marked as under review`);
             } else if (reportData.reportedUserId) {
                 // User report
                 const userDoc = await db.collection(USERS_COLLECTION).doc(reportData.reportedUserId).get();
@@ -1531,14 +1240,14 @@ export const onReportCreated = functions.firestore
 
             if (!response.ok) {
                 const errorBody = await response.text();
-                console.error(`[onReportCreated] Email error: ${response.status} - ${errorBody}`);
+                console.error(`[onReportCreated] Email error: ${response.status} - ${errorBody?.substring(0, 200) || 'Unknown error'}`);
                 return;
             }
 
-            console.log(`[onReportCreated] Admin notification sent for report ${reportId}`);
+            console.log(`[onReportCreated] Admin notification sent for report ${sanitizedReportId}`);
 
         } catch (error: any) {
-            console.error('[onReportCreated] Error:', error.message);
+            console.error('[onReportCreated] Error:', error?.message || 'Unknown error');
         }
     });
 
@@ -1546,7 +1255,7 @@ export const onReportCreated = functions.firestore
  * Approve a reported pin (admin only)
  * Removes underReview flag and marks report as resolved
  */
-export const approveReportedPin = functions.https.onCall(async (data, context) => {
+export const approveReportedPin = functions.https.onCall(async (data: { pinId: string; reportId: string }, context: functions.https.CallableContext) => {
     if (!context.auth || !ADMIN_UIDS.includes(context.auth.uid)) {
         throw new functions.https.HttpsError(
             'permission-denied',
@@ -1578,11 +1287,11 @@ export const approveReportedPin = functions.https.onCall(async (data, context) =
             });
         }
 
-        console.log(`[approveReportedPin] Pin ${pinId} approved by ${context.auth.uid}`);
+        console.log(`[approveReportedPin] Pin ${sanitizeUid(pinId)} approved by ${sanitizeUid(context.auth.uid)}`);
         return { success: true };
 
     } catch (error: any) {
-        console.error('[approveReportedPin] Error:', error.message);
+        console.error('[approveReportedPin] Error:', error?.message || 'Unknown error');
         throw new functions.https.HttpsError('internal', 'Failed to approve pin.');
     }
 });
@@ -1590,7 +1299,7 @@ export const approveReportedPin = functions.https.onCall(async (data, context) =
 /**
  * Reject a reported pin (admin only) - deletes the pin
  */
-export const rejectReportedPin = functions.https.onCall(async (data, context) => {
+export const rejectReportedPin = functions.https.onCall(async (data: { pinId: string; reportId: string }, context: functions.https.CallableContext) => {
     if (!context.auth || !ADMIN_UIDS.includes(context.auth.uid)) {
         throw new functions.https.HttpsError(
             'permission-denied',
@@ -1618,11 +1327,236 @@ export const rejectReportedPin = functions.https.onCall(async (data, context) =>
             });
         }
 
-        console.log(`[rejectReportedPin] Pin ${pinId} deleted by ${context.auth.uid}`);
+        console.log(`[rejectReportedPin] Pin ${sanitizeUid(pinId)} deleted by ${sanitizeUid(context.auth.uid)}`);
         return { success: true };
 
     } catch (error: any) {
-        console.error('[rejectReportedPin] Error:', error.message);
+        console.error('[rejectReportedPin] Error:', error?.message || 'Unknown error');
         throw new functions.https.HttpsError('internal', 'Failed to reject pin.');
+    }
+});
+// ============================================
+// DATA FETCHING PROXY (iOS Connectivity Bypass)
+// ============================================
+
+/**
+ * Fetch active games and pending challenges via HTTPS
+ * Bypasses client-side gRPC connection issues on iOS
+ */
+export const fetchActiveGames = functions.https.onCall(async (data: any, context: functions.https.CallableContext) => {
+    // 1. Verify authentication
+    if (!context.auth) {
+        throw new functions.https.HttpsError(
+            'unauthenticated',
+            'User must be authenticated to fetch games.'
+        );
+    }
+
+    const uid = context.auth.uid;
+    console.log(`[fetchActiveGames] Fetching games for user: ${sanitizeUid(uid)}`);
+
+    try {
+        const challengesRef = db.collection(CHALLENGES_COLLECTION);
+
+        // Parallel queries for performance
+        const [challengerGames, opponentGames, pendingChallenges] = await Promise.all([
+            // 1. Active games where I am challenger
+            challengesRef
+                .where('challengerId', '==', uid)
+                .where('status', 'in', ['accepted'])
+                .get(),
+
+            // 2. Active games where I am opponent
+            challengesRef
+                .where('opponentId', '==', uid)
+                .where('status', 'in', ['accepted'])
+                .get(),
+
+            // 3. Pending challenges (for "Your Turn" badge logic)
+            challengesRef
+                .where('opponentId', '==', uid)
+                .where('status', '==', 'pending')
+                .get()
+        ]);
+
+        const formatGame = (doc: admin.firestore.QueryDocumentSnapshot) => {
+            const data = doc.data();
+            return {
+                id: doc.id,
+                ...data,
+                // Ensure timestamps are numbers, not Firestore objects
+                createdAt: data.createdAt instanceof admin.firestore.Timestamp ? data.createdAt.toMillis() : data.createdAt,
+                expiresAt: data.expiresAt instanceof admin.firestore.Timestamp ? data.expiresAt.toMillis() : data.expiresAt,
+            };
+        };
+
+        const activeGames = [
+            ...challengerGames.docs.map(formatGame),
+            ...opponentGames.docs.map(formatGame)
+        ];
+
+        const pending = pendingChallenges.docs.map(formatGame);
+
+        console.log(`[fetchActiveGames] Found ${activeGames.length} active and ${pending.length} pending for ${sanitizeUid(uid)}`);
+
+        return {
+            success: true,
+            activeGames,
+            pendingChallenges: pending,
+            timestamp: Date.now()
+        };
+
+    } catch (error: any) {
+        console.error('[fetchActiveGames] Error:', error?.message || 'Unknown error');
+        throw new functions.https.HttpsError(
+            'internal',
+            error?.message || 'Failed to fetch games.'
+        );
+    }
+});
+
+// ============================================
+// APPLE SIGN-IN FOR ANDROID
+// ============================================
+
+/**
+ * Generate OAuth URL for Apple Sign-In on Android
+ * This function creates the authorization URL that the Android app will open in a browser
+ */
+export const getAppleAuthUrl = functions.https.onCall(async (data: { nonce: string }, context: functions.https.CallableContext) => {
+    const nonce = data.nonce;
+    if (!nonce) {
+        throw new functions.https.HttpsError('invalid-argument', 'Nonce is required');
+    }
+
+    // Generate state for CSRF protection
+    const state = crypto.randomBytes(16).toString('hex');
+    
+    // Get configuration from environment variables or Secrets
+    // These can be set via Firebase Console → Functions → Configuration → Secrets
+    const clientId = process.env.APPLE_CLIENT_ID || functions.config().apple?.client_id || 'com.builtbylee.app80days.service';
+    const redirectUri = process.env.APPLE_REDIRECT_URI || functions.config().apple?.redirect_uri || 'https://getpinr.com/auth/apple/callback';
+    const scope = 'name email';
+    
+    // Build Apple authorization URL
+    const authUrl = `https://appleid.apple.com/auth/authorize?` +
+        `client_id=${encodeURIComponent(clientId)}&` +
+        `redirect_uri=${encodeURIComponent(redirectUri)}&` +
+        `response_type=code&` +
+        `scope=${encodeURIComponent(scope)}&` +
+        `response_mode=form_post&` +
+        `state=${state}&` +
+        `nonce=${nonce}`;
+
+    return { authUrl, state };
+});
+
+/**
+ * Exchange Apple authorization code for ID token
+ * This function handles the OAuth callback and exchanges the code for an identity token
+ */
+export const exchangeAppleAuthCode = functions.https.onCall(async (data: { code: string; nonce: string; state?: string }, context: functions.https.CallableContext) => {
+    const { code, nonce } = data;
+    
+    if (!code || !nonce) {
+        throw new functions.https.HttpsError('invalid-argument', 'Code and nonce are required');
+    }
+
+    try {
+        // Apple Sign-In configuration
+        // TODO: Move these to environment variables once Firebase CLI is working
+        // For now, using values from Firebase Console Authentication settings
+        const teamId = process.env.APPLE_TEAM_ID || functions.config().apple?.team_id || 'CMBSFLQ5V6';
+        const keyId = process.env.APPLE_KEY_ID || functions.config().apple?.key_id || '8TV72LRP85';
+        const clientId = process.env.APPLE_CLIENT_ID || functions.config().apple?.client_id || 'com.builtbylee.app80days.service';
+        const redirectUri = process.env.APPLE_REDIRECT_URI || functions.config().apple?.redirect_uri || 'https://getpinr.com/auth/apple/callback';
+        
+        // Private key - get from config file, environment, or Firebase config
+        // Priority: config file > environment variable > Firebase config
+        const privateKey = (APPLE_CONFIG.APPLE_PRIVATE_KEY as string) || 
+                          process.env.APPLE_PRIVATE_KEY || 
+                          functions.config().apple?.private_key;
+        
+        if (!privateKey) {
+            throw new functions.https.HttpsError(
+                'failed-precondition',
+                'Apple Sign-In private key is missing. Please set APPLE_PRIVATE_KEY as an environment variable or add it to Firebase Functions config. You can copy it from Firebase Console → Authentication → Sign-in method → Apple.'
+            );
+        }
+        
+        // Generate client secret (JWT signed with private key)
+        const clientSecret = jwt.sign(
+            {
+                iss: teamId,
+                iat: Math.floor(Date.now() / 1000),
+                exp: Math.floor(Date.now() / 1000) + 3600, // 1 hour expiration
+                aud: 'https://appleid.apple.com',
+                sub: clientId,
+            },
+            privateKey.replace(/\\n/g, '\n'), // Handle escaped newlines
+            {
+                algorithm: 'ES256',
+                keyid: keyId,
+            }
+        );
+
+        // Exchange authorization code for tokens
+        const tokenResponse = await fetch('https://appleid.apple.com/auth/token', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: new URLSearchParams({
+                client_id: clientId,
+                client_secret: clientSecret,
+                code: code,
+                grant_type: 'authorization_code',
+                redirect_uri: redirectUri,
+            }),
+        });
+
+        if (!tokenResponse.ok) {
+            const errorText = await tokenResponse.text();
+            console.error('[exchangeAppleAuthCode] Token exchange failed:', errorText);
+            throw new functions.https.HttpsError('internal', `Token exchange failed: ${errorText}`);
+        }
+
+        const tokens = await tokenResponse.json() as { id_token?: string; access_token?: string; token_type?: string };
+        const idToken = tokens.id_token;
+
+        if (!idToken) {
+            throw new functions.https.HttpsError('internal', 'No ID token received from Apple');
+        }
+
+        // Decode ID token to extract user info (without verification - Firebase will verify)
+        const decoded = jwt.decode(idToken, { complete: true }) as any;
+        
+        if (!decoded || !decoded.payload) {
+            throw new functions.https.HttpsError('internal', 'Failed to decode ID token');
+        }
+
+        // Verify nonce matches (security check)
+        if (decoded.payload.nonce !== nonce) {
+            throw new functions.https.HttpsError('invalid-argument', 'Nonce mismatch');
+        }
+
+        // Return ID token and user info
+        return {
+            identityToken: idToken,
+            email: decoded.payload.email || null,
+            fullName: decoded.payload.name ? {
+                givenName: decoded.payload.name.given_name || null,
+                familyName: decoded.payload.name.family_name || null,
+            } : null,
+        };
+    } catch (error: any) {
+        console.error('[exchangeAppleAuthCode] Error:', error?.message || 'Unknown error');
+        if (error instanceof functions.https.HttpsError) {
+            throw error;
+        }
+        throw new functions.https.HttpsError(
+            'internal',
+            error?.message || 'Failed to exchange authorization code'
+        );
     }
 });
