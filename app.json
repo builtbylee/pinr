@@ -85,6 +85,15 @@
     "plugins": [
       "expo-router",
       [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/android-icon-monochrome.png",
+          "color": "#4A7EC7",
+          "sounds": [],
+          "androidMode": "default"
+        }
+      ],
+      [
         "onesignal-expo-plugin",
         {
           "mode": "production"

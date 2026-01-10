@@ -65,7 +65,7 @@ const PIN_COLOR_MAP: Record<string, string> = {
 const { width, height } = Dimensions.get('window');
 
 export const FriendsModal: React.FC<FriendsModalProps> = ({ visible, onClose, onSelectUser }) => {
-    const { currentUserId, username, avatarUri, pinColor, hiddenFriendIds, toggleHiddenFriend: toggleHiddenFriendLocal, friends: globalFriends } = useMemoryStore();
+    const { currentUserId, username, avatarUri, pinColor, hiddenFriendIds, toggleHiddenFriend: toggleHiddenFriendLocal, friends: globalFriends, setFriends: setGlobalFriends } = useMemoryStore();
     const [activeTab, setActiveTab] = useState<Tab>('list');
 
     // Search / List State
@@ -95,13 +95,18 @@ export const FriendsModal: React.FC<FriendsModalProps> = ({ visible, onClose, on
         }
     }, [visible, currentUserId, globalFriends]);
 
-    const loadFriendData = async () => {
+    const loadFriendData = async (forceRefresh = false) => {
         if (!currentUserId) return;
 
         // 1. Load Friends (Priority)
         try {
-            // Get friends from Global Store if available, else fetch
-            const friendIds = globalFriends.length > 0 ? globalFriends : await getFriends(currentUserId);
+            // Get friends from Global Store if available, else fetch (or force refresh)
+            const friendIds = (!forceRefresh && globalFriends.length > 0) ? globalFriends : await getFriends(currentUserId);
+
+            // Update global store if we fetched new data
+            if (forceRefresh || globalFriends.length === 0) {
+                setGlobalFriends(friendIds);
+            }
 
             if (friendIds.length > 0) {
                 const friendsList: Friend[] = [];
@@ -198,7 +203,7 @@ export const FriendsModal: React.FC<FriendsModalProps> = ({ visible, onClose, on
         if (!currentUserId) return;
         try {
             await acceptFriendRequest(request.id, currentUserId, request.fromUid);
-            loadFriendData();
+            loadFriendData(true);
         } catch (error: any) {
             console.error('[FriendsModal] Accept failed:', error);
             Alert.alert('Error', error.message || 'Failed to accept request');
@@ -208,7 +213,7 @@ export const FriendsModal: React.FC<FriendsModalProps> = ({ visible, onClose, on
     const handleRejectRequest = async (requestId: string) => {
         try {
             await rejectFriendRequest(requestId);
-            loadFriendData();
+            loadFriendData(true);
         } catch (error) {
             Alert.alert('Error', 'Failed to reject request');
         }
@@ -224,7 +229,7 @@ export const FriendsModal: React.FC<FriendsModalProps> = ({ visible, onClose, on
                     if (!currentUserId) return;
                     try {
                         await removeFriend(currentUserId, friendUid);
-                        loadFriendData();
+                        loadFriendData(true);
                     } catch (error) {
                         Alert.alert('Error', 'Failed to remove friend');
                     }
