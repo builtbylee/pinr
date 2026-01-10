@@ -1,6 +1,6 @@
 import firestore from '@react-native-firebase/firestore';
 import React, { useEffect, useState, useRef, useMemo } from 'react';
-import { StyleSheet, Text, View, TouchableOpacity, ScrollView, Animated, Modal, ActivityIndicator, FlatList, BackHandler, useWindowDimensions } from 'react-native';
+import { StyleSheet, Text, View, TouchableOpacity, ScrollView, Animated, Modal, ActivityIndicator, FlatList, BackHandler, useWindowDimensions, Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 import { Feather } from '@expo/vector-icons';
@@ -1896,12 +1896,20 @@ export default function GameSandbox() {
                 difficulty={selectedDifficulty}
                 onSendChallenge={async (friend, gameType, difficulty) => {
                     try {
-                        const challenge = await challengeService.createChallenge(friend.uid, difficulty, gameType);
+                        const { challenge, notificationError } = await challengeService.createChallenge(friend.uid, difficulty, gameType);
+
                         if (challenge) {
+                            if (notificationError) {
+                                Alert.alert(
+                                    'Warning',
+                                    `Challenge started, but notification failed: ${notificationError}\n\n(Ask friend to open app manually)`
+                                );
+                            }
                             setShowChallengePicker(false);
                         }
                     } catch (error) {
                         console.error('[Games] Failed to send challenge:', error);
+                        Alert.alert('Error', 'Failed to create challenge');
                     }
                 }}
                 loadingFriends={false}

@@ -36,7 +36,7 @@ class ChallengeService {
     /**
      * Create a new challenge and send invite notification
      */
-    async createChallenge(opponentId: string, difficulty: Difficulty, gameType: 'flagdash' | 'pindrop' | 'travelbattle' = 'flagdash'): Promise<GameChallenge | null> {
+    async createChallenge(opponentId: string, difficulty: Difficulty, gameType: 'flagdash' | 'pindrop' | 'travelbattle' = 'flagdash'): Promise<{ challenge: GameChallenge | null; notificationError?: string }> {
         try {
             const user = getCurrentUser();
             if (!user) {
@@ -93,10 +93,13 @@ class ChallengeService {
             }
 
             logger.log('[ChallengeService] Challenge created:', challenge.id);
-            return challenge;
-        } catch (error) {
+            return {
+                challenge,
+                notificationError: notifResult.success ? undefined : (notifResult.error || 'Unknown notification error')
+            };
+        } catch (error: any) {
             console.error('[ChallengeService] Failed to create challenge:', error);
-            return null;
+            return { challenge: null, notificationError: error.message };
         }
     }
 
