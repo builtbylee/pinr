@@ -114,7 +114,7 @@ export const FlagDashGame: React.FC<FlagDashGameProps> = ({ difficulty, onGameOv
     if (state.gameOver) return null;
 
     return (
-        <View style={{ flex: 1, width: '100%', alignItems: 'center' }}>
+        <View style={{ flex: 1, width: '100%', alignItems: 'center', paddingTop: 20, paddingHorizontal: 20 }}>
             {/* Quit Modal */}
             {showQuitConfirmation && (
                 <View style={styles.modalOverlay}>
@@ -138,7 +138,7 @@ export const FlagDashGame: React.FC<FlagDashGameProps> = ({ difficulty, onGameOv
             {/* Game Container */}
             <View style={styles.gameContainer}>
                 {/* HUD */}
-                <View style={[styles.hud, { paddingHorizontal: 16, alignItems: 'center' }]}>
+                <View style={styles.hud}>
                     <TouchableOpacity
                         style={styles.quitButtonRed}
                         onPress={handleQuit}
@@ -270,7 +270,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'space-between',
         width: '100%',
-        marginBottom: 20,
+        marginBottom: 8,
     },
     hudItem: {
         flexDirection: 'row',
