@@ -405,8 +405,8 @@ export const StoryCreationFlow: React.FC<StoryCreationFlowProps> = ({
                 current = current.add(1, 'day');
             }
         } else if (tempStartDate) {
-            // Single date selection - include color and textColor for consistent styling
-            marked[tempStartDate] = { selected: true, selectedColor: '#000000', selectedTextColor: 'white', color: '#000000', textColor: 'white' };
+            // Single date selection - use startingDay + endingDay together for circular appearance
+            marked[tempStartDate] = { startingDay: true, endingDay: true, color: '#000000', textColor: 'white' };
         }
 
         return marked;
@@ -1562,10 +1562,9 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         marginBottom: 10,
         paddingHorizontal: 10,
-        backgroundColor: 'red', // Debug: SOLID RED
-        zIndex: 9999,
-        elevation: 10,
-        height: 60,
+        backgroundColor: '#F9FAFB',
+        borderRadius: 24,
+        height: 50,
     },
     navArrow: {
         padding: 8,

@@ -268,8 +268,8 @@ export const CreationModal: React.FC<CreationModalProps> = ({ visible, onClose, 
                 current = current.add(1, 'day');
             }
         } else if (startDate) {
-            // Single date selection - include color and textColor for consistent styling
-            marked[startDate] = { selected: true, selectedColor: '#000000', selectedTextColor: 'white', color: '#000000', textColor: 'white' };
+            // Single date selection - use startingDay + endingDay together for circular appearance
+            marked[startDate] = { startingDay: true, endingDay: true, color: '#000000', textColor: 'white' };
         }
 
         return marked;
@@ -907,10 +907,9 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         marginBottom: 10,
         paddingHorizontal: 10,
-        backgroundColor: 'red', // Debug: SOLID RED (Undeniable)
-        zIndex: 9999, // Force top
-        elevation: 10,
-        height: 60, // Force height
+        backgroundColor: '#F9FAFB',
+        borderRadius: 24,
+        height: 50,
     },
     navArrow: {
         padding: 8,
