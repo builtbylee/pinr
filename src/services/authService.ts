@@ -334,18 +334,22 @@ async function signInWithAppleAndroid(): Promise<{ uid: string; email: string | 
 
             // Call Cloud Function to get OAuth URL
             const getAppleAuthUrl = functions().httpsCallable('getAppleAuthUrl');
+            if (__DEV__) console.log('[AuthService] Calling getAppleAuthUrl Cloud Function...');
             const urlResult = await getAppleAuthUrl({ nonce: hashedNonce });
+            if (__DEV__) console.log('[AuthService] Cloud Function returned:', urlResult.data ? 'data received' : 'no data');
 
             if (urlResult.data?.authUrl) {
                 // Open browser for OAuth flow
                 const authUrl = urlResult.data.authUrl;
                 if (__DEV__) console.log('[AuthService] Opening OAuth URL in browser...');
 
-                // Use HTTPS callback URL (Service IDs only support HTTPS, not custom schemes)
-                const redirectUri = 'https://us-central1-days-c4ad4.cloudfunctions.net/appleAuthCallback';
+                // CRITICAL: Listen for the custom scheme deep link, NOT the HTTPS callback
+                // Apple uses response_mode=form_post, so the code is in the POST body.
+                // The HTTPS callback extracts it and redirects to pinr:// with code in query string.
+                // We must listen for the pinr:// redirect to capture the code.
                 const result = await WebBrowser.openAuthSessionAsync(
                     authUrl,
-                    redirectUri
+                    'pinr://auth/apple/callback'
                 );
 
                 if (result.type === 'success' && result.url) {
@@ -402,13 +406,33 @@ async function signInWithAppleAndroid(): Promise<{ uid: string; email: string | 
                 throw new Error('Cloud Function did not return OAuth URL');
             }
         } catch (cloudFunctionError: any) {
-            if (__DEV__) console.error('[AuthService] Cloud Function approach failed:', cloudFunctionError?.message || 'Unknown error');
+            if (__DEV__) {
+                console.error('[AuthService] Cloud Function approach failed:', cloudFunctionError?.message || 'Unknown error');
+                console.error('[AuthService] Error code:', cloudFunctionError?.code || 'N/A');
+                console.error('[AuthService] Full error:', JSON.stringify(cloudFunctionError, null, 2));
+            }
 
-            // Fallback: Show helpful error message
-            throw new Error(
-                'Apple Sign-In on Android requires backend setup. ' +
-                'Please configure the Apple Sign-In Cloud Functions or use Google Sign-In instead.'
-            );
+            // Provide specific error messages based on the error type
+            const errorMessage = cloudFunctionError?.message || '';
+
+            if (errorMessage.includes('cancelled') || errorMessage.includes('canceled')) {
+                throw new Error('Sign-in was cancelled');
+            } else if (errorMessage.includes('network') || errorMessage.includes('Network')) {
+                throw new Error('Network error. Please check your connection and try again.');
+            } else if (errorMessage.includes('No authorization code')) {
+                throw new Error('Apple authentication was not completed. Please try again.');
+            } else if (errorMessage.includes('Token exchange failed')) {
+                throw new Error('Failed to complete Apple sign-in. Please try again.');
+            } else if (cloudFunctionError?.code === 'functions/internal') {
+                throw new Error('Server error during Apple sign-in. Please try again.');
+            } else if (cloudFunctionError?.code === 'functions/unavailable') {
+                throw new Error('Apple sign-in service temporarily unavailable. Please try again.');
+            } else {
+                // Show actual error for debugging, but with context
+                throw new Error(
+                    `Apple Sign-In failed: ${errorMessage || 'Unknown error'}`
+                );
+            }
         }
     } catch (error: any) {
         if (__DEV__) console.error('[AuthService] ❌ Apple Sign-In on Android failed:', error?.message || 'Unknown error');
