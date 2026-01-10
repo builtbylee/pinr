@@ -141,7 +141,7 @@ export const DestinationCard: React.FC<DestinationCardProps> = ({ memory, onClos
                         <View style={styles.frostedPillContent}>
                             {/* Title Row */}
                             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                                <Text style={styles.pillTitle} numberOfLines={2}>{memory.title}</Text>
+                                <Text style={[styles.pillTitle, Platform.OS === 'android' && styles.pillTitleAndroid]} numberOfLines={2}>{memory.title}</Text>
                                 {/* Expiry Badge if needed */}
                                 {remainingTime && (
                                     <View style={styles.expiryBadge}>
@@ -151,15 +151,17 @@ export const DestinationCard: React.FC<DestinationCardProps> = ({ memory, onClos
                                 )}
                             </View>
 
-                            {/* Details Row */}
-                            <View style={styles.detailsRow}>
+                            {/* Details Row - Android: both on same line, iOS: wrapped */}
+                            <View style={[styles.detailsRow, Platform.OS === 'android' && styles.detailsRowAndroid]}>
                                 <View style={styles.detailItem}>
-                                    <Feather name="map-pin" size={14} color="white" />
-                                    <Text style={styles.detailText} numberOfLines={1}>{memory.locationName}</Text>
+                                    <Feather name="map-pin" size={Platform.OS === 'android' ? 12 : 14} color="white" />
+                                    <Text style={[styles.detailText, Platform.OS === 'android' && styles.detailTextAndroid]} numberOfLines={1}>
+                                        {Platform.OS === 'android' ? memory.locationName.split(',')[0] : memory.locationName}
+                                    </Text>
                                 </View>
                                 <View style={styles.detailItem}>
-                                    <Feather name="calendar" size={14} color="white" />
-                                    <Text style={styles.detailText}>{formatMemoryDate(memory.date, memory.endDate)}</Text>
+                                    <Feather name="calendar" size={Platform.OS === 'android' ? 12 : 14} color="white" />
+                                    <Text style={[styles.detailText, Platform.OS === 'android' && styles.detailTextAndroid]}>{formatMemoryDate(memory.date, memory.endDate)}</Text>
                                 </View>
                             </View>
                         </View>
@@ -268,6 +270,9 @@ const styles = StyleSheet.create({
         flex: 1,
         marginRight: 8,
     },
+    pillTitleAndroid: {
+        fontSize: 20,
+    },
     textContainer: {
         width: '100%',
         gap: 8,
@@ -289,6 +294,10 @@ const styles = StyleSheet.create({
         flexWrap: 'wrap',
         gap: 16,
     },
+    detailsRowAndroid: {
+        flexWrap: 'nowrap',
+        gap: 12,
+    },
     detailItem: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -302,6 +311,9 @@ const styles = StyleSheet.create({
         textShadowColor: 'black',
         textShadowOffset: { width: 1, height: 1 },
         textShadowRadius: 2,
+    },
+    detailTextAndroid: {
+        fontSize: 12,
     },
     expiryBadge: {
         flexDirection: 'row',
