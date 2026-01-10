@@ -22,3 +22,10 @@ expo-env.d.ts
 # @end expo-cli
 # Play Store Service Account (sensitive)
 play-store-service-account.json
+
+# Build artifacts
+builds/
+*.apk
+*.aab
+*.apks
+*.ipa
