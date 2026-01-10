@@ -37,14 +37,14 @@ fi
 # -----------------------------------------------------------------------------
 echo "[Phase 2/7] JavaScript Bundle Check..." | tee -a "$REPORT_FILE"
 
-# Export bundle to check for syntax errors (faster than full build)
 # Note: output-dir must be inside the project
-BUNDLE_OUTPUT=$(npx expo export --platform android --no-bytecode --no-minify --output-dir .expo-bundle-check 2>&1 || true)
-BUNDLE_ERROR=$(echo "$BUNDLE_OUTPUT" | grep -i "error\|SyntaxError\|failed" | head -5 || true)
+BUNDLE_OUTPUT_LOG="/tmp/expo-bundle-output.log"
+npx expo export --platform android --no-bytecode --no-minify --output-dir .expo-bundle-check > "$BUNDLE_OUTPUT_LOG" 2>&1 || true
 
-if [ -n "$BUNDLE_ERROR" ]; then
+if [ $? -ne 0 ] || grep -q "failed" "$BUNDLE_OUTPUT_LOG"; then
     echo "  ❌ Bundle errors found:" | tee -a "$REPORT_FILE"
-    echo "$BUNDLE_ERROR" | tee -a "$REPORT_FILE"
+    # Show first 20 lines of output to catch the real error
+    head -n 20 "$BUNDLE_OUTPUT_LOG" | tee -a "$REPORT_FILE"
     ERRORS=$((ERRORS + 1))
 else
     echo "  ✅ JavaScript bundle: OK" | tee -a "$REPORT_FILE"

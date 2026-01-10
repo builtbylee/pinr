@@ -405,8 +405,8 @@ export const StoryCreationFlow: React.FC<StoryCreationFlowProps> = ({
                 current = current.add(1, 'day');
             }
         } else if (tempStartDate) {
-            // Single date selection
-            marked[tempStartDate] = { selected: true, selectedColor: '#000000', selectedTextColor: 'white' };
+            // Single date selection - include color and textColor for consistent styling
+            marked[tempStartDate] = { selected: true, selectedColor: '#000000', selectedTextColor: 'white', color: '#000000', textColor: 'white' };
         }
 
         return marked;
@@ -564,12 +564,45 @@ export const StoryCreationFlow: React.FC<StoryCreationFlowProps> = ({
                                             <Text style={styles.photoNumberText}>{(getIndex() ?? 0) + 1}</Text>
                                         </View>
                                         {!isActive && (
-                                            <TouchableOpacity
-                                                style={styles.removePhotoBtn}
-                                                onPress={() => removePhoto(item.tempId)}
-                                            >
-                                                <Feather name="x" size={14} color="white" />
-                                            </TouchableOpacity>
+                                            <>
+                                                {/* Edit icon in top left - opens native photo editor */}
+                                                <TouchableOpacity
+                                                    style={styles.editIconButton}
+                                                    onPress={async () => {
+                                                        try {
+                                                            const edited = await ImageCropPicker.openCropper({
+                                                                path: item.uri,
+                                                                mediaType: 'photo',
+                                                                compressImageQuality: 0.8,
+                                                                cropperToolbarTitle: 'Edit Photo',
+                                                                cropperChooseText: 'Done',
+                                                                cropperCancelText: 'Cancel',
+                                                                freeStyleCropEnabled: true,
+                                                                forceJpg: false,
+                                                            });
+                                                            if (edited && edited.path) {
+                                                                setSelectedPhotos(prev => prev.map(p =>
+                                                                    p.tempId === item.tempId ? { ...p, uri: edited.path } : p
+                                                                ));
+                                                            }
+                                                        } catch (error: any) {
+                                                            if (error.code !== 'E_PICKER_CANCELLED') {
+                                                                console.error('[StoryCreationFlow] Error opening native editor:', error);
+                                                                Alert.alert('Error', 'Failed to open photo editor');
+                                                            }
+                                                        }
+                                                    }}
+                                                >
+                                                    <Feather name="edit-2" size={14} color="white" />
+                                                </TouchableOpacity>
+                                                {/* Delete button in top right */}
+                                                <TouchableOpacity
+                                                    style={styles.removePhotoBtn}
+                                                    onPress={() => removePhoto(item.tempId)}
+                                                >
+                                                    <Feather name="x" size={14} color="white" />
+                                                </TouchableOpacity>
+                                            </>
                                         )}
                                     </TouchableOpacity>
                                 </ScaleDecorator>
@@ -891,7 +924,6 @@ export const StoryCreationFlow: React.FC<StoryCreationFlowProps> = ({
 
                         {/* External Custom Header for Navigation */}
                         <View style={styles.externalNavigationHeader}>
-                            <Text style={{ position: 'absolute', top: -20, color: 'red', fontWeight: 'bold' }}>DEBUG MODE ACTIVE (STORY)</Text>
                             <TouchableOpacity onPress={handlePrevMonth} style={styles.navArrow}>
                                 <Feather name="chevron-left" size={24} color="#1a1a1a" />
                             </TouchableOpacity>
@@ -1174,6 +1206,17 @@ const styles = StyleSheet.create({
         height: 22,
         borderRadius: 11,
         backgroundColor: 'rgba(239, 68, 68, 0.9)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    editIconButton: {
+        position: 'absolute',
+        top: 6,
+        left: 6,
+        width: 28,
+        height: 28,
+        borderRadius: 14,
+        backgroundColor: 'rgba(0, 0, 0, 0.6)',
         justifyContent: 'center',
         alignItems: 'center',
     },

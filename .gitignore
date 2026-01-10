@@ -20,3 +20,5 @@ scripts/simulate-pin-notification.js
 
 expo-env.d.ts
 # @end expo-cli
+# Play Store Service Account (sensitive)
+play-store-service-account.json

@@ -268,8 +268,8 @@ export const CreationModal: React.FC<CreationModalProps> = ({ visible, onClose, 
                 current = current.add(1, 'day');
             }
         } else if (startDate) {
-            // Single date selection
-            marked[startDate] = { selected: true, selectedColor: '#000000', selectedTextColor: 'white' };
+            // Single date selection - include color and textColor for consistent styling
+            marked[startDate] = { selected: true, selectedColor: '#000000', selectedTextColor: 'white', color: '#000000', textColor: 'white' };
         }
 
         return marked;
@@ -503,7 +503,6 @@ export const CreationModal: React.FC<CreationModalProps> = ({ visible, onClose, 
 
                             {/* External Custom Header for Navigation */}
                             <View style={styles.externalNavigationHeader}>
-                                <Text style={{ position: 'absolute', top: -20, color: 'red', fontWeight: 'bold' }}>DEBUG MODE ACTIVE</Text>
                                 <TouchableOpacity onPress={handlePrevMonth} style={styles.navArrow}>
                                     <Feather name="chevron-left" size={24} color="#1a1a1a" />
                                 </TouchableOpacity>

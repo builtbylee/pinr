@@ -152,8 +152,6 @@ export const signInWithGoogle = async (): Promise<{ uid: string; email: string |
 
     // If we get here, all retries failed
     throw lastError || new Error('Google sign-in failed after retries');
-    // ... (end of signInWithGoogle)
-    throw lastError || new Error('Google sign-in failed after retries');
 };
 
 /**
@@ -171,7 +169,6 @@ export const signInWithApple = async (): Promise<{ uid: string; email: string | 
         console.log('[AuthService] 🤖 Starting Android Apple Sign-In (Web Flow)...');
         try {
             // 1. Generate Nonce/State
-            const state = Math.random().toString(36).substring(7);
             const rawNonce = Math.random().toString(36).substring(2, 10);
             const hashedNonce = await Crypto.digestStringAsync(
                 Crypto.CryptoDigestAlgorithm.SHA256,
@@ -181,13 +178,16 @@ export const signInWithApple = async (): Promise<{ uid: string; email: string | 
             // 2. Get Auth URL from Backend
             console.log('[AuthService] 🔗 requesting auth URL...');
             const getUrlFn = functions().httpsCallable('getAppleAuthUrl');
-            const { data } = await getUrlFn({ state, nonce: hashedNonce });
+            const urlResult = await getUrlFn({ nonce: hashedNonce });
 
-            if (!data?.url) throw new Error('Failed to get auth URL');
-            console.log('[AuthService] 🌐 Opening browser:', data.url);
+            // Note: The backend commit d0f7212f2 uses 'authUrl' instead of 'url'
+            const authUrl = urlResult.data?.authUrl || urlResult.data?.url;
+
+            if (!authUrl) throw new Error('Failed to get auth URL');
+            console.log('[AuthService] 🌐 Opening browser:', authUrl);
 
             // 3. Open Web Browser
-            const result = await WebBrowser.openAuthSessionAsync(data.url, 'https://getpinr.com/auth/apple/callback');
+            const result = await WebBrowser.openAuthSessionAsync(authUrl, 'https://getpinr.com/auth/apple/callback');
 
             if (result.type !== 'success' || !result.url) {
                 console.log('[AuthService] Browser flow cancelled or failed:', result.type);
@@ -197,6 +197,7 @@ export const signInWithApple = async (): Promise<{ uid: string; email: string | 
             // 4. Parse Code from Redirect URL
             const urlObj = new URL(result.url);
             const code = urlObj.searchParams.get('code');
+            const state = urlObj.searchParams.get('state'); // Backend generated state
             const error = urlObj.searchParams.get('error');
 
             if (error) throw new Error(`Apple returned error: ${error}`);
@@ -207,24 +208,58 @@ export const signInWithApple = async (): Promise<{ uid: string; email: string | 
             // 5. Exchange Code for Token (via Backend)
             console.log('[AuthService] 🔄 Exchanging code for token...');
             const exchangeFn = functions().httpsCallable('exchangeAppleAuthCode');
-            const exchangeResult = await exchangeFn({ code });
+            const exchangeResult = await exchangeFn({
+                code,
+                nonce: hashedNonce,
+                state: state || undefined
+            });
 
-            // Note: Currently backend just saves code. We need it to return a custom token to sign in.
-            // If it doesn't, this flow stops here (verified state).
-            if (!exchangeResult.data?.success) {
-                throw new Error('Backend exchange failed');
+            if (!exchangeResult.data?.identityToken) {
+                throw new Error('Backend exchange failed to return identity token');
             }
 
-            // To complete sign in, we normally need: await auth().signInWithCredential(...)
-            // Since backend is stubbed to only save code, we can't fully sign in yet.
-            // But we have restored the "configuration that worked" (which presumably relied on this flow).
+            const { identityToken, email, fullName } = exchangeResult.data;
+            console.log('[AuthService] ✅ Identity Token received. Length:', identityToken.length);
 
-            // Retaining the iOS flow below for iOS devices.
+            // 6. Sign in to Firebase with the ID token
+            console.log('[AuthService] 🔐 Signing in to Firebase...');
+
+            // Create a Firebase credential
+            const provider = new auth.OAuthProvider('apple.com');
+            const credential = provider.credential({
+                idToken: identityToken,
+                rawNonce: rawNonce // Use the raw nonce here!
+            });
+
+            const userCredential = await auth().signInWithCredential(credential);
+            console.log('[AuthService] ✅ Firebase sign-in complete');
+
+            // 7. Update user profile with name/email if available
+            if (userCredential.user && (email || fullName)) {
+                // Determine display name
+                let displayName = userCredential.user.displayName;
+                if (!displayName && fullName) {
+                    const given = fullName.givenName || '';
+                    const family = fullName.familyName || '';
+                    if (given || family) displayName = `${given} ${family}`.trim();
+                }
+
+                if (displayName || (email && !userCredential.user.email)) {
+                    await userCredential.user.updateProfile({
+                        displayName: displayName || undefined,
+                    });
+
+                    // If email is provided but not in auth, we might want to update it, 
+                    // but Firebase usually handles email from the provider.
+                    console.log('[AuthService] 👤 Updated user profile');
+                }
+            }
+
             return {
-                uid: 'android-placeholder', // Placeholder until real exchange logic is restored
-                email: null,
-                displayName: null,
-                isNewUser: false,
+                uid: userCredential.user.uid,
+                email: userCredential.user.email || email,
+                displayName: userCredential.user.displayName,
+                isNewUser: userCredential.additionalUserInfo?.isNewUser ?? false,
             };
 
         } catch (error: any) {

@@ -16,6 +16,7 @@ export interface Memory {
     creatorId: string; // ID of the user who created this memory
     pinColor: PinColor; // Color of the pin icon
     expiresAt: number | null; // Unix timestamp when pin expires, null = permanent
+    endDate?: string | number | null; // End date for date ranges (journeys)
 }
 
 interface MemoryStore {

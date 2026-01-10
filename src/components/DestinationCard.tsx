@@ -2,7 +2,7 @@ import { Feather } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import React, { useEffect, useState } from 'react';
-import { Alert, Dimensions, StyleSheet, Text, TouchableOpacity, View, Image as RNImage } from 'react-native';
+import { Alert, Dimensions, Platform, StyleSheet, Text, TouchableOpacity, View, Image as RNImage } from 'react-native';
 // Note: ViewShot removed until native rebuild - using text sharing fallback
 import { Memory, useMemoryStore } from '../store/useMemoryStore';
 import { deletePin } from '../services/firestoreService';
@@ -132,40 +132,35 @@ export const DestinationCard: React.FC<DestinationCardProps> = ({ memory, onClos
                     </TouchableOpacity>
                 </View>
 
-                {/* 3. Gradient & Text Overlay (Bottom) */}
-                <View style={styles.gradientOverlay}>
-                    <View style={styles.textContainer}>
-                        {/* Title Row */}
-                        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                            <Text style={styles.title} numberOfLines={2}>{memory.title}</Text>
-                            {/* Expiry Badge if needed */}
-                            {remainingTime && (
-                                <View style={styles.expiryBadge}>
-                                    <Feather name="clock" size={12} color="#D97706" />
-                                    <Text style={styles.expiryText}>{remainingTime}</Text>
-                                </View>
-                            )}
-                        </View>
-
-                        {/* Details Row */}
-                        <View style={styles.detailsRow}>
-                            <View style={styles.detailItem}>
-                                <Feather
-                                    name="map-pin"
-                                    size={14}
-                                    color="white"
-                                    style={{ textShadowColor: 'black', textShadowOffset: { width: 1, height: 1 }, textShadowRadius: 2 }}
-                                />
-                                <Text style={styles.detailText} numberOfLines={1}>{memory.locationName}</Text>
+                {/* 3. Frosted Glass Pill Overlay (Bottom) */}
+                <View style={styles.pillContainer}>
+                    <View style={[
+                        styles.blurPill,
+                        Platform.OS === 'android' && styles.blurPillAndroid
+                    ]}>
+                        <View style={styles.frostedPillContent}>
+                            {/* Title Row */}
+                            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                                <Text style={styles.pillTitle} numberOfLines={2}>{memory.title}</Text>
+                                {/* Expiry Badge if needed */}
+                                {remainingTime && (
+                                    <View style={styles.expiryBadge}>
+                                        <Feather name="clock" size={12} color="#D97706" />
+                                        <Text style={styles.expiryText}>{remainingTime}</Text>
+                                    </View>
+                                )}
                             </View>
-                            <View style={styles.detailItem}>
-                                <Feather
-                                    name="calendar"
-                                    size={14}
-                                    color="white"
-                                    style={{ textShadowColor: 'black', textShadowOffset: { width: 1, height: 1 }, textShadowRadius: 2 }}
-                                />
-                                <Text style={styles.detailText}>{formatMemoryDate(memory.date)}</Text>
+
+                            {/* Details Row */}
+                            <View style={styles.detailsRow}>
+                                <View style={styles.detailItem}>
+                                    <Feather name="map-pin" size={14} color="white" />
+                                    <Text style={styles.detailText} numberOfLines={1}>{memory.locationName}</Text>
+                                </View>
+                                <View style={styles.detailItem}>
+                                    <Feather name="calendar" size={14} color="white" />
+                                    <Text style={styles.detailText}>{formatMemoryDate(memory.date, memory.endDate)}</Text>
+                                </View>
                             </View>
                         </View>
                     </View>
@@ -244,6 +239,34 @@ const styles = StyleSheet.create({
         paddingBottom: 32,
         // Removed dark background, replaced with text shadows
         backgroundColor: 'transparent',
+    },
+    pillContainer: {
+        position: 'absolute',
+        bottom: 24,
+        left: 24,
+        right: 24,
+    },
+    blurPill: {
+        borderRadius: 24,
+        overflow: 'hidden',
+        borderWidth: 1,
+        borderColor: 'rgba(255, 255, 255, 0.5)',
+        backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    },
+    blurPillAndroid: {
+        backgroundColor: 'rgba(100, 100, 100, 0.5)',
+    },
+    frostedPillContent: {
+        paddingHorizontal: 20,
+        paddingVertical: 12,
+        gap: 8,
+    },
+    pillTitle: {
+        fontSize: 28,
+        fontWeight: 'bold',
+        color: 'white',
+        flex: 1,
+        marginRight: 8,
     },
     textContainer: {
         width: '100%',

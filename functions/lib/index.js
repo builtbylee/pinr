@@ -43,12 +43,177 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.rejectReportedPin = exports.approveReportedPin = exports.onReportCreated = exports.moderateImage = exports.adminDeletePin = exports.checkBanStatus = exports.unbanUser = exports.banUser = exports.onWaitlistSignup = exports.createStory = exports.submitChallengeScore = exports.submitGameScore = exports.acceptFriendRequest = exports.removeFriend = exports.addFriend = void 0;
+exports.rejectReportedPin = exports.approveReportedPin = exports.onReportCreated = exports.moderateImage = exports.adminDeletePin = exports.checkBanStatus = exports.unbanUser = exports.banUser = exports.onWaitlistSignup = exports.createStory = exports.submitChallengeScore = exports.submitGameScore = exports.acceptFriendRequest = exports.removeFriend = exports.addFriend = exports.saveiOSAppleAuth = exports.exchangeAppleAuthCode = exports.getAppleAuthUrl = void 0;
 const functions = __importStar(require("firebase-functions"));
 const admin = __importStar(require("firebase-admin"));
+const crypto = __importStar(require("crypto"));
+const jwt = __importStar(require("jsonwebtoken"));
+const apple_config_1 = require("./apple-config");
+// Create APPLE_CONFIG object for use in exchangeAppleAuthCode
+const APPLE_CONFIG = {
+    APPLE_PRIVATE_KEY: apple_config_1.APPLE_PRIVATE_KEY
+};
 admin.initializeApp();
 const db = admin.firestore();
 const USERS_COLLECTION = 'users';
+// ============================================
+// APPLE SIGN IN FUNCTIONS
+// ============================================
+// ============================================
+// APPLE SIGN-IN FOR ANDROID
+// ============================================
+/**
+ * Generate OAuth URL for Apple Sign-In on Android
+ * This function creates the authorization URL that the Android app will open in a browser
+ */
+exports.getAppleAuthUrl = functions.https.onCall(async (data, context) => {
+    var _a, _b;
+    const nonce = data.nonce;
+    if (!nonce) {
+        throw new functions.https.HttpsError('invalid-argument', 'Nonce is required');
+    }
+    // Generate state for CSRF protection
+    const state = crypto.randomBytes(16).toString('hex');
+    // Get configuration from environment variables or Secrets
+    const clientId = process.env.APPLE_CLIENT_ID || ((_a = functions.config().apple) === null || _a === void 0 ? void 0 : _a.client_id) || 'com.builtbylee.app80days.service';
+    const redirectUri = process.env.APPLE_REDIRECT_URI || ((_b = functions.config().apple) === null || _b === void 0 ? void 0 : _b.redirect_uri) || 'https://getpinr.com/auth/apple/callback';
+    const scope = 'name email';
+    // Build Apple authorization URL
+    // Using response_mode=query so the authorization code appears in the callback URL
+    const authUrl = `https://appleid.apple.com/auth/authorize?` +
+        `client_id=${encodeURIComponent(clientId)}&` +
+        `redirect_uri=${encodeURIComponent(redirectUri)}&` +
+        `response_type=code&` +
+        `scope=${encodeURIComponent(scope)}&` +
+        `response_mode=query&` +
+        `state=${state}&` +
+        `nonce=${nonce}`;
+    return { authUrl, state };
+});
+/**
+ * Exchange Apple authorization code for ID token
+ * This function handles the OAuth callback and exchanges the code for an identity token
+ */
+exports.exchangeAppleAuthCode = functions.https.onCall(async (data, context) => {
+    var _a, _b, _c, _d, _e;
+    const { code, nonce, state: _state } = data; // _state available for future CSRF validation
+    if (!code || !nonce) {
+        throw new functions.https.HttpsError('invalid-argument', 'Code and nonce are required');
+    }
+    try {
+        const teamId = process.env.APPLE_TEAM_ID || ((_a = functions.config().apple) === null || _a === void 0 ? void 0 : _a.team_id) || 'CMBSFLQ5V6';
+        const keyId = process.env.APPLE_KEY_ID || ((_b = functions.config().apple) === null || _b === void 0 ? void 0 : _b.key_id) || '8TV72LRP85';
+        const clientId = process.env.APPLE_CLIENT_ID || ((_c = functions.config().apple) === null || _c === void 0 ? void 0 : _c.client_id) || 'com.builtbylee.app80days.service';
+        const redirectUri = process.env.APPLE_REDIRECT_URI || ((_d = functions.config().apple) === null || _d === void 0 ? void 0 : _d.redirect_uri) || 'https://getpinr.com/auth/apple/callback';
+        // Private key - get from config file, environment, or Firebase config
+        let privateKey = APPLE_CONFIG.APPLE_PRIVATE_KEY ||
+            process.env.APPLE_PRIVATE_KEY ||
+            ((_e = functions.config().apple) === null || _e === void 0 ? void 0 : _e.private_key);
+        if (!privateKey) {
+            // Fallback: Try to load from local file for deployment convenience if not in env
+            try {
+                const localConfig = require('./apple-config');
+                if (localConfig.APPLE_PRIVATE_KEY)
+                    privateKey = localConfig.APPLE_PRIVATE_KEY;
+            }
+            catch (e) {
+                // Ignore
+            }
+            if (!privateKey) {
+                throw new functions.https.HttpsError('failed-precondition', 'Apple Sign-In private key is missing.');
+            }
+        }
+        // Generate client secret (JWT signed with private key)
+        const clientSecret = jwt.sign({
+            iss: teamId,
+            iat: Math.floor(Date.now() / 1000),
+            exp: Math.floor(Date.now() / 1000) + 3600, // 1 hour expiration
+            aud: 'https://appleid.apple.com',
+            sub: clientId,
+        }, privateKey.replace(/\\n/g, '\n'), // Handle escaped newlines
+        {
+            algorithm: 'ES256',
+            keyid: keyId,
+        });
+        // Exchange authorization code for tokens
+        const tokenResponse = await fetch('https://appleid.apple.com/auth/token', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: new URLSearchParams({
+                client_id: clientId,
+                client_secret: clientSecret,
+                code: code,
+                grant_type: 'authorization_code',
+                redirect_uri: redirectUri,
+            }),
+        });
+        if (!tokenResponse.ok) {
+            const errorText = await tokenResponse.text();
+            console.error('[exchangeAppleAuthCode] Token exchange failed:', errorText);
+            throw new functions.https.HttpsError('internal', `Token exchange failed: ${errorText}`);
+        }
+        const tokens = await tokenResponse.json();
+        const idToken = tokens.id_token;
+        if (!idToken) {
+            throw new functions.https.HttpsError('internal', 'No ID token received from Apple');
+        }
+        // Decode ID token to extract user info (without verification - Firebase will verify)
+        const decoded = jwt.decode(idToken, { complete: true });
+        if (!decoded || !decoded.payload) {
+            throw new functions.https.HttpsError('internal', 'Failed to decode ID token');
+        }
+        // Return ID token and user info
+        return {
+            identityToken: idToken,
+            email: decoded.payload.email || null,
+            fullName: decoded.payload.name ? {
+                givenName: decoded.payload.name.given_name || null,
+                familyName: decoded.payload.name.family_name || null,
+            } : null,
+        };
+    }
+    catch (error) {
+        console.error('[exchangeAppleAuthCode] Error:', (error === null || error === void 0 ? void 0 : error.message) || 'Unknown error');
+        if (error instanceof functions.https.HttpsError) {
+            throw error;
+        }
+        throw new functions.https.HttpsError('internal', (error === null || error === void 0 ? void 0 : error.message) || 'Failed to exchange authorization code');
+    }
+});
+/**
+ * Save iOS Apple Authorization Code
+ * Used by the iOS client to store the auth code for backend processing/refresh token generation
+ */
+exports.saveiOSAppleAuth = functions.https.onCall(async (data, context) => {
+    if (!context.auth) {
+        throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated.');
+    }
+    const { code } = data;
+    if (!code) {
+        throw new functions.https.HttpsError('invalid-argument', 'Authorization code is required.');
+    }
+    const uid = context.auth.uid;
+    console.log(`[saveiOSAppleAuth] Saving auth code for user: ${uid}`);
+    try {
+        // Store in a private subcollection or document
+        await db.collection('users').doc(uid).collection('private').doc('apple_auth').set({
+            authorizationCode: code,
+            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+            platform: 'ios'
+        }, { merge: true });
+        return { success: true };
+    }
+    catch (error) {
+        console.error('[saveiOSAppleAuth] Error:', error);
+        throw new functions.https.HttpsError('internal', 'Failed to save auth code.');
+    }
+});
+/**
+ * Exchange Apple Auth Code (Android/Generic)
+ * Used to exchange the auth code for a refresh token directly on the backend
+ */
 // ============================================
 // RATE LIMITING UTILITY
 // ============================================

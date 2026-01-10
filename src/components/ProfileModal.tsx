@@ -453,7 +453,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                                                             <Text style={styles.gridCardTitle} numberOfLines={2}>{pin.title || pin.locationName}</Text>
                                                         </BlurView>
                                                     ) : (
-                                                        <View style={[styles.gridCardTitleContainer, { backgroundColor: 'rgba(0,0,0,0.6)' }]}>
+                                                        <View style={[styles.gridCardTitleContainer, { backgroundColor: 'rgba(100, 100, 100, 0.5)' }]}>
                                                             <Text style={styles.gridCardTitle} numberOfLines={2}>{pin.title || pin.locationName}</Text>
                                                         </View>
                                                     )}
@@ -498,7 +498,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                                                                 <Text style={styles.gridCardTitle} numberOfLines={1}>{story.title}</Text>
                                                             </BlurView>
                                                         ) : (
-                                                            <View style={[styles.gridCardTitleContainer, { backgroundColor: 'rgba(0,0,0,0.6)' }]}>
+                                                            <View style={[styles.gridCardTitleContainer, { backgroundColor: 'rgba(100, 100, 100, 0.5)' }]}>
                                                                 <Text style={styles.gridCardTitle} numberOfLines={1}>{story.title}</Text>
                                                             </View>
                                                         )}
@@ -549,7 +549,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                                                                 <Text style={styles.gridCardTitle} numberOfLines={2}>{item.locationName}</Text>
                                                             </BlurView>
                                                         ) : (
-                                                            <View style={[styles.gridCardTitleContainer, { backgroundColor: 'rgba(0,0,0,0.6)' }]}>
+                                                            <View style={[styles.gridCardTitleContainer, { backgroundColor: 'rgba(100, 100, 100, 0.5)' }]}>
                                                                 <Text style={styles.gridCardTitle} numberOfLines={2}>{item.locationName}</Text>
                                                             </View>
                                                         )}
