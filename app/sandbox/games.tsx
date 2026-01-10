@@ -15,6 +15,7 @@ import { getCurrentUser } from '../../src/services/authService';
 import { PinDropDifficulty } from '../../src/services/PinDropService';
 import { streakService } from '../../src/services/StreakService';
 import { useMemoryStore } from '../../src/store/useMemoryStore';
+import { ChallengeFriendModal } from '../../src/components/ChallengeFriendModal';
 
 // Lazy load games to isolate crashes (e.g. Mapbox native issues)
 const PinDropGame = React.lazy(async () => {
@@ -1888,27 +1889,23 @@ export default function GameSandbox() {
             )}
 
             {/* Challenge Friend Modal */}
-            {showChallengePicker && (
-                <React.Suspense fallback={<View style={styles.centerContainer}><ActivityIndicator size="large" color="#10B981" /></View>}>
-                    <ChallengeFriendModal
-                        visible={showChallengePicker}
-                        onClose={() => setShowChallengePicker(false)}
-                        friends={friends}
-                        difficulty={selectedDifficulty}
-                        onSendChallenge={async (friend, gameType, difficulty) => {
-                            try {
-                                const challenge = await challengeService.createChallenge(friend.uid, difficulty, gameType);
-                                if (challenge) {
-                                    setShowChallengePicker(false);
-                                }
-                            } catch (error) {
-                                console.error('[Games] Failed to send challenge:', error);
-                            }
-                        }}
-                        loadingFriends={false}
-                    />
-                </React.Suspense>
-            )}
+            <ChallengeFriendModal
+                visible={showChallengePicker}
+                onClose={() => setShowChallengePicker(false)}
+                friends={friends}
+                difficulty={selectedDifficulty}
+                onSendChallenge={async (friend, gameType, difficulty) => {
+                    try {
+                        const challenge = await challengeService.createChallenge(friend.uid, difficulty, gameType);
+                        if (challenge) {
+                            setShowChallengePicker(false);
+                        }
+                    } catch (error) {
+                        console.error('[Games] Failed to send challenge:', error);
+                    }
+                }}
+                loadingFriends={false}
+            />
         </View>
     );
 }
