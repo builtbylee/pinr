@@ -46,7 +46,10 @@ export const getAppleAuthUrl = functions.https.onCall(async (data: { nonce: stri
     // Get configuration from environment variables or Secrets
     const clientId = process.env.APPLE_CLIENT_ID || functions.config().apple?.client_id || 'com.builtbylee.app80days.service';
     const redirectUri = process.env.APPLE_REDIRECT_URI || functions.config().apple?.redirect_uri || 'https://getpinr.com/auth/apple/callback';
-    const scope = 'name email';
+
+    // NOTE: We don't request 'name email' scope because Apple requires response_mode=form_post
+    // for those scopes, which requires a server endpoint. The email is still available in the
+    // ID token after code exchange. Name can be collected in-app if needed.
 
     // Build Apple authorization URL
     // Using response_mode=query so the authorization code appears in the callback URL
@@ -54,7 +57,6 @@ export const getAppleAuthUrl = functions.https.onCall(async (data: { nonce: stri
         `client_id=${encodeURIComponent(clientId)}&` +
         `redirect_uri=${encodeURIComponent(redirectUri)}&` +
         `response_type=code&` +
-        `scope=${encodeURIComponent(scope)}&` +
         `response_mode=query&` +
         `state=${state}&` +
         `nonce=${nonce}`;
