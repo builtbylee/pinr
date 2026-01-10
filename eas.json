@@ -12,7 +12,8 @@
       "env": {
         "EXPO_PUBLIC_MAPBOX_TOKEN": "pk.eyJ1IjoiaGFja25leW1hbmxlZSIsImEiOiJjbWo4eXcyNDEwNWNyM2hyM204ajVjejkyIn0._ZH3oEqV-t0wM891mGUDlQ",
         "EXPO_PUBLIC_GOOGLE_CLIENT_ID": "760973100570-m7rblrrm2fkcjk61mjnu9bruvkrs03qp.apps.googleusercontent.com",
-        "EXPO_PUBLIC_ONESIGNAL_REST_API_KEY": "@ONESIGNAL_REST_API_KEY"
+        "EXPO_PUBLIC_ONESIGNAL_REST_API_KEY": "@ONESIGNAL_REST_API_KEY",
+        "EXPO_PUBLIC_ONESIGNAL_APP_ID": "5998e50e-ec2e-49fa-9d3f-9639168487ac"
       }
     },
     "preview": {
@@ -26,6 +27,7 @@
         "EXPO_PUBLIC_MAPBOX_TOKEN": "pk.eyJ1IjoiaGFja25leW1hbmxlZSIsImEiOiJjbWo4eXcyNDEwNWNyM2hyM204ajVjejkyIn0._ZH3oEqV-t0wM891mGUDlQ",
         "EXPO_PUBLIC_GOOGLE_CLIENT_ID": "760973100570-m7rblrrm2fkcjk61mjnu9bruvkrs03qp.apps.googleusercontent.com",
         "EXPO_PUBLIC_ONESIGNAL_REST_API_KEY": "@ONESIGNAL_REST_API_KEY",
+        "EXPO_PUBLIC_ONESIGNAL_APP_ID": "5998e50e-ec2e-49fa-9d3f-9639168487ac",
         "GOOGLE_SERVICES_JSON": "@GOOGLE_SERVICES_JSON"
       }
     },
@@ -40,6 +42,7 @@
         "EXPO_PUBLIC_MAPBOX_TOKEN": "pk.eyJ1IjoiaGFja25leW1hbmxlZSIsImEiOiJjbWo4eXcyNDEwNWNyM2hyM204ajVjejkyIn0._ZH3oEqV-t0wM891mGUDlQ",
         "EXPO_PUBLIC_GOOGLE_CLIENT_ID": "760973100570-m7rblrrm2fkcjk61mjnu9bruvkrs03qp.apps.googleusercontent.com",
         "EXPO_PUBLIC_ONESIGNAL_REST_API_KEY": "@ONESIGNAL_REST_API_KEY",
+        "EXPO_PUBLIC_ONESIGNAL_APP_ID": "5998e50e-ec2e-49fa-9d3f-9639168487ac",
         "GOOGLE_SERVICES_JSON": "@GOOGLE_SERVICES_JSON"
       }
     },
@@ -51,6 +54,7 @@
         "EXPO_PUBLIC_MAPBOX_TOKEN": "pk.eyJ1IjoiaGFja25leW1hbmxlZSIsImEiOiJjbWo4eXcyNDEwNWNyM2hyM204ajVjejkyIn0._ZH3oEqV-t0wM891mGUDlQ",
         "EXPO_PUBLIC_GOOGLE_CLIENT_ID": "760973100570-m7rblrrm2fkcjk61mjnu9bruvkrs03qp.apps.googleusercontent.com",
         "EXPO_PUBLIC_ONESIGNAL_REST_API_KEY": "@ONESIGNAL_REST_API_KEY",
+        "EXPO_PUBLIC_ONESIGNAL_APP_ID": "5998e50e-ec2e-49fa-9d3f-9639168487ac",
         "GOOGLE_SERVICES_JSON": "@GOOGLE_SERVICES_JSON"
       },
       "channel": "production"

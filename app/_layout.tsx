@@ -61,7 +61,7 @@ SplashScreen.preventAutoHideAsync();
 import { LogLevel, OneSignal } from 'react-native-onesignal';
 
 // Initialize OneSignal
-const ONE_SIGNAL_APP_ID = '5998e50e-ec2e-49fa-9d3f-9639168487ac';
+const ONE_SIGNAL_APP_ID = process.env.EXPO_PUBLIC_ONESIGNAL_APP_ID || '5998e50e-ec2e-49fa-9d3f-9639168487ac';
 OneSignal.Debug.setLogLevel(LogLevel.Verbose);
 OneSignal.initialize(ONE_SIGNAL_APP_ID);
 
