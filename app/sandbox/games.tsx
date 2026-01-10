@@ -306,9 +306,30 @@ export default function GameSandbox() {
         }
     };
 
-    // Stubbed
+    // Load friends and show challenge picker
     const loadFriendsForChallenge = async () => {
-        console.log('loadFriendsForChallenge stubbed');
+        const user = getCurrentUser();
+        if (!user) return;
+
+        try {
+            const friendIds = await getFriends(user.uid);
+            const friendProfiles = await Promise.all(
+                friendIds.map(async (id) => {
+                    const profile = await getUserProfile(id);
+                    return profile ? {
+                        uid: id,
+                        username: profile.username || 'Unknown',
+                        avatarUrl: profile.avatarUrl,
+                        pinColor: profile.pinColor
+                    } : null;
+                })
+            );
+            setFriends(friendProfiles.filter(Boolean) as any[]);
+        } catch (error) {
+            console.error('[Games] Failed to load friends:', error);
+        }
+
+        setShowChallengePicker(true);
     };
 
     // Stubbed
@@ -1864,6 +1885,29 @@ export default function GameSandbox() {
 
                     {renderBottomNav()}
                 </View>
+            )}
+
+            {/* Challenge Friend Modal */}
+            {showChallengePicker && (
+                <React.Suspense fallback={<View style={styles.centerContainer}><ActivityIndicator size="large" color="#10B981" /></View>}>
+                    <ChallengeFriendModal
+                        visible={showChallengePicker}
+                        onClose={() => setShowChallengePicker(false)}
+                        friends={friends}
+                        difficulty={selectedDifficulty}
+                        onSendChallenge={async (friend, gameType, difficulty) => {
+                            try {
+                                const challenge = await challengeService.createChallenge(friend.uid, difficulty, gameType);
+                                if (challenge) {
+                                    setShowChallengePicker(false);
+                                }
+                            } catch (error) {
+                                console.error('[Games] Failed to send challenge:', error);
+                            }
+                        }}
+                        loadingFriends={false}
+                    />
+                </React.Suspense>
             )}
         </View>
     );
