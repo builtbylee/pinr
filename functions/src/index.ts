@@ -45,7 +45,7 @@ export const getAppleAuthUrl = functions.https.onCall(async (data: { nonce: stri
 
     // Get configuration from environment variables or Secrets
     const clientId = process.env.APPLE_CLIENT_ID || functions.config().apple?.client_id || 'com.builtbylee.app80days.service';
-    const redirectUri = process.env.APPLE_REDIRECT_URI || functions.config().apple?.redirect_uri || 'https://getpinr.com/auth/apple/callback';
+    const redirectUri = process.env.APPLE_REDIRECT_URI || functions.config().apple?.redirect_uri || 'https://us-central1-days-c4ad4.cloudfunctions.net/appleAuthCallback';
 
     // NOTE: We don't request 'name email' scope because Apple requires response_mode=form_post
     // for those scopes, which requires a server endpoint. The email is still available in the
@@ -79,7 +79,7 @@ export const exchangeAppleAuthCode = functions.https.onCall(async (data: { code:
         const teamId = process.env.APPLE_TEAM_ID || functions.config().apple?.team_id || 'CMBSFLQ5V6';
         const keyId = process.env.APPLE_KEY_ID || functions.config().apple?.key_id || '8TV72LRP85';
         const clientId = process.env.APPLE_CLIENT_ID || functions.config().apple?.client_id || 'com.builtbylee.app80days.service';
-        const redirectUri = process.env.APPLE_REDIRECT_URI || functions.config().apple?.redirect_uri || 'https://getpinr.com/auth/apple/callback';
+        const redirectUri = process.env.APPLE_REDIRECT_URI || functions.config().apple?.redirect_uri || 'https://us-central1-days-c4ad4.cloudfunctions.net/appleAuthCallback';
 
         // Private key - get from config file, environment, or Firebase config
         let privateKey = (APPLE_CONFIG.APPLE_PRIVATE_KEY as string) ||
@@ -173,6 +173,126 @@ export const exchangeAppleAuthCode = functions.https.onCall(async (data: { code:
             error?.message || 'Failed to exchange authorization code'
         );
     }
+});
+
+/**
+ * HTTP endpoint to handle Apple OAuth callback
+ * Apple redirects here after user authenticates, then we redirect to the app via deep link
+ */
+export const appleAuthCallback = functions.https.onRequest(async (req, res) => {
+    const code = req.query.code as string | undefined;
+    const state = req.query.state as string | undefined;
+    const error = req.query.error as string | undefined;
+
+    // Build the HTML response
+    const html = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Signing in to Pinr...</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: white;
+        }
+        .container {
+            text-align: center;
+            padding: 40px;
+        }
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid rgba(255,255,255,0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        h1 {
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+        p {
+            color: rgba(255,255,255,0.7);
+            margin-bottom: 30px;
+        }
+        .manual-link {
+            display: inline-block;
+            padding: 12px 24px;
+            background: white;
+            color: #1a1a2e;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            margin-top: 20px;
+        }
+        .error {
+            color: #ff6b6b;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        ${error ? `
+            <h1>Sign-in Error</h1>
+            <p class="error">${error}</p>
+        ` : !code ? `
+            <h1>Error</h1>
+            <p class="error">No authorization code received</p>
+        ` : `
+            <div class="spinner"></div>
+            <h1>Signing you in...</h1>
+            <p id="status">Redirecting back to Pinr</p>
+            <a id="manualLink" class="manual-link" style="display:none;">Open Pinr</a>
+        `}
+    </div>
+
+    ${code ? `
+    <script>
+        (function() {
+            var code = ${JSON.stringify(code)};
+            var state = ${JSON.stringify(state || '')};
+
+            // Build the deep link URL
+            var deepLink = 'pinr://auth/apple/callback?' +
+                'code=' + encodeURIComponent(code) +
+                (state ? '&state=' + encodeURIComponent(state) : '');
+
+            // Set up manual link
+            var manualLink = document.getElementById('manualLink');
+            manualLink.href = deepLink;
+
+            console.log('Redirecting to:', deepLink);
+
+            // Try to open the app
+            window.location.href = deepLink;
+
+            // Show manual button after delay if still here
+            setTimeout(function() {
+                manualLink.style.display = 'inline-block';
+                document.getElementById('status').textContent = 'If the app didn\\'t open, tap below:';
+            }, 1500);
+        })();
+    </script>
+    ` : ''}
+</body>
+</html>
+    `;
+
+    res.status(200).send(html);
 });
 
 /**

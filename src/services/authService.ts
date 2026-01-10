@@ -187,7 +187,8 @@ export const signInWithApple = async (): Promise<{ uid: string; email: string | 
             console.log('[AuthService] 🌐 Opening browser:', authUrl);
 
             // 3. Open Web Browser
-            const result = await WebBrowser.openAuthSessionAsync(authUrl, 'https://getpinr.com/auth/apple/callback');
+            // The Cloud Function at the redirect URI will redirect to pinr:// deep link
+            const result = await WebBrowser.openAuthSessionAsync(authUrl, 'pinr://auth/apple/callback');
 
             if (result.type !== 'success' || !result.url) {
                 console.log('[AuthService] Browser flow cancelled or failed:', result.type);
